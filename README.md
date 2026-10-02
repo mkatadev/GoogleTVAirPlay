@@ -62,9 +62,11 @@ While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to acceler
 
 ## Build from source
 
-Requirements: JDK 17, Android SDK 37. The AirPlay core is a prebuilt AAR, so no NDK is needed for the app itself.
+Requirements: JDK 17, Android SDK 37, NDK 28.2 + CMake 3.22 (installed by Android Studio on demand), `make`, `perl`.
+The first build compiles OpenSSL and FFmpeg from source for three ABIs and takes ~10 minutes; later builds are incremental.
 
 ```bash
+git clone --recurse-submodules https://github.com/mkatadev/GoogleTVAirPlay.git   # third-party code lives in submodules
 ./gradlew :app:assembleDebug           # debug APK
 ./gradlew :app:testDebugUnitTest       # unit tests
 ./gradlew installChromecast            # build release → pick a TV → install & launch
@@ -95,8 +97,9 @@ git tag v1.2.0 && git push origin v1.2.0
 ## Architecture
 
 ```
-app/libs/airplay-core-1.0.0.aar   ← prebuilt AirPlay core (UxPlay, GPL-3.0), sources: ../airplay-core
-  pl.prodevcode.airplay.service.AirPlayService — foreground service, MediaSession, mDNS, renderers
+:airplay-core  (Android library, NDK/CMake)
+  src/main/cpp/            JNI bridge, audio engine, dnssd shim; third_party/ submodules (UxPlay, libplist, FFmpeg, openssl-cmake)
+  pl.prodevcode.airplay    AirPlayService — foreground service, MediaSession, mDNS, renderers
 
 :app  (Google TV only, Compose for TV)
   domain/         model · repository interfaces · use cases     ← no Android/Hilt deps beyond javax.inject
@@ -107,19 +110,30 @@ app/libs/airplay-core-1.0.0.aar   ← prebuilt AirPlay core (UxPlay, GPL-3.0), s
 
 Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.06 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow.
 
-### AirPlay core (`airplay-core`)
+### Third-party code & updates
 
-The native code and the receiver service live in a separate project, **`../airplay-core`** (NDK r28 / CMake). After changing it:
+`airplay-core/src/main/cpp/third_party/` holds git submodules pinned to exact upstream commits — see
+[`third_party/VERSIONS.md`](airplay-core/src/main/cpp/third_party/VERSIONS.md). Local fixes to UxPlay live in
+`airplay-core/src/main/cpp/patches/UxPlay/*.patch` and are applied at CMake configure time onto a copy in the build
+directory, so the submodules themselves stay pristine.
 
 ```bash
-cd ../airplay-core && ./gradlew :airplay-core:assembleRelease
-cp airplay-core/build/outputs/aar/airplay-core-release.aar ../GoogleTVAirPlay/app/libs/airplay-core-1.0.0.aar
+tools/third-party.sh status                    # pinned version per component vs. what upstream has
+tools/third-party.sh update UxPlay v1.75       # bump one component (tag / branch / sha), re-check patches, refresh VERSIONS.md
+tools/third-party.sh update ffmpeg n9.0.2
+tools/third-party.sh verify-patches            # do the UxPlay patches still apply to the pinned commit?
+tools/third-party.sh rebase-patches            # scratch checkout to fix patches that stopped applying
 ```
+
+After an update: build, test on a TV, then commit the submodule pointer together with `VERSIONS.md`. CI rejects stale
+`VERSIONS.md` and broken patches. Cloned without `--recurse-submodules`? The CMake configure step runs
+`git submodule update --init` for you. GitHub's *Download ZIP* does **not** include submodules — use the
+`*-full-source.tar.gz` asset from Releases instead.
 
 ## License
 
 **GPL-3.0** — see [LICENSE](LICENSE). The AirPlay core is derived from [UxPlay](https://github.com/FDH2/UxPlay) and
-[jqssun/android-airplay-server](https://github.com/jqssun/android-airplay-server); third-party notices are listed in `airplay-core/NOTICE.md` and in the app under *Settings → Open source licenses*.
+[jqssun/android-airplay-server](https://github.com/jqssun/android-airplay-server); third-party notices are listed in [`airplay-core/NOTICE.md`](airplay-core/NOTICE.md) and in the app under *Settings → Open source licenses*.
 
 AirPlay is a trademark of Apple Inc. This project is not affiliated with Apple or Google.
 

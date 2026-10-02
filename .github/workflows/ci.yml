@@ -10,20 +10,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  third-party:
+    name: Third-party patches & versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: tools/third-party.sh verify-patches
+      - name: VERSIONS.md is up to date
+        run: |
+          tools/third-party.sh versions
+          git diff --exit-code -- airplay-core/src/main/cpp/third_party/VERSIONS.md \
+            || { echo "::error::third_party/VERSIONS.md is stale — run tools/third-party.sh versions and commit"; exit 1; }
+
   build:
     name: Build & test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # ubuntu-latest ships the Android SDK with licenses accepted; AGP downloads missing components itself
+      # ubuntu-latest ships the Android SDK; the NDK/CMake versions pinned in airplay-core/build.gradle.kts are added here
+      - name: Install NDK & CMake
+        run: yes 2>/dev/null | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;28.2.13676358" "cmake;3.22.1" >/dev/null
+
       - uses: gradle/actions/setup-gradle@v4
+
+      # OpenSSL + FFmpeg are compiled from source for 3 ABIs (~10 min); keep the native build dir between runs
+      - name: Cache native build
+        uses: actions/cache@v4
+        with:
+          path: airplay-core/.cxx
+          key: cxx-${{ runner.os }}-${{ hashFiles('airplay-core/src/main/cpp/**', '.gitmodules', 'airplay-core/build.gradle.kts') }}
+          restore-keys: cxx-${{ runner.os }}-
 
       - name: Unit tests & debug build
         run: ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon

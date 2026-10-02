@@ -1,0 +1,16 @@
+[submodule "airplay-core/src/main/cpp/third_party/UxPlay"]
+	path = airplay-core/src/main/cpp/third_party/UxPlay
+	url = https://github.com/FDH2/UxPlay.git
+	shallow = true
+[submodule "airplay-core/src/main/cpp/third_party/libplist"]
+	path = airplay-core/src/main/cpp/third_party/libplist
+	url = https://github.com/libimobiledevice/libplist.git
+	shallow = true
+[submodule "airplay-core/src/main/cpp/third_party/openssl-cmake"]
+	path = airplay-core/src/main/cpp/third_party/openssl-cmake
+	url = https://github.com/viaduck/openssl-cmake.git
+	shallow = true
+[submodule "airplay-core/src/main/cpp/third_party/ffmpeg"]
+	path = airplay-core/src/main/cpp/third_party/ffmpeg
+	url = https://github.com/FFmpeg/FFmpeg.git
+	shallow = true

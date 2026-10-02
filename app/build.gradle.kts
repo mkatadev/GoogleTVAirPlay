@@ -33,8 +33,9 @@ android {
         minSdk = 31
         targetSdk = 37
         // CI passes the git tag: ./gradlew assembleRelease -PversionName=1.2.0 -PversionCode=10200
-        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = (findProperty("versionName") as String?) ?: "1.0.0"
+        // Local builds default to a huge versionCode so a dev install always replaces a published release on the TV.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 999_999_999
+        versionName = (findProperty("versionName") as String?) ?: "dev"
     }
 
     // release.keystore + keystore.properties are local (gitignored); without them release falls back to debug signing
@@ -67,13 +68,8 @@ android {
 }
 
 dependencies {
-    // AirPlay receiver core (UxPlay, GPL-3.0) — built separately in ../airplay-core
-    implementation(files("libs/airplay-core-1.0.0.aar"))
-    // runtime dependencies of the AirPlay core (a local AAR does not carry transitive deps)
-    implementation(libs.androidx.lifecycle.service)
-    implementation(libs.androidx.media)
-    implementation(libs.media3.exoplayer)
-    implementation(libs.media3.exoplayer.hls)
+    // AirPlay receiver core (UxPlay, GPL-3.0) — native build, see airplay-core/README.md
+    implementation(project(":airplay-core"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

@@ -28,6 +28,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Resolve version
         id: version
@@ -74,8 +76,19 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # ubuntu-latest ships the Android SDK with licenses accepted; AGP downloads missing components itself
+      - name: Install NDK & CMake
+        run: yes 2>/dev/null | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;28.2.13676358" "cmake;3.22.1" >/dev/null
+
       - uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache native build
+        uses: actions/cache@v4
+        with:
+          path: airplay-core/.cxx
+          key: cxx-${{ runner.os }}-${{ hashFiles('airplay-core/src/main/cpp/**', '.gitmodules', 'airplay-core/build.gradle.kts') }}
+          restore-keys: cxx-${{ runner.os }}-
+
+      - run: tools/third-party.sh verify-patches
 
       - name: Build release APK
         run: >
@@ -95,8 +108,12 @@ jobs:
           apk="dist/AirPlay-for-Google-TV-v$VERSION.apk"
           cp app/build/outputs/apk/release/app-release.apk "$apk"
           (cd dist && sha256sum "$(basename "$apk")" > "$(basename "$apk").sha256")
+          # complete corresponding source (GPL-3.0): GitHub's auto "Source code" archives omit the submodules
+          src="AirPlay-for-Google-TV-v$VERSION-full-source"
+          git ls-files --recurse-submodules -z | tar --null -T - -czf "dist/$src.tar.gz" --transform "s|^|$src/|"
+          cp airplay-core/src/main/cpp/third_party/VERSIONS.md dist/THIRD-PARTY-VERSIONS.md
           echo "apk=$apk" >> "$GITHUB_OUTPUT"
-          cat dist/*.sha256
+          ls -la dist && cat dist/*.sha256
 
       - name: Remove signing key
         if: always()
@@ -119,3 +136,7 @@ jobs:
             **Install:** download the APK and sideload it onto your Google TV / Chromecast
             (`adb install -r AirPlay-for-Google-TV-v${{ steps.version.outputs.name }}.apk` or any TV file manager).
             Verify with the `.sha256` file. Requires Android TV 12+.
+
+            `*-full-source.tar.gz` is the complete source including the third-party submodules (UxPlay, libplist,
+            FFmpeg, openssl-cmake) at the exact pinned commits listed in `THIRD-PARTY-VERSIONS.md` — GitHub's
+            auto-generated "Source code" archives below do not include them.

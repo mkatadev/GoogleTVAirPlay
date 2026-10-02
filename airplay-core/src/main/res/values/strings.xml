@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_channel">AirPlay</string>
+    <string name="notification_title">AirPlay receiver is active</string>
+    <string name="notification_text">Ready to receive photos, music and video</string>
+    <string name="notification_pin_title">AirPlay PIN required</string>
+    <string name="notification_pin_text">PIN: %1$s</string>
+</resources>
