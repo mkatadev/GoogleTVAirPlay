@@ -1,0 +1,132 @@
+<div align="center">
+
+# AirPlay for Google TV
+
+**Free, open-source AirPlay receiver for Google TV / Chromecast**
+Photos, music and video from your iPhone, iPad or Mac — straight to the big screen.
+
+[![Release](https://img.shields.io/github/v/release/mkatadev/GoogleTVAirPlay?label=download&color=4c8dff)](https://github.com/mkatadev/GoogleTVAirPlay/releases/latest)
+[![CI](https://github.com/mkatadev/GoogleTVAirPlay/actions/workflows/ci.yml/badge.svg)](https://github.com/mkatadev/GoogleTVAirPlay/actions/workflows/ci.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+![Android TV 12+](https://img.shields.io/badge/Android%20TV-12%2B-3ddc84?logo=android&logoColor=white)
+
+🇬🇧 English · [🇵🇱 Polski](README.pl.md)
+
+<img src="docs/screenshots/home-en.png" width="800" alt="Home screen — ready to receive AirPlay">
+
+</div>
+
+## Features
+
+- 📺 **Screen mirroring** from iPhone, iPad and Mac
+- 🎬 **Video & photos** — the TV plays the stream itself (HLS), with D-pad seeking
+- 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info
+- ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
+- 🔒 **Optional PIN** for every new connection
+- 🚀 **Runs in the background** and **starts at boot** — the TV is always ready to receive
+- 🎛️ Built for the remote: Compose for TV UI, no touch required
+- 🌍 English and Polish
+
+<div align="center">
+<img src="docs/screenshots/settings-en.png" width="800" alt="Settings">
+</div>
+
+## Install
+
+The app is not on Google Play — sideload the APK from [**Releases**](https://github.com/mkatadev/GoogleTVAirPlay/releases/latest).
+
+**With adb** (TV: Settings → System → About → tap *Android TV OS build* 7× → Developer options → *USB / Wireless debugging*):
+
+```bash
+adb connect <tv-ip>            # wireless debugging — pair once with `adb pair <ip:port>`
+adb install -r AirPlay-for-Google-TV-v*.apk
+```
+
+**Without a computer:** copy the APK to a USB stick or open the release link in a TV file manager
+(e.g. *Downloader*, *X-plore*) and install it. Allow *Unknown sources* for that app when asked.
+
+Afterwards open the app once and grant **Display over other apps** so playback can take over the screen while you are in another app — the app asks for it on first launch:
+
+<div align="center">
+<img src="docs/screenshots/overlay-prompt-en.png" width="49%" alt="In-app prompt: Allow Display over other apps">
+<img src="docs/screenshots/overlay-system.png" width="49%" alt="System screen: AirPlay for Google TV — Allowed">
+</div>
+
+## Usage
+
+1. Make sure the TV and the Apple device are on the same Wi-Fi network.
+2. Open Photos, Music, YouTube, Safari… and tap the AirPlay icon.
+3. Pick the TV (default name **Google TV**, changeable in Settings).
+
+While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop.
+
+## Build from source
+
+Requirements: JDK 17, Android SDK 37. The AirPlay core is a prebuilt AAR, so no NDK is needed for the app itself.
+
+```bash
+./gradlew :app:assembleDebug           # debug APK
+./gradlew :app:testDebugUnitTest       # unit tests
+./gradlew installChromecast            # build release → pick a TV → install & launch
+```
+
+`installChromecast` scans for devices by itself (USB, adb over Wi-Fi via mDNS, port 5555 on the local /24 networks) and asks which one to use when it finds more than one — Enter repeats the last choice. Pass `-Pchromecast=<ip[:port]>` or `-Pchromecast=<adb serial>` to skip the scan.
+
+### Release signing
+
+`release.keystore` + `keystore.properties` in the project root (both gitignored) sign the release build; without them the release is signed with the debug key.
+
+```bash
+keytool -genkeypair -keystore release.keystore -alias tvairplay -keyalg RSA -keysize 4096 -validity 10000
+```
+
+`keystore.properties`: `storeFile=release.keystore`, `storePassword`, `keyAlias`, `keyPassword`. Keep a backup — an APK signed with a different key cannot update the one installed on the TV.
+
+### Releasing (CI)
+
+Pushing a tag publishes a signed APK + SHA-256 to GitHub Releases ([`release.yml`](.github/workflows/release.yml)):
+
+```bash
+git tag v1.2.0 && git push origin v1.2.0
+```
+
+`versionName` comes from the tag and `versionCode` is derived from it (`1.2.3 → 10203`). The workflow needs these repository secrets: `KEYSTORE_BASE64` (`base64 -i release.keystore`), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. *Run workflow* from the Actions tab builds a signed APK as an artifact without publishing a release. Every push and PR runs [`ci.yml`](.github/workflows/ci.yml) (unit tests + debug build).
+
+## Architecture
+
+```
+app/libs/airplay-core-1.0.0.aar   ← prebuilt AirPlay core (UxPlay, GPL-3.0), sources: ../airplay-core
+  pl.prodevcode.airplay.service.AirPlayService — foreground service, MediaSession, mDNS, renderers
+
+:app  (Google TV only, Compose for TV)
+  domain/         model · repository interfaces · use cases     ← no Android/Hilt deps beyond javax.inject
+  data/           ReceiverRepositoryImpl (binds AirPlayService), SettingsRepositoryImpl, DeviceInfoRepositoryImpl
+  presentation/   MainActivity · ReceiverScreen (idle / mirroring / video / audio) · SettingsScreen · theme
+  di/             Hilt bindings
+```
+
+Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.06 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow.
+
+### AirPlay core (`airplay-core`)
+
+The native code and the receiver service live in a separate project, **`../airplay-core`** (NDK r28 / CMake). After changing it:
+
+```bash
+cd ../airplay-core && ./gradlew :airplay-core:assembleRelease
+cp airplay-core/build/outputs/aar/airplay-core-release.aar ../GoogleTVAirPlay/app/libs/airplay-core-1.0.0.aar
+```
+
+## License
+
+**GPL-3.0** — see [LICENSE](LICENSE). The AirPlay core is derived from [UxPlay](https://github.com/FDH2/UxPlay) and
+[jqssun/android-airplay-server](https://github.com/jqssun/android-airplay-server); third-party notices are listed in `airplay-core/NOTICE.md` and in the app under *Settings → Open source licenses*.
+
+AirPlay is a trademark of Apple Inc. This project is not affiliated with Apple or Google.
+
+---
+
+<div align="center">
+
+Supported by **ProDevCode** · [prodevcodepl@gmail.com](mailto:prodevcodepl@gmail.com) · [github.com/mkatadev](https://github.com/mkatadev)
+
+</div>

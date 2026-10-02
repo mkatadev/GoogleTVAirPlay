@@ -1,0 +1,12 @@
+package pl.prodevcode.tvairplay.domain.model
+
+data class ReceiverSettings(
+    val deviceName: String = "Google TV",
+    val startOnBoot: Boolean = true,
+    val runInBackground: Boolean = true,
+    val openAppOnConnect: Boolean = true,
+    val requirePin: Boolean = false,
+    val hevcEnabled: Boolean = true,
+    val advertiseVideo: Boolean = true,
+    val advertiseAudio: Boolean = true,
+)

@@ -1,0 +1,1 @@
+# R8 keep rules (AGP merges every file in src/main/keepRules). Code shrinking is currently disabled in build.gradle.kts.

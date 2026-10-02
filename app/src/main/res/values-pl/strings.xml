@@ -1,0 +1,61 @@
+<resources>
+    <string name="app_name">AirPlay for Google TV</string>
+
+    <string name="status_ready">Gotowe — udostępnij z iPhone’a, iPada lub Maca</string>
+    <string name="status_connected">Urządzenie połączone</string>
+    <string name="status_stopped">Odbiornik zatrzymany</string>
+    <string name="status_error">Nie udało się uruchomić odbiornika</string>
+
+    <string name="hint_step_1">Otwórz Zdjęcia, Muzykę lub film</string>
+    <string name="hint_step_2">Dotknij ikony AirPlay</string>
+    <string name="hint_step_3">Wybierz „%1$s”</string>
+
+    <string name="action_start">Uruchom</string>
+    <string name="action_stop">Zatrzymaj</string>
+    <string name="action_settings">Ustawienia</string>
+    <string name="action_back">Wstecz</string>
+
+    <string name="footer_network">Wi‑Fi · %1$s</string>
+    <string name="footer_no_network">Brak połączenia z siecią</string>
+
+    <string name="video_title_fallback">Wideo AirPlay</string>
+    <string name="video_hint_playing">OK pauza · ◀ ▶ przewijaj · ▲ ▼ skok o 10% · Wstecz zatrzymaj</string>
+    <string name="video_hint_paused">Wstrzymano · OK, aby wznowić</string>
+
+    <string name="pin_title">Wpisz ten PIN na urządzeniu Apple</string>
+
+    <string name="settings_subtitle">Zmiana nazwy, PIN‑u i typów mediów restartuje odbiornik.</string>
+    <string name="section_general">Ogólne</string>
+    <string name="section_security">Bezpieczeństwo</string>
+    <string name="section_media">Media</string>
+    <string name="setting_device_name">Nazwa urządzenia</string>
+    <string name="setting_start_on_boot">Uruchamiaj przy starcie</string>
+    <string name="setting_start_on_boot_desc">Odbieraj AirPlay zaraz po włączeniu telewizora</string>
+    <string name="setting_background">Działaj w tle</string>
+    <string name="setting_background_desc">Odbieraj także podczas korzystania z innych aplikacji</string>
+    <string name="setting_open_on_connect">Otwieraj po połączeniu</string>
+    <string name="setting_open_on_connect_desc">Pokaż tę aplikację, gdy urządzenie się połączy</string>
+    <string name="setting_require_pin">Wymagaj PIN</string>
+    <string name="setting_require_pin_desc">Proś o jednorazowy PIN przy każdym nowym połączeniu</string>
+    <string name="setting_video">Wideo i zdjęcia</string>
+    <string name="setting_video_desc">Przyjmuj strumienie wideo i zdjęć</string>
+    <string name="setting_audio">Muzyka</string>
+    <string name="setting_audio_desc">Widoczny jako głośnik AirPlay</string>
+    <string name="setting_hevc">HEVC (H.265)</string>
+    <string name="setting_hevc_desc">Używaj sprzętowego dekodera HEVC, gdy dostępny</string>
+    <string name="section_about">O aplikacji</string>
+    <string name="setting_licenses">Licencje open source</string>
+    <string name="setting_licenses_desc">GPL‑3.0 · oparte o UxPlay</string>
+    <string name="licenses_title">Open source</string>
+    <string name="licenses_subtitle">Ta aplikacja jest wolnym oprogramowaniem na licencji GPL‑3.0. Wybierz komponent, aby przeczytać licencję.</string>
+    <string name="about_credit">Wspierane przez ProDevCode</string>
+    <string name="about_credit_desc">prodevcodepl@gmail.com · darmowe i open source</string>
+    <string name="footer_credit">Wspierane przez ProDevCode</string>
+    <string name="overlay_title">Zezwól na „Wyświetlanie nad innymi aplikacjami”</string>
+    <string name="overlay_desc">Potrzebne, aby odtwarzanie mogło otworzyć ten ekran, gdy jesteś w innej aplikacji</string>
+    <string name="overlay_action">Zezwól</string>
+    <string name="setting_overlay">Wyświetlanie nad innymi aplikacjami</string>
+    <string name="setting_overlay_granted">Przyznane</string>
+    <string name="setting_overlay_missing">Brak — kliknij, aby otworzyć ustawienia systemowe</string>
+    <string name="video_hint_seeking">◀ ▶ przewijaj · ▲ ▼ skok o 10% · 0–9 skok do 0–90%</string>
+</resources>
