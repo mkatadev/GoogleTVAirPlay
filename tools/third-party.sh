@@ -32,8 +32,26 @@ component_dir() {
 
 sub_url() { git -C "$ROOT" config -f .gitmodules "submodule.airplay-core/src/main/cpp/third_party/$1.url"; }
 
-# tag if the commit is tagged, else <nearest tag>-<n>-g<sha> or the short sha
-describe() { git -C "$1" describe --tags --exact-match 2>/dev/null || git -C "$1" describe --tags --always 2>/dev/null; }
+# Human-readable version of the pinned commit. Must not depend on which tags happen to be fetched locally
+# (CI checks out shallow submodules without tags), so: exact local tag → tag on the remote pointing at HEAD →
+# short sha. Remote lookups are cached per run and skipped when offline.
+_DESCRIBE_CACHE="$(mktemp)"; trap 'rm -f "$_DESCRIBE_CACHE"' EXIT
+describe() {
+  local d="$1" head v
+  head="$(git -C "$d" rev-parse HEAD)"
+  v="$(awk -v h="$head" '$1 == h { print $2; exit }' "$_DESCRIBE_CACHE")"
+  if [[ -n "$v" ]]; then printf '%s' "$v"; return; fi
+  v="$(git -C "$d" describe --tags --exact-match 2>/dev/null)" || v=""
+  if [[ -z "$v" ]]; then
+    # peeled refs (^{}) resolve annotated tags to the commit they point at
+    v="$(git -C "$d" ls-remote -q --tags origin 2>/dev/null \
+        | awk -v h="$head" '$1 == h { t=$2; sub("refs/tags/","",t); sub("\\^\\{\\}$","",t); print t }' \
+        | sort -V | tail -1)" || v=""
+  fi
+  [[ -n "$v" ]] || v="$(git -C "$d" rev-parse --short HEAD)"
+  echo "$head $v" >> "$_DESCRIBE_CACHE"
+  printf '%s' "$v"
+}
 
 ensure_tags() { git -C "$1" fetch -q --tags --depth 1 origin 2>/dev/null || true; }
 
