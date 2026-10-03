@@ -218,6 +218,15 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
                 .debounce(AUDIO_CONFIG_DEBOUNCE_MS)
                 .collect { audioRenderer.updateConfig(it) }
         }
+        // takes effect when the next mirroring session configures its decoder
+        lifecycleScope.launch { prefs.latencyModeFlow().collect { applyLatencyProfile(LatencyProfile.of(it)) } }
+    }
+
+    private fun applyLatencyProfile(profile: LatencyProfile) {
+        videoRenderer.keyAllowFrameDrop = profile.allowFrameDrop
+            ?: prefs.getBoolean(Prefs.KEY_ALLOW_FRAME_DROP, Prefs.DEF_KEY_ALLOW_FRAME_DROP)
+        videoRenderer.scheduledOutputBufferRelease = profile.scheduledOutputRelease
+            ?: prefs.getBoolean(Prefs.SCHEDULED_OUTPUT_BUFFER_RELEASE, Prefs.DEF_SCHEDULED_OUTPUT_BUFFER_RELEASE)
     }
 
     private fun mediaSessionCallback() = object : MediaSessionCompat.Callback() {
@@ -304,13 +313,12 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         val aac = prefs.getBoolean(Prefs.AAC_ENABLED, Prefs.DEF_AAC_ENABLED)
 
         videoRenderer.enforceSdr = prefs.getBoolean(Prefs.ENFORCE_SDR, Prefs.DEF_ENFORCE_SDR)
-        videoRenderer.keyAllowFrameDrop = prefs.getBoolean(Prefs.KEY_ALLOW_FRAME_DROP, Prefs.DEF_KEY_ALLOW_FRAME_DROP)
+        applyLatencyProfile(LatencyProfile.read(prefs))
         videoRenderer.selector.maxOperatingRate = when (prefs.getString(Prefs.OPERATING_RATE, Prefs.DEF_OPERATING_RATE)) {
             Prefs.ON -> true; Prefs.OFF -> false; else -> null
         }
         videoRenderer.benchmarkLog = prefs.getBoolean(Prefs.BENCHMARK_LOG, Prefs.DEF_BENCHMARK_LOG)
         videoRenderer.benchmarkLogCallback = { msg -> logCallback?.invoke(msg) }
-        videoRenderer.scheduledOutputBufferRelease = prefs.getBoolean(Prefs.SCHEDULED_OUTPUT_BUFFER_RELEASE, Prefs.DEF_SCHEDULED_OUTPUT_BUFFER_RELEASE)
         NativeBridge.nativeSetH265Enabled(nativeHandle, h265)
         NativeBridge.nativeSetCodecs(nativeHandle, alac, aac)
         val advertiseVideo = prefs.getBoolean(Prefs.ADVERTISE_VIDEO, Prefs.DEF_ADVERTISE_VIDEO)

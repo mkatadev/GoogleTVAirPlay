@@ -1,5 +1,6 @@
 package pl.prodevcode.tvairplay.presentation.settings
 
+import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
 import pl.prodevcode.tvairplay.presentation.mvi.NoEffect
@@ -12,6 +13,7 @@ data class SettingsUiState(
     val pickingDeviceName: Boolean = false,
     val trustedDevices: List<TrustedDevice> = emptyList(),
     val managingTrustedDevices: Boolean = false,
+    val pickingLatencyMode: Boolean = false,
 ) : UiState
 
 sealed interface SettingsIntent : UiIntent {
@@ -34,6 +36,9 @@ sealed interface SettingsIntent : UiIntent {
     data class SetAdvertiseVideo(val enabled: Boolean) : SettingsIntent
     data class SetAdvertiseAudio(val enabled: Boolean) : SettingsIntent
     data class SetHevcEnabled(val enabled: Boolean) : SettingsIntent
+    data object PickLatencyMode : SettingsIntent
+    /** `null` = picker dismissed without a choice. */
+    data class LatencyModePicked(val mode: LatencyMode?) : SettingsIntent
 }
 
 typealias SettingsEffect = NoEffect

@@ -15,6 +15,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
@@ -75,6 +76,17 @@ class SettingsViewModelTest {
 
         vm.onIntent(SettingsIntent.CloseTrustedDevices)
         assertFalse(vm.state.value.managingTrustedDevices)
+    }
+
+    @Test fun `latency mode picker applies live without restart`() = runTest {
+        val vm = viewModel()
+        vm.onIntent(SettingsIntent.PickLatencyMode)
+        assertTrue(vm.state.value.pickingLatencyMode)
+        vm.onIntent(SettingsIntent.LatencyModePicked(LatencyMode.LOW))
+        advanceUntilIdle()
+        assertFalse(vm.state.value.pickingLatencyMode)
+        assertEquals(LatencyMode.LOW, vm.state.value.settings.latencyMode)
+        verify(exactly = 0) { receiverRepo.restart() }
     }
 
     @Test fun `remember devices is a local setting`() = runTest {

@@ -42,6 +42,7 @@ import androidx.tv.material3.Text
 import pl.prodevcode.tvairplay.R
 import java.text.DateFormat
 import java.util.Date
+import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
 import pl.prodevcode.tvairplay.presentation.components.SupportingText
@@ -90,6 +91,11 @@ private fun SettingsContent(
 
         if (ui.pickingDeviceName) {
             DeviceNamePicker(current = s.deviceName) { onIntent(SettingsIntent.DeviceNamePicked(it)) }
+            return@Row
+        }
+        if (ui.pickingLatencyMode) {
+            BackHandler { onIntent(SettingsIntent.LatencyModePicked(null)) }
+            LatencyModePicker(current = s.latencyMode) { onIntent(SettingsIntent.LatencyModePicked(it)) }
             return@Row
         }
         if (ui.managingTrustedDevices) {
@@ -172,6 +178,13 @@ private fun SettingsContent(
                 ToggleRow(stringResource(R.string.setting_hevc), stringResource(R.string.setting_hevc_desc), s.hevcEnabled) {
                     onIntent(SettingsIntent.SetHevcEnabled(it))
                 }
+            }
+            item {
+                ValueRow(
+                    title = stringResource(R.string.setting_latency),
+                    value = stringResource(latencyModeTitle(s.latencyMode)),
+                    onClick = { onIntent(SettingsIntent.PickLatencyMode) },
+                )
             }
 
             item { Section(stringResource(R.string.section_about)) }
@@ -257,6 +270,46 @@ private fun ValueRow(title: String, value: String, onClick: () -> Unit) {
         supportingContent = { SupportingText(value) },
         colors = appListItemColors(),
     )
+}
+
+private fun latencyModeTitle(mode: LatencyMode) = when (mode) {
+    LatencyMode.LOW -> R.string.latency_low
+    LatencyMode.BALANCED -> R.string.latency_balanced
+    LatencyMode.SMOOTH -> R.string.latency_smooth
+}
+
+private fun latencyModeDesc(mode: LatencyMode) = when (mode) {
+    LatencyMode.LOW -> R.string.latency_low_desc
+    LatencyMode.BALANCED -> R.string.latency_balanced_desc
+    LatencyMode.SMOOTH -> R.string.latency_smooth_desc
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun LatencyModePicker(current: LatencyMode, onPicked: (LatencyMode?) -> Unit) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item { Section(stringResource(R.string.setting_latency)) }
+        items(LatencyMode.entries) { mode ->
+            ListItem(
+                selected = mode == current,
+                onClick = { onPicked(mode) },
+                headlineContent = { Text(stringResource(latencyModeTitle(mode))) },
+                supportingContent = { SupportingText(stringResource(latencyModeDesc(mode))) },
+                trailingContent = { if (mode == current) Icon(Icons.Default.Check, null) },
+                colors = appListItemColors(),
+            )
+        }
+        item {
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = { onPicked(null) }) { Text(stringResource(R.string.action_back)) }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)

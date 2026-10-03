@@ -111,4 +111,13 @@
     <string name="trusted_device_last_seen">Ostatnie połączenie %1$s</string>
     <string name="trusted_device_forget">Zapomnij</string>
     <string name="trusted_devices_forget_all">Zapomnij wszystkie</string>
+
+    <!-- Opóźnienie -->
+    <string name="setting_latency">Opóźnienie mirroringu</string>
+    <string name="latency_low">Niskie opóźnienie</string>
+    <string name="latency_low_desc">Najkrótsze opóźnienie do gier i prezentacji; spóźnione klatki są pomijane</string>
+    <string name="latency_balanced">Zrównoważone</string>
+    <string name="latency_balanced_desc">Domyślne — dobre dla większości treści</string>
+    <string name="latency_smooth">Płynne</string>
+    <string name="latency_smooth_desc">Większy bufor do filmów i słabego Wi-Fi; każda klatka jest pokazywana, opóźnienie nieco rośnie</string>
 </resources>

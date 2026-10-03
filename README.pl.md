@@ -22,6 +22,7 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 - 🎬 **Wideo i zdjęcia** — telewizor sam odtwarza strumień (HLS), przewijanie pilotem
 - 🎵 **Muzyka** — widoczny jako głośnik AirPlay, z okładką i informacjami o utworze
 - ⚡ **Dekodowanie sprzętowe** — H.264 i HEVC (H.265), gdy telewizor to wspiera
+- ⏱️ **Presety opóźnienia** — Niskie / Zrównoważone / Płynne, przełączane na żywo (gry vs. słabe Wi-Fi)
 - 🔒 **Parowanie PIN-em** (domyślnie włączone) — urządzenia, które raz wpisały PIN, są zapamiętywane; zarządzasz nimi w *Ustawienia → Zaufane urządzenia*
 - 🩺 **Diagnostyka** — sprawdzenie odbiornika, sieci, rozgłaszania mDNS i portu z podpowiedziami po ludzku; po zmianie sieci TV rozgłasza się ponownie automatycznie
 - 🚀 **Działa w tle** i **startuje z telewizorem** — odbiornik zawsze gotowy

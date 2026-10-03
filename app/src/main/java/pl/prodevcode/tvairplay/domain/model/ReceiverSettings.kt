@@ -1,5 +1,8 @@
 package pl.prodevcode.tvairplay.domain.model
 
+/** Mirroring/audio trade-off between delay and smoothness. */
+enum class LatencyMode { LOW, BALANCED, SMOOTH }
+
 data class ReceiverSettings(
     val deviceName: String = "Google TV",
     val startOnBoot: Boolean = true,
@@ -11,4 +14,5 @@ data class ReceiverSettings(
     val hevcEnabled: Boolean = true,
     val advertiseVideo: Boolean = true,
     val advertiseAudio: Boolean = true,
+    val latencyMode: LatencyMode = LatencyMode.BALANCED,
 )

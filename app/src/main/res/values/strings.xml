@@ -109,4 +109,13 @@
     <string name="trusted_device_last_seen">Last connected %1$s</string>
     <string name="trusted_device_forget">Forget</string>
     <string name="trusted_devices_forget_all">Forget all</string>
+
+    <!-- Latency -->
+    <string name="setting_latency">Mirroring latency</string>
+    <string name="latency_low">Low latency</string>
+    <string name="latency_low_desc">Shortest delay for games and presentations; late frames are dropped</string>
+    <string name="latency_balanced">Balanced</string>
+    <string name="latency_balanced_desc">Default — good for most content</string>
+    <string name="latency_smooth">Smooth</string>
+    <string name="latency_smooth_desc">Larger buffer for video and shaky Wi-Fi; every frame is shown, delay grows slightly</string>
 </resources>

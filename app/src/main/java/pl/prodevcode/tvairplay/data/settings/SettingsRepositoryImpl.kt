@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import pl.prodevcode.airplay.Prefs
+import pl.prodevcode.airplay.service.LatencyMode as CoreLatencyMode
+import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
 
@@ -55,6 +57,7 @@ class SettingsRepositoryImpl @Inject constructor(
         hevcEnabled = prefs.getBoolean(Prefs.H265_ENABLED, Prefs.DEF_H265_ENABLED),
         advertiseVideo = prefs.getBoolean(Prefs.ADVERTISE_VIDEO, Prefs.DEF_ADVERTISE_VIDEO),
         advertiseAudio = prefs.getBoolean(Prefs.ADVERTISE_AUDIO, Prefs.DEF_ADVERTISE_AUDIO),
+        latencyMode = CoreLatencyMode.fromPref(prefs.getString(Prefs.LATENCY_MODE, Prefs.DEF_LATENCY_MODE)).toDomain(),
     )
 
     private fun write(s: ReceiverSettings) = prefs.edit {
@@ -67,6 +70,19 @@ class SettingsRepositoryImpl @Inject constructor(
         putBoolean(Prefs.H265_ENABLED, s.hevcEnabled)
         putBoolean(Prefs.ADVERTISE_VIDEO, s.advertiseVideo)
         putBoolean(Prefs.ADVERTISE_AUDIO, s.advertiseAudio)
+        putString(Prefs.LATENCY_MODE, s.latencyMode.toCore().pref)
+    }
+
+    private fun CoreLatencyMode.toDomain() = when (this) {
+        CoreLatencyMode.LOW -> LatencyMode.LOW
+        CoreLatencyMode.BALANCED -> LatencyMode.BALANCED
+        CoreLatencyMode.SMOOTH -> LatencyMode.SMOOTH
+    }
+
+    private fun LatencyMode.toCore() = when (this) {
+        LatencyMode.LOW -> CoreLatencyMode.LOW
+        LatencyMode.BALANCED -> CoreLatencyMode.BALANCED
+        LatencyMode.SMOOTH -> CoreLatencyMode.SMOOTH
     }
 
     private companion object {

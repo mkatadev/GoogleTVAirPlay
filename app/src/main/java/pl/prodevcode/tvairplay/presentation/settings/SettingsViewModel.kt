@@ -56,6 +56,11 @@ class SettingsViewModel @Inject constructor(
             is Intent.SetAdvertiseVideo -> update(restart = true) { copy(advertiseVideo = intent.enabled) }
             is Intent.SetAdvertiseAudio -> update(restart = true) { copy(advertiseAudio = intent.enabled) }
             is Intent.SetHevcEnabled -> update(restart = true) { copy(hevcEnabled = intent.enabled) }
+            Intent.PickLatencyMode -> setState { copy(pickingLatencyMode = true) }
+            is Intent.LatencyModePicked -> {
+                setState { copy(pickingLatencyMode = false) }
+                intent.mode?.let { m -> update { copy(latencyMode = m) } }
+            }
         }
     }
 

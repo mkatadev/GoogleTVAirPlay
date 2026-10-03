@@ -22,6 +22,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 - 🎬 **Video & photos** — the TV plays the stream itself (HLS), with D-pad seeking
 - 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info
 - ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
+- ⏱️ **Latency presets** — Low / Balanced / Smooth, switchable live for games vs. shaky Wi-Fi
 - 🔒 **PIN pairing** (on by default) — devices that entered the PIN once are remembered; manage them under *Settings → Trusted devices*
 - 🩺 **Diagnostics** screen — receiver, network, mDNS announcement and port checks with plain-language hints; re-announces automatically when the TV changes network
 - 🚀 **Runs in the background** and **starts at boot** — the TV is always ready to receive
