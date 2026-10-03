@@ -24,6 +24,12 @@
 - Keep README facts consistent with the code (SDK/NDK versions, Gradle tasks, workflow names, script options).
 - Do not create extra markdown files (plans, notes, summaries) unless asked.
 
+## Dependencies
+
+- All versions live in `gradle/libs.versions.toml` (`[versions]`); never hardcode versions in `build.gradle.kts`.
+- **Keep dependencies current.** When adding a library, use the latest stable release (check Maven Central / Google Maven, not memory). When touching the catalog, check the other entries for newer stable versions and bump them in the same change, then compile both modules and run unit tests. Skip alphas/betas/RCs unless the project already uses one for that artifact.
+- After a bump, update any README facts that mention versions (AGP, Compose BOM, SDK/NDK).
+
 ## Code
 
 - Minimal, surgical changes; do not touch unrelated code or "fix" unrelated issues.

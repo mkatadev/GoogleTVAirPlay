@@ -125,7 +125,7 @@ git tag v1.2.0 && git push origin v1.2.0
   di/             Hilt bindings
 ```
 
-Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.06 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow.
+Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow.
 
 ### Third-party code & updates
 
