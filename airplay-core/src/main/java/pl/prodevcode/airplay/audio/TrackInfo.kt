@@ -9,9 +9,11 @@ data class TrackInfo(
     val genre: String = "",
     val durationMs: Long = 0,
     val coverArt: Bitmap? = null,
+    /** Encoded artwork as received from the sender; for consumers that decode themselves. */
+    val coverArtBytes: ByteArray? = null,
 ) {
     companion object {
-        fun fromDmap(map: Map<String, Any>, existingArt: Bitmap? = null): TrackInfo {
+        fun fromDmap(map: Map<String, Any>, existingArt: Bitmap? = null, existingArtBytes: ByteArray? = null): TrackInfo {
             // DMAP data is often wrapped in mlit container
             val flat = _flatten(map)
             return TrackInfo(
@@ -21,6 +23,7 @@ data class TrackInfo(
                 genre = flat["asgn"] as? String ?: "",
                 durationMs = (flat["astm"] as? Long) ?: 0L,
                 coverArt = existingArt,
+                coverArtBytes = existingArtBytes,
             )
         }
 

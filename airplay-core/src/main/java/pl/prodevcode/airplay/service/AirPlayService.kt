@@ -874,7 +874,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     override fun onMetadata(data: ByteArray) {
         val map = DmapParser.parse(data)
-        val info = TrackInfo.fromDmap(map, _trackInfo.value.coverArt)
+        val info = TrackInfo.fromDmap(map, _trackInfo.value.coverArt, _trackInfo.value.coverArtBytes)
         _trackInfo.value = info
         if (info.durationMs > 0) _durationMs.value = info.durationMs
         _updateMediaMetadata()
@@ -885,7 +885,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onCoverArt(data: ByteArray) {
         val bmp = BitmapFactory.decodeByteArray(data, 0, data.size) ?: return
         _coverArtBytes = data
-        _trackInfo.value = _trackInfo.value.copy(coverArt = bmp)
+        _trackInfo.value = _trackInfo.value.copy(coverArt = bmp, coverArtBytes = data)
         _updateMediaMetadata()
         _refreshDacpPlayer()
     }

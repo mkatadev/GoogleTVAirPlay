@@ -3,7 +3,6 @@ package pl.prodevcode.tvairplay.presentation.receiver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
-import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveReceiverStateUseCase
@@ -13,6 +12,7 @@ import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StopReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ToggleReceiverUseCase
+import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 import pl.prodevcode.tvairplay.presentation.mvi.MviViewModel
 import pl.prodevcode.tvairplay.presentation.receiver.ReceiverIntent as Intent
 
@@ -27,7 +27,7 @@ class ReceiverViewModel @Inject constructor(
     private val toggleReceiver: ToggleReceiverUseCase,
     private val stopReceiver: StopReceiverUseCase,
     private val playback: PlaybackControlUseCase,
-    private val surfaces: ReceiverRepository,
+    private val surfaces: VideoSurfaceHost,
 ) : MviViewModel<ReceiverUiState, Intent, ReceiverEffect>(ReceiverUiState()) {
 
     init {

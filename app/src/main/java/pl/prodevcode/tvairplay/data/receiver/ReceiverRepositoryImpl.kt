@@ -1,6 +1,5 @@
 package pl.prodevcode.tvairplay.data.receiver
 
-import android.view.Surface
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -10,6 +9,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import pl.prodevcode.airplay.Prefs
 import pl.prodevcode.airplay.service.AirPlayService
+import pl.prodevcode.tvairplay.domain.model.CoverArt
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
 import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
@@ -43,7 +43,7 @@ class ReceiverRepositoryImpl @Inject constructor(
         val music = combine(trackInfo, positionMs, durationMs, playing) { track, pos, dur, playing ->
             NowPlaying(
                 title = track.title, artist = track.artist, album = track.album,
-                coverArt = track.coverArt, positionMs = pos, durationMs = dur, playing = playing,
+                coverArt = track.coverArtBytes?.let(::CoverArt), positionMs = pos, durationMs = dur, playing = playing,
             )
         }
         val hls = combine(videoPlaybackInfo, videoTitle, videoPlaybackAspect) { info, title, aspect ->
@@ -96,11 +96,6 @@ class ReceiverRepositoryImpl @Inject constructor(
     }
 
     private fun deviceName() = runBlocking { settings.settings.first().deviceName.ifBlank { Prefs.DEF_SERVER_NAME } }
-
-    override fun attachMirrorSurface(surface: Surface) { svc?.setVideoSurface(surface) }
-    override fun detachMirrorSurface(surface: Surface) { svc?.clearVideoSurface(surface) }
-    override fun attachVideoSurface(surface: Surface) { svc?.setVideoPlaybackSurface(surface) }
-    override fun detachVideoSurface(surface: Surface) { svc?.clearVideoPlaybackSurface(surface) }
 
     override fun togglePlayPause() {
         val s = svc ?: return

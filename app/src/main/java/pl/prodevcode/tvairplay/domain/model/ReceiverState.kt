@@ -1,17 +1,21 @@
 package pl.prodevcode.tvairplay.domain.model
 
-import android.graphics.Bitmap
-
 enum class ReceiverStatus { STOPPED, STARTING, RUNNING, ERROR }
 
 /** What the connected Apple device is currently sending. */
 enum class SessionMode { IDLE, CONNECTED, MIRRORING, VIDEO, AUDIO }
 
+/** Encoded artwork bytes with content-based equality so state diffing works. */
+class CoverArt(val bytes: ByteArray) {
+    override fun equals(other: Any?) = other is CoverArt && bytes.contentEquals(other.bytes)
+    override fun hashCode() = bytes.contentHashCode()
+}
+
 data class NowPlaying(
     val title: String = "",
     val artist: String = "",
     val album: String = "",
-    val coverArt: Bitmap? = null,
+    val coverArt: CoverArt? = null,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
     val playing: Boolean = false,

@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +45,7 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.presentation.components.ProgressTrack
+import pl.prodevcode.tvairplay.presentation.components.rememberCoverArt
 import pl.prodevcode.tvairplay.presentation.components.formatTime
 import pl.prodevcode.tvairplay.presentation.theme.AirPlayColors
 
@@ -66,10 +66,12 @@ fun AudioSession(
         }
     }
 
+    val art = rememberCoverArt(nowPlaying.coverArt)
+
     Box(Modifier.fillMaxSize().background(AirPlayColors.Background)) {
-        nowPlaying.coverArt?.let {
+        art?.let {
             Image(
-                bitmap = it.asImageBitmap(),
+                bitmap = it,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().blur(90.dp),
@@ -93,9 +95,8 @@ fun AudioSession(
                     .background(AirPlayColors.Surface),
                 contentAlignment = Alignment.Center,
             ) {
-                val art = nowPlaying.coverArt
                 if (art != null) {
-                    Image(art.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    Image(art, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 } else {
                     Icon(Icons.Default.MusicNote, null, Modifier.size(96.dp), tint = AirPlayColors.Muted)
                 }

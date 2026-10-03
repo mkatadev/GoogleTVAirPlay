@@ -9,12 +9,14 @@ import pl.prodevcode.tvairplay.data.licenses.AssetLicensesRepository
 import pl.prodevcode.tvairplay.data.network.DeviceInfoRepositoryImpl
 import pl.prodevcode.tvairplay.data.permission.OverlayPermissionRepositoryImpl
 import pl.prodevcode.tvairplay.data.receiver.ReceiverRepositoryImpl
+import pl.prodevcode.tvairplay.data.receiver.ServiceVideoSurfaceHost
 import pl.prodevcode.tvairplay.data.settings.SettingsRepositoryImpl
 import pl.prodevcode.tvairplay.domain.repository.DeviceInfoRepository
 import pl.prodevcode.tvairplay.domain.repository.LicensesRepository
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
 import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
+import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -33,4 +35,7 @@ abstract class AppModule {
 
     @Binds @Singleton
     abstract fun bindOverlayPermissionRepository(impl: OverlayPermissionRepositoryImpl): OverlayPermissionRepository
+
+    @Binds @Singleton
+    abstract fun bindVideoSurfaceHost(impl: ServiceVideoSurfaceHost): VideoSurfaceHost
 }
