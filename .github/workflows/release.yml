@@ -125,18 +125,37 @@ jobs:
           name: AirPlay-for-Google-TV-v${{ steps.version.outputs.name }}
           path: dist/*
 
+      # release notes = this version's CHANGELOG.md section, followed by the install blurb
+      - name: Compose release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          awk -v v="$VERSION" '
+            /^## \[/ { p = ($0 ~ "^## \\[" v "\\]") }
+            p && !/^## \[/ { print }
+          ' CHANGELOG.md > dist/RELEASE_NOTES.md
+          if [ ! -s dist/RELEASE_NOTES.md ]; then echo "No CHANGELOG.md section for $VERSION" >&2; exit 1; fi
+          cat >> dist/RELEASE_NOTES.md <<EOF
+
+          ---
+          **Install:** on macOS/Linux run \`curl -fsSL https://raw.githubusercontent.com/mkatadev/GoogleTVAirPlay/main/install.sh | bash\`,
+          or download the APK and sideload it (\`adb install -r AirPlay-for-Google-TV-v$VERSION.apk\` or any TV file manager).
+          Already installed? Settings → About → App update installs it from the TV. Verify with the \`.sha256\` file. Requires Android TV 12+.
+
+          \`*-full-source.tar.gz\` is the complete source including the third-party submodules (UxPlay, libplist,
+          FFmpeg, openssl-cmake) at the exact pinned commits listed in \`THIRD-PARTY-VERSIONS.md\` — GitHub's
+          auto-generated "Source code" archives below do not include them.
+          EOF
+          cat dist/RELEASE_NOTES.md
+
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
           name: v${{ steps.version.outputs.name }}
-          generate_release_notes: true
-          files: dist/*
-          body: |
-            **Install:** download the APK and sideload it onto your Google TV / Chromecast
-            (`adb install -r AirPlay-for-Google-TV-v${{ steps.version.outputs.name }}.apk` or any TV file manager).
-            Verify with the `.sha256` file. Requires Android TV 12+.
-
-            `*-full-source.tar.gz` is the complete source including the third-party submodules (UxPlay, libplist,
-            FFmpeg, openssl-cmake) at the exact pinned commits listed in `THIRD-PARTY-VERSIONS.md` — GitHub's
-            auto-generated "Source code" archives below do not include them.
+          body_path: dist/RELEASE_NOTES.md
+          files: |
+            dist/*.apk
+            dist/*.sha256
+            dist/*.tar.gz
