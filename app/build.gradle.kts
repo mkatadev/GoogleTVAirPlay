@@ -32,9 +32,8 @@ android {
         applicationId = "pl.prodevcode.tvairplay"
         minSdk = 31
         targetSdk = 37
-        // CI passes the git tag: ./gradlew assembleRelease -PversionName=1.2.0 -PversionCode=10200
-        // Local builds default to a huge versionCode so a dev install always replaces a published release on the TV.
-        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 999_999_999
+        // GitHub assigns increasing version codes to releases; local builds start at 1.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (findProperty("versionName") as String?) ?: "dev"
     }
 
