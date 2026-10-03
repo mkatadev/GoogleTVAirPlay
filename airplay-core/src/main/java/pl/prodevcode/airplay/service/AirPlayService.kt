@@ -13,6 +13,11 @@ import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
 import android.media.AudioManager
+import android.net.ConnectivityManager
+import android.net.LinkProperties
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
@@ -47,10 +52,12 @@ import pl.prodevcode.airplay.renderer.AirPlayVideoPlayer
 import pl.prodevcode.airplay.renderer.AudioRenderer
 import pl.prodevcode.airplay.renderer.VideoRenderer
 import pl.prodevcode.airplay.model.DebugInfo
+import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.security.SecureRandom
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -65,6 +72,14 @@ data class VideoPlaybackInfo(
     val buffering: Boolean = false,
 )
 
+data class NetworkStatus(
+    val transport: String = "",
+    val interfaceName: String = "",
+    val addresses: List<String> = emptyList(),
+    /** How many times the mDNS records were re-announced because the network changed. */
+    val changes: Int = 0,
+)
+
 class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     private var nativeHandle = 0L
@@ -72,6 +87,21 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     private var wakeLock: PowerManager.WakeLock? = null
     private var foregroundStarted = false
     private var lastOrientation = Configuration.ORIENTATION_UNDEFINED
+
+    private val connectivity by lazy { getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    // ipv4 addresses per network; re-advertise only when the set changes, not on every callback
+    private val networkAddrs = HashMap<Network, Set<String>>()
+    private var lastAdvertisedAddrs: Set<String> = emptySet()
+    private val readvertise = Runnable { _readvertise() }
+    private var nsdStatusJob: Job? = null
+
+    private val _networkStatus = MutableStateFlow(NetworkStatus())
+    val networkStatus = _networkStatus.asStateFlow()
+
+    private val _nsdStatus = MutableStateFlow(NsdServiceManager.Status())
+    val nsdStatus = _nsdStatus.asStateFlow()
 
     val videoRenderer = VideoRenderer(this)
     val audioRenderer = AudioRenderer()
@@ -426,6 +456,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             nsdManager?.registerRaop(raopName, port, raopTxt)
         }
         nsdManager?.registerAirplay(resolvedName, port, airplayTxt)
+        _watchNetwork()
 
         _serverState.value = ServerState.RUNNING
         if (ensureServiceStarted) {
@@ -468,12 +499,93 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         log("Advertising ${w}x${h} from next session")
     }
 
+    // --- network change → re-announce mDNS ---------------------------------------------------------
+
+    private fun _watchNetwork() {
+        if (networkCallback != null) return
+        networkAddrs.clear()
+        lastAdvertisedAddrs = emptySet()
+        val nsd = nsdManager ?: return
+        nsdStatusJob = lifecycleScope.launch { nsd.status.collect { _nsdStatus.value = it } }
+        val request = NetworkRequest.Builder()
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+            .build()
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onLinkPropertiesChanged(network: Network, lp: LinkProperties) {
+                val addrs = lp.linkAddresses.mapNotNull { it.address as? Inet4Address }
+                    .filter { !it.isLoopbackAddress }
+                    .map { it.hostAddress ?: "" }.filter { it.isNotEmpty() }.toSet()
+                mainHandler.post { networkAddrs[network] = addrs; _onNetworkChanged(network, lp) }
+            }
+            override fun onLost(network: Network) {
+                mainHandler.post { networkAddrs.remove(network); _onNetworkChanged(null, null) }
+            }
+        }
+        try {
+            connectivity.registerNetworkCallback(request, callback)
+            networkCallback = callback
+        } catch (e: Exception) {
+            log("Network watch unavailable: ${e.message}")
+        }
+    }
+
+    private fun _unwatchNetwork() {
+        networkCallback?.let { try { connectivity.unregisterNetworkCallback(it) } catch (_: Exception) {} }
+        networkCallback = null
+        nsdStatusJob?.cancel()
+        nsdStatusJob = null
+        mainHandler.removeCallbacks(readvertise)
+        networkAddrs.clear()
+        lastAdvertisedAddrs = emptySet()
+        _networkStatus.value = NetworkStatus()
+        _nsdStatus.value = NsdServiceManager.Status()
+    }
+
+    private fun _onNetworkChanged(network: Network?, lp: LinkProperties?) {
+        val all = networkAddrs.values.flatten().toSet()
+        val active = network ?: connectivity.activeNetwork
+        val caps = active?.let { connectivity.getNetworkCapabilities(it) }
+        val transport = when {
+            caps == null -> ""
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
+            else -> "other"
+        }
+        val iface = (lp ?: active?.let { connectivity.getLinkProperties(it) })?.interfaceName ?: ""
+        _networkStatus.value = _networkStatus.value.copy(
+            transport = transport, interfaceName = iface, addresses = all.sorted(),
+        )
+        // first callback after start only seeds the baseline; the records were just registered
+        if (lastAdvertisedAddrs.isEmpty() && all.isNotEmpty()) { lastAdvertisedAddrs = all; return }
+        if (all == lastAdvertisedAddrs) return
+        mainHandler.removeCallbacks(readvertise)
+        if (all.isEmpty()) {
+            // offline: nothing to announce yet, wait for the next address
+            lastAdvertisedAddrs = emptySet()
+            return
+        }
+        // dhcp usually settles within a second; coalesce the burst of callbacks into one re-announce
+        mainHandler.postDelayed(readvertise, NETWORK_SETTLE_MS)
+    }
+
+    private fun _readvertise() {
+        if (_serverState.value != ServerState.RUNNING) return
+        val all = networkAddrs.values.flatten().toSet()
+        if (all.isEmpty()) return
+        lastAdvertisedAddrs = all
+        log("Network changed (${all.joinToString()}), re-announcing AirPlay")
+        nsdManager?.reregister()
+        _networkStatus.value = _networkStatus.value.copy(changes = _networkStatus.value.changes + 1)
+    }
+
     private fun _failStart() {
         audioRenderer.detachEngine()
         if (nativeHandle != 0L) {
             NativeBridge.nativeDestroy(nativeHandle)
             nativeHandle = 0L
         }
+        _unwatchNetwork()
         nsdManager?.release()
         nsdManager = null
         wakeLock?.release()
@@ -493,6 +605,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             nativeHandle = 0L
         }
         dacpController?.reset()
+        _unwatchNetwork()
         nsdManager?.release()
         nsdManager = null
         wakeLock?.release()
@@ -1117,6 +1230,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         private const val VOL_SYNC_EPS = 0.033f
         private const val VOL_SYNC_MAX_STEPS = 32
         private const val VOL_SYNC_TIMEOUT_MS = 800L
+        private const val NETWORK_SETTLE_MS = 1500L
         private const val CHANNEL_ID = "airplay_service"
         private const val NOTIFICATION_ID = 1
         const val ACTION_PLAY_PAUSE = "pl.prodevcode.airplay.PLAY_PAUSE"
