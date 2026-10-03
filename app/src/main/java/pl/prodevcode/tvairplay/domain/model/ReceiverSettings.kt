@@ -19,4 +19,6 @@ data class ReceiverSettings(
     val latencyMode: LatencyMode = LatencyMode.BALANCED,
     /** Minutes of audio-only idling before the screen dims; 0 = never. */
     val idleDimMinutes: Int = 5,
+    /** Show HLS subtitles in the system language without asking. */
+    val subtitlesByDefault: Boolean = false,
 )

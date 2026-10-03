@@ -202,6 +202,11 @@ private fun SettingsContent(
                 }
             }
             item {
+                ToggleRow(stringResource(R.string.setting_subtitles), stringResource(R.string.setting_subtitles_desc), s.subtitlesByDefault) {
+                    onIntent(SettingsIntent.SetSubtitlesByDefault(it))
+                }
+            }
+            item {
                 ValueRow(
                     title = stringResource(R.string.setting_latency),
                     value = stringResource(latencyModeTitle(s.latencyMode)),

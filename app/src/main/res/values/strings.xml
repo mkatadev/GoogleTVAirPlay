@@ -152,4 +152,14 @@
     <string name="update_failed_installer">Installer error — use install.sh or sideload the APK</string>
     <string name="update_failed_aborted">Installation cancelled — select to try again</string>
     <string name="audio_hint">OK play/pause · ◀ ▶ previous/next track</string>
+
+    <!-- Tracks -->
+    <string name="video_hint_playing_tracks">OK pause · ◀ ▶ seek · ▼ audio &amp; subtitles · Back stop</string>
+    <string name="video_hint_paused_tracks">OK play · ◀ ▶ seek · ▼ audio &amp; subtitles · Back stop</string>
+    <string name="tracks_audio">Audio</string>
+    <string name="tracks_subtitles">Subtitles</string>
+    <string name="tracks_off">Off</string>
+    <string name="tracks_unnamed">Track %1$d</string>
+    <string name="setting_subtitles">Subtitles on by default</string>
+    <string name="setting_subtitles_desc">Show subtitles in the TV language when the video has them; switch tracks with ▼ while playing</string>
 </resources>

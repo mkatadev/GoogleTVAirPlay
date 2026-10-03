@@ -23,6 +23,17 @@ data class NowPlaying(
     val hasTrack: Boolean get() = title.isNotBlank() || artist.isNotBlank()
 }
 
+enum class TrackKind { AUDIO, SUBTITLE }
+
+/** A selectable audio or subtitle track of the video being played; `id` is opaque to the UI. */
+data class MediaTrack(
+    val id: String,
+    val kind: TrackKind,
+    val label: String,
+    val language: String? = null,
+    val selected: Boolean = false,
+)
+
 data class VideoPlayback(
     val title: String = "",
     val positionMs: Long = 0,
@@ -30,7 +41,12 @@ data class VideoPlayback(
     val playing: Boolean = false,
     val buffering: Boolean = false,
     val aspectRatio: Float = 16f / 9f,
-)
+    val audioTracks: List<MediaTrack> = emptyList(),
+    val subtitleTracks: List<MediaTrack> = emptyList(),
+) {
+    /** Anything worth a menu: a second audio track or any subtitle track. */
+    val hasTrackChoices: Boolean get() = audioTracks.size > 1 || subtitleTracks.isNotEmpty()
+}
 
 data class ReceiverState(
     val status: ReceiverStatus = ReceiverStatus.STOPPED,

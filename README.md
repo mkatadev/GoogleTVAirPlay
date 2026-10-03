@@ -19,7 +19,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 ## Features
 
 - 📺 **Screen mirroring** from iPhone, iPad and Mac
-- 🎬 **Video & photos** — the TV plays the stream itself (HLS), with D-pad seeking
+- 🎬 **Video & photos** — the TV plays the stream itself (HLS), with D-pad seeking, **audio track and subtitle selection**
 - 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info
 - ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
 - ⏱️ **Latency presets** — Low / Balanced / Smooth, switchable live for games vs. shaky Wi-Fi
@@ -80,7 +80,7 @@ Afterwards open the app once and grant **Display over other apps** so playback c
 2. Open Photos, Music, YouTube, Safari… and tap the AirPlay icon.
 3. Pick the TV (default name **Google TV**, changeable in Settings).
 
-While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop.
+While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop. If the stream has several audio tracks or subtitles, **▼** opens the track menu instead.
 
 ## Build from source
 

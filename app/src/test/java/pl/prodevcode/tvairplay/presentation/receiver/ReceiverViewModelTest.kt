@@ -41,6 +41,7 @@ import pl.prodevcode.tvairplay.domain.usecase.StopReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ToggleReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
+import pl.prodevcode.tvairplay.platform.SubtitleCues
 import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 import pl.prodevcode.tvairplay.presentation.MainDispatcherRule
 
@@ -73,7 +74,15 @@ class ReceiverViewModelTest {
         surfaces = mockk<VideoSurfaceHost>(relaxed = true),
         observeUpdate = ObserveUpdateUseCase(updateRepo),
         checkForUpdate = CheckForUpdateUseCase(updateRepo),
+        subtitleCues = mockk<SubtitleCues> { every { cues } returns MutableStateFlow(emptyList()) },
     )
+
+    @Test fun `track intents are forwarded`() = runTest {
+        val vm = viewModel()
+        vm.onIntent(ReceiverIntent.SelectAudioTrack("1:0"))
+        vm.onIntent(ReceiverIntent.SelectSubtitleTrack(null))
+        verify { receiverRepo.selectAudioTrack("1:0"); receiverRepo.selectSubtitleTrack(null) }
+    }
     private val updateState = MutableStateFlow<UpdateCheck>(UpdateCheck.Idle)
     private val updateRepo = mockk<UpdateRepository>(relaxed = true) {
         every { state } returns updateState

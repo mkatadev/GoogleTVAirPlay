@@ -7,9 +7,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import androidx.media3.common.C
 import pl.prodevcode.airplay.Prefs
+import pl.prodevcode.airplay.renderer.VideoTrack
 import pl.prodevcode.airplay.service.AirPlayService
 import pl.prodevcode.tvairplay.domain.model.CoverArt
+import pl.prodevcode.tvairplay.domain.model.MediaTrack
+import pl.prodevcode.tvairplay.domain.model.TrackKind
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
 import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
@@ -46,10 +50,12 @@ class ReceiverRepositoryImpl @Inject constructor(
                 coverArt = track.coverArtBytes?.let(::CoverArt), positionMs = pos, durationMs = dur, playing = playing,
             )
         }
-        val hls = combine(videoPlaybackInfo, videoTitle, videoPlaybackAspect) { info, title, aspect ->
+        val hls = combine(videoPlaybackInfo, videoTitle, videoPlaybackAspect, video.tracks) { info, title, aspect, tracks ->
             VideoPlayback(
                 title = title, positionMs = info.positionMs, durationMs = info.durationMs,
                 playing = info.playing, buffering = info.buffering, aspectRatio = aspect,
+                audioTracks = tracks.filter { it.type == C.TRACK_TYPE_AUDIO }.map { it.toDomain(TrackKind.AUDIO) },
+                subtitleTracks = tracks.filter { it.type == C.TRACK_TYPE_TEXT }.map { it.toDomain(TrackKind.SUBTITLE) },
             )
         }
         return combine(session, music, hls, videoAspect, connector.pin, connector.logs) { values ->
@@ -68,6 +74,9 @@ class ReceiverRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    private fun VideoTrack.toDomain(kind: TrackKind) =
+        MediaTrack(id = id, kind = kind, label = label, language = language, selected = selected)
 
     private fun AirPlayService.ServerState.toDomain() = when (this) {
         AirPlayService.ServerState.STOPPED -> ReceiverStatus.STOPPED
@@ -116,4 +125,6 @@ class ReceiverRepositoryImpl @Inject constructor(
     override fun skipNext() { svc?.dacpController?.nextItem() }
     override fun skipPrevious() { svc?.dacpController?.prevItem() }
     override fun stopVideo() { svc?.stopVideoPlayback() }
+    override fun selectAudioTrack(id: String) { svc?.selectVideoTrack(C.TRACK_TYPE_AUDIO, id) }
+    override fun selectSubtitleTrack(id: String?) { svc?.selectVideoTrack(C.TRACK_TYPE_TEXT, id) }
 }

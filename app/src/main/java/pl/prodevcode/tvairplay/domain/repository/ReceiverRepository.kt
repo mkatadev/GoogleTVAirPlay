@@ -16,4 +16,7 @@ interface ReceiverRepository {
     fun skipNext()
     fun skipPrevious()
     fun stopVideo()
+    fun selectAudioTrack(id: String)
+    /** `null` turns subtitles off. */
+    fun selectSubtitleTrack(id: String?)
 }

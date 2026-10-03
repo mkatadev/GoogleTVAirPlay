@@ -444,6 +444,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     fun setVideoPlaying(playing: Boolean) = video.setPlaying(playing)
     fun seekVideoTo(positionMs: Long) = video.scrub(positionMs / 1000f)
     fun seekVideoBy(deltaMs: Long) = video.seekBy(deltaMs)
+    fun selectVideoTrack(type: Int, id: String?) = video.selectTrack(type, id)
     fun stopVideoPlayback() = endVideoPlayback("AirPlay Video stopped (local)")
 
     fun togglePlayPause() {
@@ -467,6 +468,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onVideoSessionPoll() {}
 
     override fun onVideoPlay(location: String, startPositionSeconds: Float) {
+        video.player.subtitlesByDefault = prefs.getBoolean(Prefs.SUBTITLES_DEFAULT, Prefs.DEF_SUBTITLES_DEFAULT)
+        video.player.preferredLanguage = resources.configuration.locales[0]?.language
         video.play(location, startPositionSeconds)
         bringUiToFront()
         log("AirPlay Video play: $location @ ${startPositionSeconds}s")

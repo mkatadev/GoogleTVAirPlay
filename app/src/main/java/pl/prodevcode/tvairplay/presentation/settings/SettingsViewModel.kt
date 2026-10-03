@@ -71,6 +71,7 @@ class SettingsViewModel @Inject constructor(
             is Intent.SetAdvertiseVideo -> update(restart = true) { copy(advertiseVideo = intent.enabled) }
             is Intent.SetAdvertiseAudio -> update(restart = true) { copy(advertiseAudio = intent.enabled) }
             is Intent.SetHevcEnabled -> update(restart = true) { copy(hevcEnabled = intent.enabled) }
+            is Intent.SetSubtitlesByDefault -> update { copy(subtitlesByDefault = intent.enabled) }
             Intent.PickIdleDim -> setState { copy(pickingIdleDim = true) }
             is Intent.IdleDimPicked -> {
                 setState { copy(pickingIdleDim = false) }

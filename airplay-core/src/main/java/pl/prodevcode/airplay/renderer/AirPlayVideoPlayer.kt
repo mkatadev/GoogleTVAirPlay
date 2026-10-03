@@ -12,7 +12,12 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.VideoSize
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Tracks
+import androidx.media3.common.text.Cue
+import androidx.media3.common.text.CueGroup
 import androidx.media3.exoplayer.ExoPlayer
+import java.util.Locale
 
 // rate is 0 while buffering; speed is the configured rate regardless of pause state
 // native reads the effective rate, overlay reads playWhenReady + speed + skipSilence
@@ -25,6 +30,16 @@ data class PlaybackSnapshot(
     val speed: Float = 1f,
     val skipSilence: Boolean = false,
     val buffering: Boolean = false,
+)
+
+/** One selectable audio or subtitle track of the current HLS stream. */
+data class VideoTrack(
+    val id: String,
+    /** [C.TRACK_TYPE_AUDIO] or [C.TRACK_TYPE_TEXT]. */
+    val type: Int,
+    val label: String,
+    val language: String?,
+    val selected: Boolean,
 )
 
 // exoplayer calls stay on the main thread; native only reads the onPlaybackInfo snapshot
@@ -40,6 +55,14 @@ class AirPlayVideoPlayer(private val context: Context) {
     var onEnded: (() -> Unit)? = null
     /** Fires with the live ExoPlayer on /play and with null when it is released; lets a MediaSession follow it. */
     var onPlayerChanged: ((Player?) -> Unit)? = null
+    var onTracksChanged: ((List<VideoTrack>) -> Unit)? = null
+    var onCues: ((List<Cue>) -> Unit)? = null
+
+    /** Applied when the next player is built: show text tracks in the preferred language right away. */
+    @Volatile var subtitlesByDefault = false
+    @Volatile var preferredLanguage: String? = null
+
+    private var lastTracks: Tracks = Tracks.EMPTY
 
     private val _reportTick = object : Runnable {
         override fun run() {
@@ -63,6 +86,13 @@ class AirPlayVideoPlayer(private val context: Context) {
         override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
             onTitle?.invoke(mediaMetadata.title?.toString())
         }
+        override fun onTracksChanged(tracks: Tracks) {
+            lastTracks = tracks
+            onTracksChanged?.invoke(tracks.toVideoTracks())
+        }
+        override fun onCues(cueGroup: CueGroup) {
+            onCues?.invoke(cueGroup.cues)
+        }
         override fun onVideoSizeChanged(videoSize: VideoSize) {
             if (videoSize.height == 0) return
             val width = (videoSize.width * videoSize.pixelWidthHeightRatio).toInt()
@@ -76,8 +106,15 @@ class AirPlayVideoPlayer(private val context: Context) {
         val p = ExoPlayer.Builder(context).build().also {
             it.addListener(_listener)
             pendingSurface?.let { s -> it.setVideoSurface(s) }
+            it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
+                .apply { preferredLanguage?.let { l -> setPreferredAudioLanguage(l); setPreferredTextLanguage(l) } }
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !subtitlesByDefault)
+                .build()
         }
         player = p
+        lastTracks = Tracks.EMPTY
+        onTracksChanged?.invoke(emptyList())
+        onCues?.invoke(emptyList())
         onPlayerChanged?.invoke(p)
         p.setMediaItem(MediaItem.fromUri(location), (startPositionSeconds * 1000).toLong())
         p.playWhenReady = true
@@ -103,6 +140,38 @@ class AirPlayVideoPlayer(private val context: Context) {
     // local-only: the sender self-syncs from its next /playback-info poll
     fun setPlaying(playing: Boolean) = mainHandler.post {
         player?.playWhenReady = playing
+    }
+
+    /** `id` from [VideoTrack]; `null` disables the type (subtitles off) or, for audio, returns to automatic. */
+    fun selectTrack(type: Int, id: String?) = mainHandler.post {
+        val p = player ?: return@post
+        val builder = p.trackSelectionParameters.buildUpon().clearOverridesOfType(type)
+        if (id == null) {
+            builder.setTrackTypeDisabled(type, type == C.TRACK_TYPE_TEXT)
+        } else {
+            val (groupIndex, trackIndex) = id.split(':').map { it.toInt() }
+            val group = lastTracks.groups.getOrNull(groupIndex) ?: return@post
+            builder.setTrackTypeDisabled(type, false)
+                .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, trackIndex))
+        }
+        p.trackSelectionParameters = builder.build()
+    }
+
+    private fun Tracks.toVideoTracks(): List<VideoTrack> = buildList {
+        groups.forEachIndexed { gi, group ->
+            if (group.type != C.TRACK_TYPE_AUDIO && group.type != C.TRACK_TYPE_TEXT) return@forEachIndexed
+            for (ti in 0 until group.length) {
+                if (!group.isTrackSupported(ti)) continue
+                val f = group.getTrackFormat(ti)
+                add(
+                    VideoTrack(
+                        id = "$gi:$ti", type = group.type,
+                        label = f.label ?: f.language?.let { Locale.forLanguageTag(it).displayLanguage } ?: "",
+                        language = f.language, selected = group.isTrackSelected(ti),
+                    )
+                )
+            }
+        }
     }
 
     fun seekBy(deltaMs: Long) = mainHandler.post {

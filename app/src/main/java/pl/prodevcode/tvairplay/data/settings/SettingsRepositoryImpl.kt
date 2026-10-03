@@ -58,6 +58,7 @@ class SettingsRepositoryImpl @Inject constructor(
         advertiseVideo = prefs.getBoolean(Prefs.ADVERTISE_VIDEO, Prefs.DEF_ADVERTISE_VIDEO),
         advertiseAudio = prefs.getBoolean(Prefs.ADVERTISE_AUDIO, Prefs.DEF_ADVERTISE_AUDIO),
         idleDimMinutes = prefs.getInt(Prefs.IDLE_DIM_MINUTES, Prefs.DEF_IDLE_DIM_MINUTES),
+        subtitlesByDefault = prefs.getBoolean(Prefs.SUBTITLES_DEFAULT, Prefs.DEF_SUBTITLES_DEFAULT),
         latencyMode = CoreLatencyMode.fromPref(prefs.getString(Prefs.LATENCY_MODE, Prefs.DEF_LATENCY_MODE)).toDomain(),
     )
 
@@ -73,6 +74,7 @@ class SettingsRepositoryImpl @Inject constructor(
         putBoolean(Prefs.ADVERTISE_AUDIO, s.advertiseAudio)
         putString(Prefs.LATENCY_MODE, s.latencyMode.toCore().pref)
         putInt(Prefs.IDLE_DIM_MINUTES, s.idleDimMinutes)
+        putBoolean(Prefs.SUBTITLES_DEFAULT, s.subtitlesByDefault)
     }
 
     private fun CoreLatencyMode.toDomain() = when (this) {

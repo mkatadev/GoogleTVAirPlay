@@ -22,6 +22,14 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Check
+import androidx.tv.material3.ListItem
+import pl.prodevcode.tvairplay.domain.model.MediaTrack
+import pl.prodevcode.tvairplay.presentation.components.SupportingText
+import pl.prodevcode.tvairplay.presentation.components.appListItemColors
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,6 +91,7 @@ private fun digitOf(key: Key): Int? =
  * repeats) moves a *pending* position shown on the bar; the seek is committed once the user pauses
  * for [SEEK_COMMIT_DELAY_MS]. Step size scales with the video length and grows while holding.
  * ▲/▼ jump ±10 %, digits 0–9 jump to 0–90 %. OK = play/pause, Back = hide / stop.
+ * When the stream offers audio or subtitle tracks, ▼ on the visible overlay opens the track menu instead.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -91,8 +100,11 @@ fun VideoOverlay(
     onPlayPause: () -> Unit,
     onSeekTo: (Long) -> Unit,
     onStop: () -> Unit,
+    onSelectAudioTrack: (String) -> Unit = {},
+    onSelectSubtitleTrack: (String?) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
+    var tracksMenu by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     var visible by remember { mutableStateOf(true) }
     var interactionTick by remember { mutableLongStateOf(0L) }
@@ -164,6 +176,7 @@ fun VideoOverlay(
             .focusRequester(focus)
             .focusable()
             .onPreviewKeyEvent { event ->
+                if (tracksMenu) return@onPreviewKeyEvent event.type == KeyEventType.KeyDown && event.key == Key.Back
                 when (event.type) {
                     // repeats arrive as KeyDown while held → smooth scrubbing
                     KeyEventType.KeyDown -> when (event.key) {
@@ -174,7 +187,12 @@ fun VideoOverlay(
                             if (visible) jumpBy(+1) else interactionTick++; true
                         }
                         Key.DirectionDown, Key.ChannelDown, Key.PageDown -> {
-                            if (visible) jumpBy(-1) else interactionTick++; true
+                            when {
+                                !visible -> interactionTick++
+                                video.hasTrackChoices && event.key == Key.DirectionDown -> tracksMenu = true
+                                else -> jumpBy(-1)
+                            }
+                            true
                         }
                         else -> digitOf(event.key)?.let { jumpToSegment(it); true } ?: false
                     }
@@ -194,6 +212,14 @@ fun VideoOverlay(
                 }
             }
     ) {
+        if (tracksMenu) {
+            TracksMenu(
+                video = video,
+                onSelectAudioTrack = { onSelectAudioTrack(it); interactionTick++ },
+                onSelectSubtitleTrack = { onSelectSubtitleTrack(it); interactionTick++ },
+                onClose = { tracksMenu = false; interactionTick++; focus.requestFocus() },
+            )
+        }
         if (video.buffering && !seeking) {
             CircularProgressIndicator(Modifier.align(Alignment.Center).size(64.dp), color = AirPlayColors.Primary)
         }
@@ -251,6 +277,8 @@ fun VideoOverlay(
                         stringResource(
                             when {
                                 seeking -> R.string.video_hint_seeking
+                                video.hasTrackChoices && video.playing -> R.string.video_hint_playing_tracks
+                                video.hasTrackChoices -> R.string.video_hint_paused_tracks
                                 video.playing -> R.string.video_hint_playing
                                 else -> R.string.video_hint_paused
                             }
@@ -260,6 +288,94 @@ fun VideoOverlay(
                     Text(formatTime(video.durationMs), fontSize = 14.sp, color = AirPlayColors.Muted)
                 }
             }
+        }
+    }
+}
+
+/** Two columns — audio and subtitles — navigated with the d-pad; OK selects, Back returns to the player. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TracksMenu(
+    video: VideoPlayback,
+    onSelectAudioTrack: (String) -> Unit,
+    onSelectSubtitleTrack: (String?) -> Unit,
+    onClose: () -> Unit,
+) {
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { firstFocus.requestFocus() }
+    BackHandler(onBack = onClose)
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .onPreviewKeyEvent { event ->
+                if (event.key == Key.Back) { if (event.type == KeyEventType.KeyUp) onClose(); true } else false
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+            if (video.audioTracks.size > 1) {
+                TrackColumn(
+                    title = stringResource(R.string.tracks_audio),
+                    tracks = video.audioTracks,
+                    offLabel = null,
+                    firstFocus = firstFocus,
+                    onPick = { onSelectAudioTrack(it!!) },
+                )
+            }
+            if (video.subtitleTracks.isNotEmpty()) {
+                TrackColumn(
+                    title = stringResource(R.string.tracks_subtitles),
+                    tracks = video.subtitleTracks,
+                    offLabel = stringResource(R.string.tracks_off),
+                    firstFocus = if (video.audioTracks.size > 1) null else firstFocus,
+                    onPick = onSelectSubtitleTrack,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TrackColumn(
+    title: String,
+    tracks: List<MediaTrack>,
+    offLabel: String?,
+    firstFocus: FocusRequester?,
+    onPick: (String?) -> Unit,
+) {
+    Column(
+        Modifier
+            .width(380.dp)
+            .background(AirPlayColors.Surface, RoundedCornerShape(16.dp))
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(title.uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = AirPlayColors.Primary)
+        Spacer(Modifier.height(8.dp))
+        if (offLabel != null) {
+            val off = tracks.none { it.selected }
+            ListItem(
+                selected = off,
+                onClick = { onPick(null) },
+                headlineContent = { Text(offLabel) },
+                trailingContent = { if (off) Icon(Icons.Default.Check, null) },
+                colors = appListItemColors(),
+                modifier = if (firstFocus != null) Modifier.focusRequester(firstFocus) else Modifier,
+            )
+        }
+        tracks.forEachIndexed { i, t ->
+            ListItem(
+                selected = t.selected,
+                onClick = { onPick(t.id) },
+                headlineContent = { Text(t.label.ifBlank { stringResource(R.string.tracks_unnamed, i + 1) }) },
+                supportingContent = t.language?.let { lang -> { SupportingText(lang) } },
+                trailingContent = { if (t.selected) Icon(Icons.Default.Check, null) },
+                colors = appListItemColors(),
+                modifier = if (firstFocus != null && offLabel == null && i == 0) Modifier.focusRequester(firstFocus) else Modifier,
+            )
         }
     }
 }

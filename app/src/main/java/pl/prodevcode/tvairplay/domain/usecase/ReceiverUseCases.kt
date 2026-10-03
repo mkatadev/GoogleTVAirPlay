@@ -35,4 +35,6 @@ class PlaybackControlUseCase @Inject constructor(private val repo: ReceiverRepos
     fun next() = repo.skipNext()
     fun previous() = repo.skipPrevious()
     fun stopVideo() = repo.stopVideo()
+    fun selectAudioTrack(id: String) = repo.selectAudioTrack(id)
+    fun selectSubtitleTrack(id: String?) = repo.selectSubtitleTrack(id)
 }

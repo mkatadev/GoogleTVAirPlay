@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.prodevcode.tvairplay.domain.model.SessionMode
+import pl.prodevcode.tvairplay.presentation.components.SubtitleOverlay
 import pl.prodevcode.tvairplay.presentation.components.VideoSurface
 import pl.prodevcode.tvairplay.presentation.receiver.screens.AudioSession
 import pl.prodevcode.tvairplay.presentation.receiver.screens.DimOverlay
@@ -64,11 +65,14 @@ private fun ReceiverContent(
                         onSurfaceAvailable = { onIntent(ReceiverIntent.VideoSurfaceReady(it)) },
                         onSurfaceDestroyed = { onIntent(ReceiverIntent.VideoSurfaceGone(it)) },
                     )
+                    SubtitleOverlay(cues = ui.cues)
                     VideoOverlay(
                         video = state.video,
                         onPlayPause = { onIntent(ReceiverIntent.PlayPause) },
                         onSeekTo = { onIntent(ReceiverIntent.SeekTo(it)) },
                         onStop = { onIntent(ReceiverIntent.StopVideo) },
+                        onSelectAudioTrack = { onIntent(ReceiverIntent.SelectAudioTrack(it)) },
+                        onSelectSubtitleTrack = { onIntent(ReceiverIntent.SelectSubtitleTrack(it)) },
                     )
                 }
 

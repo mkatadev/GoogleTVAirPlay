@@ -4,7 +4,9 @@ import android.content.Context
 import android.view.Surface
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import androidx.media3.common.text.Cue
 import pl.prodevcode.airplay.renderer.AirPlayVideoPlayer
+import pl.prodevcode.airplay.renderer.VideoTrack
 import pl.prodevcode.airplay.renderer.PlaybackSnapshot
 
 data class VideoPlaybackInfo(
@@ -34,9 +36,17 @@ class VideoSession internal constructor(context: Context) {
     private val _title = MutableStateFlow("")
     val title = _title.asStateFlow()
 
+    private val _tracks = MutableStateFlow<List<VideoTrack>>(emptyList())
+    val tracks = _tracks.asStateFlow()
+
+    private val _cues = MutableStateFlow<List<Cue>>(emptyList())
+    val cues = _cues.asStateFlow()
+
     fun bind(onEnded: () -> Unit, onPlaybackInfo: (PlaybackSnapshot) -> Unit) {
         player.onVideoSize = { _, _, aspect -> _aspect.value = aspect }
         player.onTitle = { _title.value = it ?: "" }
+        player.onTracksChanged = { _tracks.value = it }
+        player.onCues = { _cues.value = it }
         player.onEnded = onEnded
         player.onPlaybackInfo = { snapshot ->
             onPlaybackInfo(snapshot)
@@ -75,6 +85,7 @@ class VideoSession internal constructor(context: Context) {
         _info.value = VideoPlaybackInfo()
     }
 
+    fun selectTrack(type: Int, id: String?) { player.selectTrack(type, id) }
     fun setSurface(surface: Surface) { player.setSurface(surface) }
     fun clearSurface(surface: Surface) { player.clearSurface(surface) }
     fun setPlaying(playing: Boolean) { player.setPlaying(playing) }

@@ -10,6 +10,7 @@ import pl.prodevcode.tvairplay.data.licenses.AssetLicensesRepository
 import pl.prodevcode.tvairplay.data.network.DeviceInfoRepositoryImpl
 import pl.prodevcode.tvairplay.data.permission.OverlayPermissionRepositoryImpl
 import pl.prodevcode.tvairplay.data.receiver.ReceiverRepositoryImpl
+import pl.prodevcode.tvairplay.data.receiver.ServiceSubtitleCues
 import pl.prodevcode.tvairplay.data.receiver.ServiceVideoSurfaceHost
 import pl.prodevcode.tvairplay.data.security.TrustedDevicesRepositoryImpl
 import pl.prodevcode.tvairplay.data.settings.SettingsRepositoryImpl
@@ -22,6 +23,7 @@ import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
 import pl.prodevcode.tvairplay.domain.repository.TrustedDevicesRepository
 import pl.prodevcode.tvairplay.domain.repository.UpdateRepository
+import pl.prodevcode.tvairplay.platform.SubtitleCues
 import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 
 @Module
@@ -53,4 +55,7 @@ abstract class AppModule {
 
     @Binds @Singleton
     abstract fun bindUpdateRepository(impl: GitHubUpdateRepository): UpdateRepository
+
+    @Binds @Singleton
+    abstract fun bindSubtitleCues(impl: ServiceSubtitleCues): SubtitleCues
 }

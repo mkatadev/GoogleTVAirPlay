@@ -159,5 +159,15 @@
     <string name="update_failed_checksum">Niezgodna suma kontrolna — plik odrzucony, wybierz, aby ponowić</string>
     <string name="update_failed_installer">Błąd instalatora — użyj install.sh albo wgraj APK ręcznie</string>
     <string name="update_failed_aborted">Instalacja anulowana — wybierz, aby spróbować ponownie</string>
+
+    <!-- Ścieżki -->
     <string name="audio_hint">OK odtwórz/pauza · ◀ ▶ poprzedni/następny utwór</string>
+    <string name="video_hint_playing_tracks">OK pauza · ◀ ▶ przewijanie · ▼ audio i napisy · Wstecz stop</string>
+    <string name="video_hint_paused_tracks">OK odtwórz · ◀ ▶ przewijanie · ▼ audio i napisy · Wstecz stop</string>
+    <string name="tracks_audio">Audio</string>
+    <string name="tracks_subtitles">Napisy</string>
+    <string name="tracks_off">Wyłączone</string>
+    <string name="tracks_unnamed">Ścieżka %1$d</string>
+    <string name="setting_subtitles">Napisy domyślnie włączone</string>
+    <string name="setting_subtitles_desc">Pokazuj napisy w języku telewizora, gdy wideo je ma; ścieżki zmienisz przyciskiem ▼ podczas odtwarzania</string>
 </resources>

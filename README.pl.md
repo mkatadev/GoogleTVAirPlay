@@ -19,7 +19,7 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 ## Funkcje
 
 - 📺 **Mirroring ekranu** z iPhone’a, iPada i Maca
-- 🎬 **Wideo i zdjęcia** — telewizor sam odtwarza strumień (HLS), przewijanie pilotem
+- 🎬 **Wideo i zdjęcia** — telewizor sam odtwarza strumień (HLS), przewijanie pilotem, **wybór ścieżki audio i napisów**
 - 🎵 **Muzyka** — widoczny jako głośnik AirPlay, z okładką i informacjami o utworze
 - ⚡ **Dekodowanie sprzętowe** — H.264 i HEVC (H.265), gdy telewizor to wspiera
 - ⏱️ **Presety opóźnienia** — Niskie / Zrównoważone / Płynne, przełączane na żywo (gry vs. słabe Wi-Fi)
@@ -80,7 +80,7 @@ Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad 
 2. Otwórz Zdjęcia, Muzykę, YouTube, Safari… i dotknij ikony AirPlay.
 3. Wybierz telewizor (domyślna nazwa **Google TV**, do zmiany w Ustawieniach).
 
-Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przytrzymaj, aby przyspieszyć) · **▲ ▼** skok ±10 % · **0–9** skok do 0–90 % · **Wstecz** stop.
+Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przytrzymaj, aby przyspieszyć) · **▲ ▼** skok ±10 % · **0–9** skok do 0–90 % · **Wstecz** stop. Jeśli strumień ma kilka ścieżek audio lub napisy, **▼** otwiera menu ścieżek.
 
 ## Budowanie ze źródeł
 

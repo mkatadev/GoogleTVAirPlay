@@ -20,6 +20,7 @@ import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StopReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ToggleReceiverUseCase
+import pl.prodevcode.tvairplay.platform.SubtitleCues
 import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 import pl.prodevcode.tvairplay.presentation.mvi.MviViewModel
 import pl.prodevcode.tvairplay.presentation.receiver.ReceiverIntent as Intent
@@ -38,6 +39,7 @@ class ReceiverViewModel @Inject constructor(
     private val surfaces: VideoSurfaceHost,
     observeUpdate: ObserveUpdateUseCase,
     private val checkForUpdate: CheckForUpdateUseCase,
+    subtitleCues: SubtitleCues,
 ) : MviViewModel<ReceiverUiState, Intent, ReceiverEffect>(ReceiverUiState()) {
 
     private var idleTimer: Job? = null
@@ -61,6 +63,7 @@ class ReceiverViewModel @Inject constructor(
             if (key != lastIdleKey) { lastIdleKey = key; restartIdleTimer(key.mode) }
             withDerived(ui.copy(dimmed = idleDimmed && key.mode == SessionMode.AUDIO, updateAvailable = latestRelease))
         }
+        subtitleCues.cues.reduceInto { copy(cues = it) }
         observeUpdate().reduceInto {
             latestRelease = (it as? UpdateCheck.Available)?.update?.latestVersion
             copy(updateAvailable = latestRelease)
@@ -116,6 +119,8 @@ class ReceiverViewModel @Inject constructor(
             Intent.Next -> playback.next()
             Intent.Previous -> playback.previous()
             Intent.StopVideo -> playback.stopVideo()
+            is Intent.SelectAudioTrack -> playback.selectAudioTrack(intent.id)
+            is Intent.SelectSubtitleTrack -> playback.selectSubtitleTrack(intent.id)
 
             is Intent.MirrorSurfaceReady -> surfaces.attachMirrorSurface(intent.surface)
             is Intent.MirrorSurfaceGone -> surfaces.detachMirrorSurface(intent.surface)
