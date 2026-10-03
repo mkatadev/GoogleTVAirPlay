@@ -34,6 +34,7 @@
 
 - Minimal, surgical changes; do not touch unrelated code or "fix" unrelated issues.
 - **No compiler warnings.** After every change run the Kotlin compile for the touched module(s) with warnings visible (`./gradlew :app:compileDebugKotlin :airplay-core:compileDebugKotlin`, look at `w:` lines) and fix every warning in files you touched — unused imports/variables/parameters, deprecated APIs, unchecked casts, redundant qualifiers. Do not suppress warnings with `@Suppress` unless there is no correct alternative, and then explain why in a one-line comment.
+- **No Lint findings.** Before finishing a change run `./gradlew :app:lintDebug` (report: `app/build/reports/lint-results-debug.xml`/`.html`) and fix every error and warning in files you touched — missing translations (EN + PL must match), unused resources, deprecated/obsolete APIs, missing `contentDescription`, hardcoded text, `MissingPermission`, etc. Prefer fixing over `lint.xml`/`@SuppressLint`; a suppression needs a one-line justification. Treat Android Studio's inspection highlights the same way: the IDE should show no warnings in files you touched.
 - `:app` layering: `domain/` has no Android/Hilt dependencies beyond `javax.inject`; `data/` implements repositories; `presentation/` is Compose for TV; `di/` holds Hilt bindings.
 - Verify with the smallest relevant command: `./gradlew :app:testDebugUnitTest`, `./gradlew :app:assembleDebug`.
 - Comment code only where clarification is genuinely needed.

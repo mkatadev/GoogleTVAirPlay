@@ -18,6 +18,7 @@ import org.junit.Test
 import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.AppUpdate
+import pl.prodevcode.tvairplay.domain.model.InstallProgress
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
 import pl.prodevcode.tvairplay.domain.model.UpdateCheck
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
@@ -34,6 +35,8 @@ import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ForgetTrustedDeviceUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveInstallProgressUseCase
+import pl.prodevcode.tvairplay.domain.usecase.InstallUpdateUseCase
 import pl.prodevcode.tvairplay.presentation.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -66,9 +69,25 @@ class SettingsViewModelTest {
         forgetTrustedDevice = ForgetTrustedDeviceUseCase(trustedRepo),
         observeUpdate = ObserveUpdateUseCase(updateRepo),
         checkForUpdate = CheckForUpdateUseCase(updateRepo),
+        observeInstallProgress = ObserveInstallProgressUseCase(updateRepo),
+        installUpdate = InstallUpdateUseCase(updateRepo),
     )
     private val updateState = MutableStateFlow<UpdateCheck>(UpdateCheck.Idle)
-    private val updateRepo = mockk<UpdateRepository>(relaxed = true) { every { state } returns updateState }
+    private val installState = MutableStateFlow<InstallProgress>(InstallProgress.Idle)
+    private val updateRepo = mockk<UpdateRepository>(relaxed = true) {
+        every { state } returns updateState
+        every { install } returns installState
+    }
+
+    @Test fun `install intent starts the download and progress reaches the state`() = runTest {
+        val vm = viewModel()
+        vm.onIntent(SettingsIntent.InstallUpdate)
+        advanceUntilIdle()
+        coVerify(exactly = 1) { updateRepo.downloadAndInstall() }
+        installState.value = InstallProgress.Downloading(42)
+        advanceUntilIdle()
+        assertEquals(InstallProgress.Downloading(42), vm.state.value.install)
+    }
 
     @Test fun `opening settings checks for updates, selecting the row forces a re-check`() = runTest {
         val vm = viewModel()

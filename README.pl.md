@@ -28,7 +28,7 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 - 🌙 **Przyciemnianie ekranu** przy muzyce (przyjazne OLED); zapauzowana sesja pozwala TV usnąć
 - 🔁 **Odporność na chwilowe zerwania** — zablokowanie iPhone'a nie kończy już odtwarzania audio/wideo
 - 🚀 **Działa w tle** i **startuje z telewizorem** — odbiornik zawsze gotowy
-- 🔔 **Sprawdzanie aktualizacji** — porównuje z GitHub Releases i informuje o nowej wersji (bez automatycznego pobierania, bez telemetrii)
+- 🔔 **Aktualizacje w aplikacji** — sprawdza GitHub Releases, pobiera podpisany APK, weryfikuje SHA-256 i przekazuje do instalatora systemowego; potwierdzasz pilotem (bez telemetrii)
 - 🎛️ Zaprojektowany pod pilota: UI w Compose for TV, bez dotyku
 - 🌍 Polski i angielski
 

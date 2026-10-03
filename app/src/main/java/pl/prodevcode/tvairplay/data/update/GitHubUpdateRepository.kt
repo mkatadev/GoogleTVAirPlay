@@ -1,11 +1,18 @@
 package pl.prodevcode.tvairplay.data.update
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageInstaller
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.Log
+import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -16,11 +23,17 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pl.prodevcode.tvairplay.domain.model.AppUpdate
+import pl.prodevcode.tvairplay.domain.model.InstallFailure
+import pl.prodevcode.tvairplay.domain.model.InstallProgress
 import pl.prodevcode.tvairplay.domain.model.UpdateCheck
 import pl.prodevcode.tvairplay.domain.model.VersionComparator
 import pl.prodevcode.tvairplay.domain.repository.UpdateRepository
 
-/** Reads the latest GitHub release; no downloads — install.sh / Releases do that. */
+/**
+ * Reads the latest GitHub release and, on request, downloads its APK, checks the published
+ * SHA-256 and hands it to [PackageInstaller]. The system still asks the user to confirm;
+ * that is as far as a non-system app can go.
+ */
 @Singleton
 class GitHubUpdateRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -28,6 +41,9 @@ class GitHubUpdateRepository @Inject constructor(
 
     private val _state = MutableStateFlow<UpdateCheck>(UpdateCheck.Idle)
     override val state: StateFlow<UpdateCheck> = _state
+
+    private val _install = MutableStateFlow<InstallProgress>(InstallProgress.Idle)
+    override val install: StateFlow<InstallProgress> = _install
 
     private val mutex = Mutex()
     private var lastCheckedAt = 0L
@@ -47,9 +63,8 @@ class GitHubUpdateRepository @Inject constructor(
         _state.value = withContext(Dispatchers.IO) {
             runCatching { fetchLatest() }
                 .onFailure { Log.w(TAG, "update check failed", it) }
-                .map { (latest, url) ->
-                    if (VersionComparator.compare(latest, currentVersion) > 0)
-                        UpdateCheck.Available(AppUpdate(currentVersion, latest, url))
+                .map { update ->
+                    if (VersionComparator.compare(update.latestVersion, currentVersion) > 0) UpdateCheck.Available(update)
                     else UpdateCheck.UpToDate(currentVersion)
                 }
                 .getOrElse { UpdateCheck.Failed(currentVersion) }
@@ -57,29 +72,174 @@ class GitHubUpdateRepository @Inject constructor(
         lastCheckedAt = now
     }
 
-    private fun fetchLatest(): Pair<String, String> {
-        val conn = (URL(LATEST_RELEASE).openConnection() as HttpURLConnection).apply {
+    override suspend fun downloadAndInstall() {
+        val update = (_state.value as? UpdateCheck.Available)?.update ?: return
+        val apkUrl = update.apkUrl ?: return
+        if (_install.value is InstallProgress.Downloading || _install.value == InstallProgress.Verifying) return
+        if (!context.packageManager.canRequestPackageInstalls()) {
+            _install.value = InstallProgress.NeedsPermission
+            openUnknownSourcesSettings()
+            return
+        }
+        withContext(Dispatchers.IO) {
+            val file = File(context.cacheDir, "updates/AirPlay-for-Google-TV-v${update.latestVersion}.apk")
+            try {
+                file.parentFile?.mkdirs()
+                _install.value = InstallProgress.Downloading(0)
+                download(apkUrl, file, update.apkSizeBytes) { _install.value = InstallProgress.Downloading(it) }
+            } catch (e: Exception) {
+                Log.w(TAG, "download failed", e)
+                file.delete()
+                _install.value = InstallProgress.Failed(InstallFailure.DOWNLOAD)
+                return@withContext
+            }
+            update.apkSha256Url?.let { shaUrl ->
+                _install.value = InstallProgress.Verifying
+                val expected = runCatching { URL(shaUrl).readText().trim().split(Regex("\\s+")).first().lowercase() }.getOrNull()
+                if (expected == null || expected != sha256(file)) {
+                    Log.w(TAG, "checksum mismatch for ${file.name}")
+                    file.delete()
+                    _install.value = InstallProgress.Failed(InstallFailure.CHECKSUM)
+                    return@withContext
+                }
+            }
+            try {
+                commitToInstaller(file)
+                _install.value = InstallProgress.AwaitingConfirmation
+            } catch (e: Exception) {
+                Log.w(TAG, "installer session failed", e)
+                _install.value = InstallProgress.Failed(InstallFailure.INSTALLER)
+            } finally {
+                file.delete()
+            }
+        }
+    }
+
+    /** Called by [UpdateInstallReceiver] with the installer's status broadcast. */
+    fun onInstallerStatus(status: Int, message: String?, confirmIntent: Intent?) {
+        when (status) {
+            PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                confirmIntent?.let {
+                    it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    runCatching { context.startActivity(it) }.onFailure { e -> Log.w(TAG, "confirm failed", e) }
+                }
+                _install.value = InstallProgress.AwaitingConfirmation
+            }
+            // success means the process is about to be replaced; nothing to show
+            PackageInstaller.STATUS_SUCCESS -> _install.value = InstallProgress.Idle
+            PackageInstaller.STATUS_FAILURE_ABORTED -> _install.value = InstallProgress.Failed(InstallFailure.ABORTED)
+            else -> {
+                Log.w(TAG, "install failed: $status $message")
+                _install.value = InstallProgress.Failed(InstallFailure.INSTALLER)
+            }
+        }
+    }
+
+    private fun fetchLatest(): AppUpdate {
+        val json = JSONObject(get(LATEST_RELEASE, accept = "application/vnd.github+json"))
+        val tag = json.getString("tag_name").removePrefix("v")
+        var apkUrl: String? = null; var shaUrl: String? = null; var size = 0L
+        val assets = json.optJSONArray("assets")
+        if (assets != null) for (i in 0 until assets.length()) {
+            val a = assets.getJSONObject(i)
+            val name = a.optString("name")
+            when {
+                name.endsWith(".apk.sha256") -> shaUrl = a.optString("browser_download_url")
+                name.endsWith(".apk") -> { apkUrl = a.optString("browser_download_url"); size = a.optLong("size") }
+            }
+        }
+        return AppUpdate(
+            currentVersion = currentVersion, latestVersion = tag,
+            releaseUrl = json.optString("html_url", RELEASES_PAGE),
+            apkUrl = apkUrl, apkSha256Url = shaUrl, apkSizeBytes = size,
+        )
+    }
+
+    private fun open(url: String, accept: String? = null): HttpURLConnection =
+        (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
-            setRequestProperty("Accept", "application/vnd.github+json")
+            accept?.let { setRequestProperty("Accept", it) }
             setRequestProperty("User-Agent", "GoogleTVAirPlay/$currentVersion")
             connectTimeout = TIMEOUT_MS
             readTimeout = TIMEOUT_MS
+            instanceFollowRedirects = true
         }
+
+    private fun get(url: String, accept: String? = null): String {
+        val conn = open(url, accept)
         try {
             if (conn.responseCode !in 200..299) error("HTTP ${conn.responseCode}")
-            val json = JSONObject(conn.inputStream.bufferedReader().readText())
-            val tag = json.getString("tag_name").removePrefix("v")
-            return tag to json.optString("html_url", RELEASES_PAGE)
+            return conn.inputStream.bufferedReader().readText()
         } finally {
             conn.disconnect()
         }
+    }
+
+    private fun download(url: String, target: File, knownSize: Long, onProgress: (Int) -> Unit) {
+        val conn = open(url)
+        try {
+            if (conn.responseCode !in 200..299) error("HTTP ${conn.responseCode}")
+            val total = if (knownSize > 0) knownSize else conn.contentLengthLong
+            var done = 0L; var lastPercent = -1
+            conn.inputStream.use { input ->
+                target.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = input.read(buf); if (n < 0) break
+                        out.write(buf, 0, n); done += n
+                        if (total > 0) {
+                            val pct = (done * 100 / total).toInt()
+                            if (pct != lastPercent) { lastPercent = pct; onProgress(pct) }
+                        }
+                    }
+                }
+            }
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    private fun sha256(file: File): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buf = ByteArray(64 * 1024)
+            while (true) { val n = input.read(buf); if (n < 0) break; md.update(buf, 0, n) }
+        }
+        return md.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private fun commitToInstaller(file: File) {
+        val installer = context.packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+            setAppPackageName(context.packageName)
+            setSize(file.length())
+        }
+        val sessionId = installer.createSession(params)
+        installer.openSession(sessionId).use { session ->
+            session.openWrite("update.apk", 0, file.length()).use { out ->
+                file.inputStream().use { it.copyTo(out) }
+                session.fsync(out)
+            }
+            val intent = Intent(context, UpdateInstallReceiver::class.java).setAction(UpdateInstallReceiver.ACTION)
+            val pi = PendingIntent.getBroadcast(
+                context, sessionId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+            )
+            session.commit(pi.intentSender)
+        }
+    }
+
+    private fun openUnknownSourcesSettings() {
+        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${context.packageName}".toUri())
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }.onFailure { Log.w(TAG, "unknown sources screen unavailable", it) }
     }
 
     private companion object {
         const val TAG = "UpdateCheck"
         const val LATEST_RELEASE = "https://api.github.com/repos/mkatadev/GoogleTVAirPlay/releases/latest"
         const val RELEASES_PAGE = "https://github.com/mkatadev/GoogleTVAirPlay/releases/latest"
-        const val TIMEOUT_MS = 8_000
+        const val TIMEOUT_MS = 15_000
         const val CACHE_MS = 6 * 60 * 60 * 1000L
     }
 }

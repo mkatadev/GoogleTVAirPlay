@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- The Android TV banner is specified as a single 320x180dp asset in drawable-xhdpi
+         (developer.android.com/training/tv/start/start#banner); other densities are not expected. -->
+    <issue id="IconMissingDensityFolder" severity="ignore" />
+</lint>

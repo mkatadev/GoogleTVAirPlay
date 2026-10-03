@@ -4,7 +4,27 @@ data class AppUpdate(
     val currentVersion: String,
     val latestVersion: String,
     val releaseUrl: String,
-)
+    /** Direct APK asset of the release when it has one; enables in-app install. */
+    val apkUrl: String? = null,
+    val apkSha256Url: String? = null,
+    val apkSizeBytes: Long = 0,
+) {
+    val installable: Boolean get() = apkUrl != null
+}
+
+/** Progress of the in-app update: download → verify → system install prompt. */
+sealed interface InstallProgress {
+    data object Idle : InstallProgress
+    data class Downloading(val percent: Int) : InstallProgress
+    data object Verifying : InstallProgress
+    /** The system "install this app?" dialog is on screen; the user confirms with the remote. */
+    data object AwaitingConfirmation : InstallProgress
+    /** "Install unknown apps" has to be allowed for this app first; the system screen was opened. */
+    data object NeedsPermission : InstallProgress
+    data class Failed(val reason: InstallFailure) : InstallProgress
+}
+
+enum class InstallFailure { DOWNLOAD, CHECKSUM, INSTALLER, ABORTED }
 
 sealed interface UpdateCheck {
     data object Idle : UpdateCheck

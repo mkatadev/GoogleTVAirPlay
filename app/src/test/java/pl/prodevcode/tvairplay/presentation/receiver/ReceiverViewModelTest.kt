@@ -18,6 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import pl.prodevcode.tvairplay.domain.model.AppUpdate
 import pl.prodevcode.tvairplay.domain.model.DeviceInfo
+import pl.prodevcode.tvairplay.domain.model.InstallProgress
 import pl.prodevcode.tvairplay.domain.model.UpdateCheck
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.domain.model.SessionMode
@@ -74,7 +75,10 @@ class ReceiverViewModelTest {
         checkForUpdate = CheckForUpdateUseCase(updateRepo),
     )
     private val updateState = MutableStateFlow<UpdateCheck>(UpdateCheck.Idle)
-    private val updateRepo = mockk<UpdateRepository>(relaxed = true) { every { state } returns updateState }
+    private val updateRepo = mockk<UpdateRepository>(relaxed = true) {
+        every { state } returns updateState
+        every { install } returns MutableStateFlow(InstallProgress.Idle)
+    }
 
     @Test fun `idle screen learns about a newer release`() = runTest {
         val vm = viewModel()

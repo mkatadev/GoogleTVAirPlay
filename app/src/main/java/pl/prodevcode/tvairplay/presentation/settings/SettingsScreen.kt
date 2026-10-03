@@ -46,6 +46,8 @@ import pl.prodevcode.tvairplay.domain.model.IDLE_DIM_OPTIONS
 import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
+import pl.prodevcode.tvairplay.domain.model.InstallFailure
+import pl.prodevcode.tvairplay.domain.model.InstallProgress
 import pl.prodevcode.tvairplay.domain.model.UpdateCheck
 import pl.prodevcode.tvairplay.presentation.components.SupportingText
 import pl.prodevcode.tvairplay.presentation.components.appListItemColors
@@ -209,10 +211,15 @@ private fun SettingsContent(
 
             item { Section(stringResource(R.string.section_about)) }
             item {
+                val installable = (ui.update as? UpdateCheck.Available)?.update?.takeIf { it.installable }
+                val busy = ui.install is InstallProgress.Downloading || ui.install == InstallProgress.Verifying
                 ValueRow(
                     title = stringResource(R.string.setting_update),
-                    value = updateLabel(ui.update),
-                    onClick = { onIntent(SettingsIntent.CheckForUpdate) },
+                    value = installable?.let { installLabel(ui.install, it.latestVersion) } ?: updateLabel(ui.update),
+                    onClick = {
+                        if (installable != null && !busy) onIntent(SettingsIntent.InstallUpdate)
+                        else onIntent(SettingsIntent.CheckForUpdate)
+                    },
                 )
             }
             item {
@@ -296,6 +303,23 @@ private fun ValueRow(title: String, value: String, onClick: () -> Unit) {
         headlineContent = { Text(title) },
         supportingContent = { SupportingText(value) },
         colors = appListItemColors(),
+    )
+}
+
+@Composable
+private fun installLabel(progress: InstallProgress, version: String): String = when (progress) {
+    InstallProgress.Idle -> stringResource(R.string.update_install, version)
+    is InstallProgress.Downloading -> stringResource(R.string.update_downloading, version, progress.percent)
+    InstallProgress.Verifying -> stringResource(R.string.update_verifying)
+    InstallProgress.AwaitingConfirmation -> stringResource(R.string.update_confirm)
+    InstallProgress.NeedsPermission -> stringResource(R.string.update_needs_permission)
+    is InstallProgress.Failed -> stringResource(
+        when (progress.reason) {
+            InstallFailure.DOWNLOAD -> R.string.update_failed_download
+            InstallFailure.CHECKSUM -> R.string.update_failed_checksum
+            InstallFailure.INSTALLER -> R.string.update_failed_installer
+            InstallFailure.ABORTED -> R.string.update_failed_aborted
+        }
     )
 }
 

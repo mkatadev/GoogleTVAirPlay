@@ -16,6 +16,8 @@ import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ForgetTrustedDeviceUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveInstallProgressUseCase
+import pl.prodevcode.tvairplay.domain.usecase.InstallUpdateUseCase
 import pl.prodevcode.tvairplay.presentation.mvi.MviViewModel
 import pl.prodevcode.tvairplay.presentation.settings.SettingsIntent as Intent
 
@@ -30,6 +32,8 @@ class SettingsViewModel @Inject constructor(
     private val forgetTrustedDevice: ForgetTrustedDeviceUseCase,
     observeUpdate: ObserveUpdateUseCase,
     private val checkForUpdate: CheckForUpdateUseCase,
+    observeInstallProgress: ObserveInstallProgressUseCase,
+    private val installUpdate: InstallUpdateUseCase,
 ) : MviViewModel<SettingsUiState, Intent, SettingsEffect>(SettingsUiState()) {
 
     private var restartJob: Job? = null
@@ -39,6 +43,7 @@ class SettingsViewModel @Inject constructor(
         observeOverlay().reduceInto { copy(overlayGranted = it) }
         observeTrustedDevices().reduceInto { copy(trustedDevices = it) }
         observeUpdate().reduceInto { copy(update = it) }
+        observeInstallProgress().reduceInto { copy(install = it) }
     }
 
     override fun onIntent(intent: Intent) {
@@ -48,6 +53,7 @@ class SettingsViewModel @Inject constructor(
                 viewModelScope.launch { checkForUpdate() }
             }
             Intent.CheckForUpdate -> viewModelScope.launch { checkForUpdate(force = true) }
+            Intent.InstallUpdate -> viewModelScope.launch { installUpdate() }
             Intent.GrantOverlay -> requestOverlay()
             Intent.PickDeviceName -> setState { copy(pickingDeviceName = true) }
             is Intent.DeviceNamePicked -> {

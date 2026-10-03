@@ -25,6 +25,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,8 +99,8 @@ fun VideoOverlay(
 
     // pending seek target; -1 = none
     var pendingMs by remember { mutableLongStateOf(-1L) }
-    var pendingDir by remember { mutableStateOf(0) }
-    var repeatCount by remember { mutableStateOf(0) }
+    var pendingDir by remember { mutableIntStateOf(0) }
+    var repeatCount by remember { mutableIntStateOf(0) }
     var commitJob by remember { mutableStateOf<Job?>(null) }
 
     val seeking = pendingMs >= 0

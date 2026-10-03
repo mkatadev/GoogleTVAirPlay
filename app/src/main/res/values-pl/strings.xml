@@ -88,8 +88,18 @@
     <string name="diagnostics_clients">Połączone urządzenia</string>
     <string name="diagnostics_video">Wideo</string>
     <string name="diagnostics_audio">Audio</string>
-    <string name="diagnostics_dropped">%1$d pominiętych</string>
-    <string name="diagnostics_underruns">%1$d underrunów</string>
+    <plurals name="diagnostics_dropped">
+        <item quantity="one">%d pominięta klatka</item>
+        <item quantity="few">%d pominięte klatki</item>
+        <item quantity="many">%d pominiętych klatek</item>
+        <item quantity="other">%d pominiętej klatki</item>
+    </plurals>
+    <plurals name="diagnostics_underruns">
+        <item quantity="one">%d underrun</item>
+        <item quantity="few">%d underruny</item>
+        <item quantity="many">%d underrunów</item>
+        <item quantity="other">%d underrunu</item>
+    </plurals>
     <string name="diagnostics_last_event">Ostatnie zdarzenie</string>
     <string name="diagnostics_mode_idle">bezczynny</string>
     <string name="diagnostics_mode_connected">połączony</string>
@@ -138,4 +148,15 @@
     <string name="update_available">Dostępna %1$s (masz %2$s) — uruchom install.sh albo otwórz github.com/mkatadev/GoogleTVAirPlay/releases</string>
     <string name="update_failed">Wersja %1$s — nie udało się sprawdzić (brak internetu?). Wybierz, aby ponowić</string>
     <string name="footer_update">Dostępna aktualizacja %1$s — zobacz Ustawienia</string>
+
+    <!-- Instalacja aktualizacji w aplikacji -->
+    <string name="update_install">Dostępna %1$s — wybierz, aby pobrać i zainstalować</string>
+    <string name="update_downloading">Pobieranie %1$s… %2$d%%</string>
+    <string name="update_verifying">Sprawdzanie sumy kontrolnej…</string>
+    <string name="update_confirm">Potwierdź instalację na ekranie telewizora</string>
+    <string name="update_needs_permission">Zezwól tej aplikacji na „Instalowanie nieznanych aplikacji”, potem wybierz ponownie</string>
+    <string name="update_failed_download">Pobieranie nie powiodło się — wybierz, aby ponowić</string>
+    <string name="update_failed_checksum">Niezgodna suma kontrolna — plik odrzucony, wybierz, aby ponowić</string>
+    <string name="update_failed_installer">Błąd instalatora — użyj install.sh albo wgraj APK ręcznie</string>
+    <string name="update_failed_aborted">Instalacja anulowana — wybierz, aby spróbować ponownie</string>
 </resources>

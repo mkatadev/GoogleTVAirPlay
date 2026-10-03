@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -118,7 +119,7 @@ private fun DiagnosticsContent(
                     InfoRow(
                         stringResource(R.string.diagnostics_video),
                         listOf(d.session.videoCodec, d.session.videoResolution, "${d.session.videoFps} fps",
-                            stringResource(R.string.diagnostics_dropped, d.session.droppedFrames))
+                            pluralStringResource(R.plurals.diagnostics_dropped, d.session.droppedFrames.toInt(), d.session.droppedFrames.toInt()))
                             .filter { it.isNotBlank() }.joinToString(" · "),
                     )
                 }
@@ -127,7 +128,7 @@ private fun DiagnosticsContent(
                 item {
                     InfoRow(
                         stringResource(R.string.diagnostics_audio),
-                        listOf(d.session.audioCodec, stringResource(R.string.diagnostics_underruns, d.session.audioUnderruns))
+                        listOf(d.session.audioCodec, pluralStringResource(R.plurals.diagnostics_underruns, d.session.audioUnderruns, d.session.audioUnderruns))
                             .filter { it.isNotBlank() }.joinToString(" · "),
                     )
                 }

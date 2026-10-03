@@ -88,8 +88,14 @@
     <string name="diagnostics_clients">Connected devices</string>
     <string name="diagnostics_video">Video</string>
     <string name="diagnostics_audio">Audio</string>
-    <string name="diagnostics_dropped">%1$d dropped</string>
-    <string name="diagnostics_underruns">%1$d underruns</string>
+    <plurals name="diagnostics_dropped">
+        <item quantity="one">%d dropped frame</item>
+        <item quantity="other">%d dropped frames</item>
+    </plurals>
+    <plurals name="diagnostics_underruns">
+        <item quantity="one">%d underrun</item>
+        <item quantity="other">%d underruns</item>
+    </plurals>
     <string name="diagnostics_last_event">Last event</string>
     <string name="diagnostics_mode_idle">idle</string>
     <string name="diagnostics_mode_connected">connected</string>
@@ -134,4 +140,15 @@
     <string name="update_available">%1$s available (you have %2$s) — run install.sh or open github.com/mkatadev/GoogleTVAirPlay/releases</string>
     <string name="update_failed">Version %1$s — could not check (offline?). Select to retry</string>
     <string name="footer_update">Update %1$s available — see Settings</string>
+
+    <!-- In-app update install -->
+    <string name="update_install">%1$s available — select to download and install</string>
+    <string name="update_downloading">Downloading %1$s… %2$d%%</string>
+    <string name="update_verifying">Verifying checksum…</string>
+    <string name="update_confirm">Confirm the installation on the TV screen</string>
+    <string name="update_needs_permission">Allow “Install unknown apps” for this app, then select again</string>
+    <string name="update_failed_download">Download failed — select to retry</string>
+    <string name="update_failed_checksum">Checksum mismatch — download discarded, select to retry</string>
+    <string name="update_failed_installer">Installer error — use install.sh or sideload the APK</string>
+    <string name="update_failed_aborted">Installation cancelled — select to try again</string>
 </resources>
