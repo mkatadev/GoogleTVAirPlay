@@ -8,10 +8,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.media.app.NotificationCompat as MediaNotificationCompat
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaStyleNotificationHelper
 import pl.prodevcode.airplay.R
 import pl.prodevcode.airplay.audio.TrackInfo
 
@@ -24,7 +24,7 @@ internal class ServiceNotifications(
         val track: TrackInfo,
         val audioOnly: Boolean,
         val pin: String?,
-        val sessionToken: MediaSessionCompat.Token?,
+        val session: MediaSession?,
     )
 
     var foreground = false
@@ -71,9 +71,9 @@ internal class ServiceNotifications(
         if (isAudio) {
             builder.setContentTitle(s.track.title).setContentText(s.track.artist).setSubText(s.track.album)
             s.track.coverArt?.let { builder.setLargeIcon(it) }
-            s.sessionToken?.let { token ->
+            s.session?.let { session ->
                 builder.setStyle(
-                    MediaNotificationCompat.MediaStyle().setMediaSession(token).setShowActionsInCompactView(0, 1, 2)
+                    MediaStyleNotificationHelper.MediaStyle(session).setShowActionsInCompactView(0, 1, 2)
                 )
                 builder.addAction(android.R.drawable.ic_media_previous, "Prev", action(AirPlayService.ACTION_PREV))
                 builder.addAction(android.R.drawable.ic_media_pause, "Pause", action(AirPlayService.ACTION_PLAY_PAUSE))

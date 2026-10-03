@@ -61,7 +61,7 @@ Clean Architecture + MVI. Dependency direction: `presentation → domain ← dat
 - `service/VideoSession` — AirPlay Video (HLS) state + `AirPlayVideoPlayer` wrapper.
 - `audio/NowPlayingState` — track metadata, artwork bytes, extrapolated position.
 - `audio/VolumeSync` — two-way volume (RAOP ↔ DACP), `audio/DacpController`, `audio/DacpPlayer` (Media3 `SimpleBasePlayer`).
-- `service/MediaSessionController` — `MediaSessionCompat` (pending migration to Media3 `MediaSession`), `service/ServiceNotifications` — foreground notification.
+- `service/MediaSessionController` — Media3 `MediaSession` whose player is switched between `DacpPlayer` (audio) and the AirPlay Video ExoPlayer; `service/ServiceNotifications` — foreground notification (`MediaStyleNotificationHelper`).
 - `discovery/NsdServiceManager` — mDNS registration + `status`; `discovery/NetworkWatcher` — re-announce after network change.
 - `renderer/VideoRenderer`, `DecoderSelector`, `VideoPipeline`, `AudioRenderer` — mirroring decode/render; `bridge/NativeBridge` — the only JNI surface.
 - State crosses to `:app` only as `StateFlow`s on the service; the app maps them in `ReceiverRepositoryImpl`.

@@ -38,6 +38,8 @@ class AirPlayVideoPlayer(private val context: Context) {
     var onVideoSize: ((width: Int, height: Int, aspect: Float) -> Unit)? = null
     var onTitle: ((String?) -> Unit)? = null
     var onEnded: (() -> Unit)? = null
+    /** Fires with the live ExoPlayer on /play and with null when it is released; lets a MediaSession follow it. */
+    var onPlayerChanged: ((Player?) -> Unit)? = null
 
     private val _reportTick = object : Runnable {
         override fun run() {
@@ -76,6 +78,7 @@ class AirPlayVideoPlayer(private val context: Context) {
             pendingSurface?.let { s -> it.setVideoSurface(s) }
         }
         player = p
+        onPlayerChanged?.invoke(p)
         p.setMediaItem(MediaItem.fromUri(location), (startPositionSeconds * 1000).toLong())
         p.playWhenReady = true
         p.prepare()
@@ -144,6 +147,7 @@ class AirPlayVideoPlayer(private val context: Context) {
     private fun _stopInternal(reportStopped: Boolean) {
         mainHandler.removeCallbacks(_reportTick)
         player?.let {
+            onPlayerChanged?.invoke(null)
             it.removeListener(_listener)
             it.release()
         }

@@ -40,9 +40,9 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     api(libs.androidx.lifecycle.service)
-    implementation(libs.androidx.media)
     api(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.session)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.oboe)
 }

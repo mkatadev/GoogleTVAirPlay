@@ -1,5 +1,6 @@
 package pl.prodevcode.airplay.service
 
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -12,7 +13,6 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
-import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import android.view.Surface
 import androidx.core.content.ContextCompat
@@ -162,7 +162,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
                 track = nowPlaying.track.value,
                 audioOnly = _audioOnly.value,
                 pin = lastPin,
-                sessionToken = mediaSession.token,
+                session = mediaSession.session,
             )
         }
         notifications.createChannel()
@@ -182,7 +182,10 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             positionMs = nowPlaying::currentPositionMs,
             setPlaying = ::setPlaying,
         )
-        mediaSession = MediaSessionController(this, mediaSessionCallback())
+        mediaSession = MediaSessionController(
+            this, idlePlayer = dacpPlayer,
+            sessionActivity = PendingIntent.getActivity(this, 0, notifications.launcherIntent(), PendingIntent.FLAG_IMMUTABLE),
+        )
         volumeSync = VolumeSync(this, audioManager, dacp = { dacpController }, sessionActive = { _connectionCount.value > 0 })
         volumeSync.start()
         networkWatcher = NetworkWatcher(this) { addrs ->
@@ -207,13 +210,13 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         }
         ContextCompat.registerReceiver(this, mediaReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
 
+        video.player.onPlayerChanged = { mediaSession.attachVideoPlayer(it) }
         video.bind(
             onEnded = { endVideoPlayback("AirPlay Video stopped (player)") },
             onPlaybackInfo = { snapshot ->
                 if (nativeHandle != 0L) {
                     NativeBridge.nativeUpdatePlaybackInfo(nativeHandle, snapshot.position, snapshot.duration, snapshot.rate, snapshot.ready)
                 }
-                if (video.active.value) mediaSession.setVideoState(snapshot.position, snapshot.rate)
             },
         )
         lifecycleScope.launch {
@@ -232,25 +235,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             ?: prefs.getBoolean(Prefs.SCHEDULED_OUTPUT_BUFFER_RELEASE, Prefs.DEF_SCHEDULED_OUTPUT_BUFFER_RELEASE)
     }
 
-    private fun mediaSessionCallback() = object : MediaSessionCompat.Callback() {
-        override fun onPlay() {
-            if (video.active.value) { video.setPlaying(true); return }
-            setPlaying(true)
-            dacpController?.play()
-        }
-        override fun onPause() {
-            if (video.active.value) { video.setPlaying(false); return }
-            setPlaying(false)
-            dacpController?.pause()
-        }
-        override fun onStop() { if (video.active.value) stopVideoPlayback() }
-        override fun onFastForward() { if (video.active.value) video.seekBy(VIDEO_SEEK_STEP_MS) }
-        override fun onRewind() { if (video.active.value) video.seekBy(-VIDEO_SEEK_STEP_MS) }
-        override fun onSeekTo(pos: Long) { if (video.active.value) video.scrub(pos / 1000f) }
-        override fun onSkipToNext() { if (!video.active.value) dacpController?.nextItem() }
-        override fun onSkipToPrevious() { if (!video.active.value) dacpController?.prevItem() }
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_START_SERVER) {
             notifications.promoteToForeground()
@@ -263,7 +247,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     override fun onDestroy() {
         stopServer()
-        dacpPlayer.release()
         mediaReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
         mediaReceiver = null
         volumeSync.release()
@@ -406,7 +389,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         dacpController?.reset()
         videoRenderer.release()
         video.reset()
-        mediaSession.active = false
         _audioOnly.value = false
         _mirroringActive.value = false
         nowPlaying.clear()
@@ -473,7 +455,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     private fun endVideoPlayback(message: String) {
         if (!video.end()) return
-        if (!_audioOnly.value) mediaSession.active = false
         log(message)
     }
 
@@ -488,8 +469,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onVideoPlay(location: String, startPositionSeconds: Float) {
         video.play(location, startPositionSeconds)
         bringUiToFront()
-        // claim media-button routing for keys that arrive as media-session events
-        mediaSession.active = true
         log("AirPlay Video play: $location @ ${startPositionSeconds}s")
     }
 
@@ -568,7 +547,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         nowPlaying.clear()
         dacpController?.reset()
         volumeSync.onSessionEnded()
-        mediaSession.active = false
         refreshDacpPlayer()
         updateNotification()
         log("Client disconnected (0)")
@@ -636,10 +614,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         _audioOnly.value = audioOnly
         refreshDacpPlayer()
         if (audioOnly && !prev) {
-            mediaSession.active = true
             log("Audio mode")
         } else if (!audioOnly && prev) {
-            mediaSession.active = false
             nowPlaying.clear()
             updateNotification()
             log("Mirror mode")
@@ -652,17 +628,9 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         updatePlaybackState()
     }
 
-    private fun updateMediaMetadata() {
-        mediaSession.setMetadata(nowPlaying.track.value, nowPlaying.durationMs.value)
-        updateNotification()
-    }
+    private fun updateMediaMetadata() = updateNotification()
 
-    private fun updatePlaybackState() {
-        // the sender's silent raop audio session must not overwrite video session state
-        if (video.active.value) return
-        mediaSession.setAudioState(nowPlaying.playing.value, nowPlaying.positionMs.value)
-        updateNotification()
-    }
+    private fun updatePlaybackState() = updateNotification()
 
     private fun refreshDacpPlayer() {
         mainHandler.post { dacpPlayer.refresh() }
