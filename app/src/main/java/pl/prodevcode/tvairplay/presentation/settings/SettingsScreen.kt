@@ -46,6 +46,7 @@ import pl.prodevcode.tvairplay.domain.model.IDLE_DIM_OPTIONS
 import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
+import pl.prodevcode.tvairplay.domain.model.UpdateCheck
 import pl.prodevcode.tvairplay.presentation.components.SupportingText
 import pl.prodevcode.tvairplay.presentation.components.appListItemColors
 import pl.prodevcode.tvairplay.presentation.theme.AirPlayColors
@@ -209,6 +210,13 @@ private fun SettingsContent(
             item { Section(stringResource(R.string.section_about)) }
             item {
                 ValueRow(
+                    title = stringResource(R.string.setting_update),
+                    value = updateLabel(ui.update),
+                    onClick = { onIntent(SettingsIntent.CheckForUpdate) },
+                )
+            }
+            item {
+                ValueRow(
                     title = stringResource(R.string.setting_diagnostics),
                     value = stringResource(R.string.setting_diagnostics_desc),
                     onClick = onOpenDiagnostics,
@@ -289,6 +297,14 @@ private fun ValueRow(title: String, value: String, onClick: () -> Unit) {
         supportingContent = { SupportingText(value) },
         colors = appListItemColors(),
     )
+}
+
+@Composable
+private fun updateLabel(check: UpdateCheck): String = when (check) {
+    UpdateCheck.Idle, UpdateCheck.Checking -> stringResource(R.string.update_checking)
+    is UpdateCheck.UpToDate -> stringResource(R.string.update_up_to_date, check.currentVersion)
+    is UpdateCheck.Available -> stringResource(R.string.update_available, check.update.latestVersion, check.update.currentVersion)
+    is UpdateCheck.Failed -> stringResource(R.string.update_failed, check.currentVersion)
 }
 
 @Composable

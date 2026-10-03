@@ -28,6 +28,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 - 🌙 **Screen dimming** while music plays (OLED-friendly); a paused session lets the TV sleep
 - 🔁 **Survives short drop-outs** — locking the iPhone no longer ends audio/video playback
 - 🚀 **Runs in the background** and **starts at boot** — the TV is always ready to receive
+- 🔔 **Update check** — compares with GitHub Releases and tells you when a newer version is out (no auto-download, no telemetry)
 - 🎛️ Built for the remote: Compose for TV UI, no touch required
 - 🌍 English and Polish
 

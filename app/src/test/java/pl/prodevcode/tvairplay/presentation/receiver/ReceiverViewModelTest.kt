@@ -1,6 +1,7 @@
 package pl.prodevcode.tvairplay.presentation.receiver
 
 import app.cash.turbine.test
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,7 +16,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import pl.prodevcode.tvairplay.domain.model.AppUpdate
 import pl.prodevcode.tvairplay.domain.model.DeviceInfo
+import pl.prodevcode.tvairplay.domain.model.UpdateCheck
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
@@ -25,6 +28,7 @@ import pl.prodevcode.tvairplay.domain.repository.DeviceInfoRepository
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
 import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
+import pl.prodevcode.tvairplay.domain.repository.UpdateRepository
 import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveReceiverStateUseCase
@@ -34,6 +38,8 @@ import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StopReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ToggleReceiverUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
+import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
 import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 import pl.prodevcode.tvairplay.presentation.MainDispatcherRule
 
@@ -64,7 +70,22 @@ class ReceiverViewModelTest {
         stopReceiver = StopReceiverUseCase(receiverRepo),
         playback = PlaybackControlUseCase(receiverRepo),
         surfaces = mockk<VideoSurfaceHost>(relaxed = true),
+        observeUpdate = ObserveUpdateUseCase(updateRepo),
+        checkForUpdate = CheckForUpdateUseCase(updateRepo),
     )
+    private val updateState = MutableStateFlow<UpdateCheck>(UpdateCheck.Idle)
+    private val updateRepo = mockk<UpdateRepository>(relaxed = true) { every { state } returns updateState }
+
+    @Test fun `idle screen learns about a newer release`() = runTest {
+        val vm = viewModel()
+        vm.onIntent(ReceiverIntent.EnsureStarted)
+        advanceUntilIdle()
+        coVerify { updateRepo.check(false) }
+        assertEquals(null, vm.state.value.updateAvailable)
+        updateState.value = UpdateCheck.Available(AppUpdate("1.0.0", "1.1.0", "https://x"))
+        advanceUntilIdle()
+        assertEquals("1.1.0", vm.state.value.updateAvailable)
+    }
 
     @Test fun `state combines receiver, device, settings and overlay`() = runTest {
         receiverState.value = ReceiverState(status = ReceiverStatus.RUNNING, connectedClients = 1)

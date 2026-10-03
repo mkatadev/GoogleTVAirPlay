@@ -15,6 +15,8 @@ data class ReceiverUiState(
     val overlayPermissionGranted: Boolean = true,
     /** Audio-only session idle long enough: show the dim overlay, let the TV sleep when paused. */
     val dimmed: Boolean = false,
+    /** Newer release tag when one exists; shown as a hint on the idle screen. */
+    val updateAvailable: String? = null,
 ) : UiState
 
 sealed interface ReceiverIntent : UiIntent {

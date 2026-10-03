@@ -126,4 +126,12 @@
         <item quantity="one">After %d minute</item>
         <item quantity="other">After %d minutes</item>
     </plurals>
+
+    <!-- Updates -->
+    <string name="setting_update">App update</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">Version %1$s — up to date</string>
+    <string name="update_available">%1$s available (you have %2$s) — run install.sh or open github.com/mkatadev/GoogleTVAirPlay/releases</string>
+    <string name="update_failed">Version %1$s — could not check (offline?). Select to retry</string>
+    <string name="footer_update">Update %1$s available — see Settings</string>
 </resources>

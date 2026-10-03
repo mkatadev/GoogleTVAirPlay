@@ -8,6 +8,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import pl.prodevcode.tvairplay.domain.model.SessionMode
+import pl.prodevcode.tvairplay.domain.model.UpdateCheck
+import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveReceiverStateUseCase
@@ -33,6 +36,8 @@ class ReceiverViewModel @Inject constructor(
     private val stopReceiver: StopReceiverUseCase,
     private val playback: PlaybackControlUseCase,
     private val surfaces: VideoSurfaceHost,
+    observeUpdate: ObserveUpdateUseCase,
+    private val checkForUpdate: CheckForUpdateUseCase,
 ) : MviViewModel<ReceiverUiState, Intent, ReceiverEffect>(ReceiverUiState()) {
 
     private var idleTimer: Job? = null
@@ -54,9 +59,15 @@ class ReceiverViewModel @Inject constructor(
         }.reduceInto { (ui, key) ->
             // a new track, play/pause or a mode change counts as activity
             if (key != lastIdleKey) { lastIdleKey = key; restartIdleTimer(key.mode) }
-            withDerived(ui.copy(dimmed = idleDimmed && key.mode == SessionMode.AUDIO))
+            withDerived(ui.copy(dimmed = idleDimmed && key.mode == SessionMode.AUDIO, updateAvailable = latestRelease))
+        }
+        observeUpdate().reduceInto {
+            latestRelease = (it as? UpdateCheck.Available)?.update?.latestVersion
+            copy(updateAvailable = latestRelease)
         }
     }
+
+    private var latestRelease: String? = null
 
     private data class IdleKey(val mode: SessionMode, val title: String, val playing: Boolean)
     private var lastIdleKey: IdleKey? = null
@@ -86,7 +97,10 @@ class ReceiverViewModel @Inject constructor(
 
     override fun onIntent(intent: Intent) {
         when (intent) {
-            Intent.EnsureStarted -> startReceiver()
+            Intent.EnsureStarted -> {
+                startReceiver()
+                viewModelScope.launch { checkForUpdate() }
+            }
             Intent.AppResumed -> observeOverlay.refresh()
             // leaving the foreground never interrupts an active session
             Intent.AppBackgrounded -> with(currentState) {

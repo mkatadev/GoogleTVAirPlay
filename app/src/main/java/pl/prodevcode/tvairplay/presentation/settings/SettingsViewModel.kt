@@ -14,6 +14,8 @@ import pl.prodevcode.tvairplay.domain.usecase.RestartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.UpdateSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ForgetTrustedDeviceUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
+import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
 import pl.prodevcode.tvairplay.presentation.mvi.MviViewModel
 import pl.prodevcode.tvairplay.presentation.settings.SettingsIntent as Intent
 
@@ -26,6 +28,8 @@ class SettingsViewModel @Inject constructor(
     private val requestOverlay: RequestOverlayPermissionUseCase,
     observeTrustedDevices: ObserveTrustedDevicesUseCase,
     private val forgetTrustedDevice: ForgetTrustedDeviceUseCase,
+    observeUpdate: ObserveUpdateUseCase,
+    private val checkForUpdate: CheckForUpdateUseCase,
 ) : MviViewModel<SettingsUiState, Intent, SettingsEffect>(SettingsUiState()) {
 
     private var restartJob: Job? = null
@@ -34,11 +38,16 @@ class SettingsViewModel @Inject constructor(
         observeSettings().reduceInto { copy(settings = it) }
         observeOverlay().reduceInto { copy(overlayGranted = it) }
         observeTrustedDevices().reduceInto { copy(trustedDevices = it) }
+        observeUpdate().reduceInto { copy(update = it) }
     }
 
     override fun onIntent(intent: Intent) {
         when (intent) {
-            Intent.ScreenResumed -> observeOverlay.refresh()
+            Intent.ScreenResumed -> {
+                observeOverlay.refresh()
+                viewModelScope.launch { checkForUpdate() }
+            }
+            Intent.CheckForUpdate -> viewModelScope.launch { checkForUpdate(force = true) }
             Intent.GrantOverlay -> requestOverlay()
             Intent.PickDeviceName -> setState { copy(pickingDeviceName = true) }
             is Intent.DeviceNamePicked -> {

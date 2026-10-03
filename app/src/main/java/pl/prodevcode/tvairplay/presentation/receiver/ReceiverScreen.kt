@@ -82,6 +82,7 @@ private fun ReceiverContent(
                 SessionMode.IDLE, SessionMode.CONNECTED -> IdleScreen(
                     state = state,
                     device = ui.device,
+                    updateAvailable = ui.updateAvailable,
                     onToggleReceiver = { onIntent(ReceiverIntent.ToggleReceiver) },
                     onOpenSettings = onOpenSettings,
                     overlayPermissionGranted = ui.overlayPermissionGranted,

@@ -3,6 +3,7 @@ package pl.prodevcode.tvairplay.presentation.settings
 import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
+import pl.prodevcode.tvairplay.domain.model.UpdateCheck
 import pl.prodevcode.tvairplay.presentation.mvi.NoEffect
 import pl.prodevcode.tvairplay.presentation.mvi.UiIntent
 import pl.prodevcode.tvairplay.presentation.mvi.UiState
@@ -15,10 +16,12 @@ data class SettingsUiState(
     val managingTrustedDevices: Boolean = false,
     val pickingLatencyMode: Boolean = false,
     val pickingIdleDim: Boolean = false,
+    val update: UpdateCheck = UpdateCheck.Idle,
 ) : UiState
 
 sealed interface SettingsIntent : UiIntent {
     data object ScreenResumed : SettingsIntent
+    data object CheckForUpdate : SettingsIntent
     data object GrantOverlay : SettingsIntent
 
     data object PickDeviceName : SettingsIntent

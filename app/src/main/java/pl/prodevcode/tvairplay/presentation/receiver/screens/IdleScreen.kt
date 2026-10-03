@@ -58,6 +58,7 @@ fun IdleScreen(
     onOpenSettings: () -> Unit,
     overlayPermissionGranted: Boolean = true,
     onGrantOverlay: () -> Unit = {},
+    updateAvailable: String? = null,
 ) {
     val running = state.status == ReceiverStatus.RUNNING
     val connected = state.connectedClients > 0
@@ -146,9 +147,9 @@ fun IdleScreen(
             modifier = Modifier.align(Alignment.BottomStart).padding(40.dp),
         )
         Text(
-            text = stringResource(R.string.footer_credit),
+            text = updateAvailable?.let { stringResource(R.string.footer_update, it) } ?: stringResource(R.string.footer_credit),
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (updateAvailable != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
         )
         if (state.lastLog.isNotBlank()) {
