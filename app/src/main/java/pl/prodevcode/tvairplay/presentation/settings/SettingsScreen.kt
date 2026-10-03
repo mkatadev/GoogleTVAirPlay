@@ -42,6 +42,7 @@ import androidx.tv.material3.Text
 import pl.prodevcode.tvairplay.R
 import java.text.DateFormat
 import java.util.Date
+import pl.prodevcode.tvairplay.domain.model.IDLE_DIM_OPTIONS
 import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.TrustedDevice
@@ -93,6 +94,17 @@ private fun SettingsContent(
             DeviceNamePicker(current = s.deviceName) { onIntent(SettingsIntent.DeviceNamePicked(it)) }
             return@Row
         }
+        if (ui.pickingIdleDim) {
+            BackHandler { onIntent(SettingsIntent.IdleDimPicked(null)) }
+            OptionPicker(
+                title = stringResource(R.string.setting_idle_dim),
+                options = IDLE_DIM_OPTIONS,
+                current = s.idleDimMinutes,
+                label = { idleDimLabel(it) },
+                onPicked = { onIntent(SettingsIntent.IdleDimPicked(it)) },
+            )
+            return@Row
+        }
         if (ui.pickingLatencyMode) {
             BackHandler { onIntent(SettingsIntent.LatencyModePicked(null)) }
             LatencyModePicker(current = s.latencyMode) { onIntent(SettingsIntent.LatencyModePicked(it)) }
@@ -135,6 +147,13 @@ private fun SettingsContent(
                 ToggleRow(stringResource(R.string.setting_open_on_connect), stringResource(R.string.setting_open_on_connect_desc), s.openAppOnConnect) {
                     onIntent(SettingsIntent.SetOpenAppOnConnect(it))
                 }
+            }
+            item {
+                ValueRow(
+                    title = stringResource(R.string.setting_idle_dim),
+                    value = idleDimLabel(s.idleDimMinutes),
+                    onClick = { onIntent(SettingsIntent.PickIdleDim) },
+                )
             }
             item {
                 ValueRow(
@@ -270,6 +289,44 @@ private fun ValueRow(title: String, value: String, onClick: () -> Unit) {
         supportingContent = { SupportingText(value) },
         colors = appListItemColors(),
     )
+}
+
+@Composable
+private fun idleDimLabel(minutes: Int): String =
+    if (minutes <= 0) stringResource(R.string.idle_dim_never)
+    else pluralStringResource(R.plurals.idle_dim_minutes, minutes, minutes)
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun <T> OptionPicker(
+    title: String,
+    options: List<T>,
+    current: T,
+    label: @Composable (T) -> String,
+    onPicked: (T?) -> Unit,
+) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item { Section(title) }
+        items(options) { option ->
+            ListItem(
+                selected = option == current,
+                onClick = { onPicked(option) },
+                headlineContent = { Text(label(option)) },
+                trailingContent = { if (option == current) Icon(Icons.Default.Check, null) },
+                colors = appListItemColors(),
+            )
+        }
+        item {
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = { onPicked(null) }) { Text(stringResource(R.string.action_back)) }
+            }
+        }
+    }
 }
 
 private fun latencyModeTitle(mode: LatencyMode) = when (mode) {

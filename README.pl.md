@@ -25,6 +25,8 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 - ⏱️ **Presety opóźnienia** — Niskie / Zrównoważone / Płynne, przełączane na żywo (gry vs. słabe Wi-Fi)
 - 🔒 **Parowanie PIN-em** (domyślnie włączone) — urządzenia, które raz wpisały PIN, są zapamiętywane; zarządzasz nimi w *Ustawienia → Zaufane urządzenia*
 - 🩺 **Diagnostyka** — sprawdzenie odbiornika, sieci, rozgłaszania mDNS i portu z podpowiedziami po ludzku; po zmianie sieci TV rozgłasza się ponownie automatycznie
+- 🌙 **Przyciemnianie ekranu** przy muzyce (przyjazne OLED); zapauzowana sesja pozwala TV usnąć
+- 🔁 **Odporność na chwilowe zerwania** — zablokowanie iPhone'a nie kończy już odtwarzania audio/wideo
 - 🚀 **Działa w tle** i **startuje z telewizorem** — odbiornik zawsze gotowy
 - 🎛️ Zaprojektowany pod pilota: UI w Compose for TV, bez dotyku
 - 🌍 Polski i angielski

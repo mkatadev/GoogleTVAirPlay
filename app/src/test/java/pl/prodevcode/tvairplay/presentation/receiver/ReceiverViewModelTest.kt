@@ -6,7 +6,9 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,6 +16,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import pl.prodevcode.tvairplay.domain.model.DeviceInfo
+import pl.prodevcode.tvairplay.domain.model.NowPlaying
+import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
 import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
@@ -113,6 +117,47 @@ class ReceiverViewModelTest {
         advanceUntilIdle()
         vm.onIntent(ReceiverIntent.ToggleReceiver)
         verify { receiverRepo.start() }
+    }
+
+    @Test fun `audio session dims after the idle timeout and any key wakes it`() = runTest {
+        settingsFlow.value = ReceiverSettings(idleDimMinutes = 1)
+        receiverState.value = ReceiverState(
+            status = ReceiverStatus.RUNNING, mode = SessionMode.AUDIO, connectedClients = 1,
+            nowPlaying = NowPlaying(title = "Song", playing = true),
+        )
+        val vm = viewModel()
+        runCurrent()
+        assertFalse(vm.state.value.dimmed)
+
+        advanceTimeBy(61_000)
+        assertTrue(vm.state.value.dimmed)
+        assertTrue("playing music keeps the panel on", vm.state.value.keepScreenOn)
+
+        receiverState.value = receiverState.value.copy(nowPlaying = NowPlaying(title = "Song", playing = false))
+        runCurrent()
+        // pause is activity: timer restarts, then paused + dimmed lets the TV sleep
+        assertFalse(vm.state.value.dimmed)
+        advanceTimeBy(61_000)
+        assertTrue(vm.state.value.dimmed)
+        assertFalse(vm.state.value.keepScreenOn)
+
+        vm.onIntent(ReceiverIntent.UserInteraction)
+        runCurrent()
+        assertFalse(vm.state.value.dimmed)
+        assertTrue(vm.state.value.keepScreenOn)
+    }
+
+    @Test fun `mirroring never dims and dimming can be disabled`() = runTest {
+        settingsFlow.value = ReceiverSettings(idleDimMinutes = 1)
+        receiverState.value = ReceiverState(status = ReceiverStatus.RUNNING, mode = SessionMode.MIRRORING, connectedClients = 1)
+        val vm = viewModel()
+        advanceTimeBy(120_000)
+        assertFalse(vm.state.value.dimmed)
+
+        settingsFlow.value = ReceiverSettings(idleDimMinutes = 0)
+        receiverState.value = receiverState.value.copy(mode = SessionMode.AUDIO, nowPlaying = NowPlaying(title = "x", playing = true))
+        advanceTimeBy(600_000)
+        assertFalse(vm.state.value.dimmed)
     }
 
     @Test fun `transport intents are forwarded`() = runTest {

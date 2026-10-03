@@ -73,6 +73,9 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     lateinit var dacpPlayer: DacpPlayer
         private set
     private var mediaReceiver: BroadcastReceiver? = null
+    // tcp connections currently open; _connectionCount is what the ui sees and lags by the grace period
+    private var liveConnections = 0
+    private val sessionEnd = Runnable { finishSession() }
 
     // --- state exposed to the app -------------------------------------------------------------------
 
@@ -397,6 +400,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     fun stopServer() {
+        mainHandler.removeCallbacks(sessionEnd)
+        liveConnections = 0
         releaseServerResources()
         dacpController?.reset()
         videoRenderer.release()
@@ -520,6 +525,14 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onClientVolume(): Float = volumeSync.clientVolumeDb()
 
     override fun onConnectionInit() {
+        liveConnections++
+        // a sender that dropped moments ago (iPhone lock, wi-fi power save) is the same session
+        val resumed = mainHandler.hasCallbacks(sessionEnd)
+        mainHandler.removeCallbacks(sessionEnd)
+        if (resumed) {
+            log("Client reconnected (${_connectionCount.value})")
+            return
+        }
         val firstConnection = _connectionCount.value == 0
         _connectionCount.value++
         log("Client connected (${_connectionCount.value})")
@@ -532,22 +545,33 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     override fun onConnectionDestroy() {
-        _connectionCount.value = (_connectionCount.value - 1).coerceAtLeast(0)
-        if (_connectionCount.value == 0) {
-            // clients may drop without POST /stop; must run before the poll-state reset
-            endVideoPlayback("AirPlay Video stopped (disconnect)")
-            // last client gone: release audio output devices to save power
-            audioRenderer.stop()
-            _audioOnly.value = false
-            video.onAllClientsGone()
-            nowPlaying.clear()
-            dacpController?.reset()
-            volumeSync.onSessionEnded()
-            mediaSession.active = false
-            refreshDacpPlayer()
-            updateNotification()
+        liveConnections = (liveConnections - 1).coerceAtLeast(0)
+        if (liveConnections > 0) {
+            _connectionCount.value = (_connectionCount.value - 1).coerceAtLeast(1)
+            log("Client disconnected (${_connectionCount.value})")
+            return
         }
-        log("Client disconnected (${_connectionCount.value})")
+        // keep the session alive briefly: locking an iPhone often drops and re-opens the control connection
+        log("Last client gone, holding session ${SESSION_GRACE_MS / 1000}s")
+        mainHandler.removeCallbacks(sessionEnd)
+        mainHandler.postDelayed(sessionEnd, SESSION_GRACE_MS)
+    }
+
+    private fun finishSession() {
+        _connectionCount.value = 0
+        // clients may drop without POST /stop; must run before the poll-state reset
+        endVideoPlayback("AirPlay Video stopped (disconnect)")
+        // last client gone: release audio output devices to save power
+        audioRenderer.stop()
+        _audioOnly.value = false
+        video.onAllClientsGone()
+        nowPlaying.clear()
+        dacpController?.reset()
+        volumeSync.onSessionEnded()
+        mediaSession.active = false
+        refreshDacpPlayer()
+        updateNotification()
+        log("Client disconnected (0)")
     }
 
     override fun onConnectionReset(reason: Int) {
@@ -702,6 +726,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         const val ACTION_START_SERVER = "pl.prodevcode.airplay.START_SERVER"
         // shared with dpad/double-tap seeks
         const val VIDEO_SEEK_STEP_MS = 10_000L
+        private const val SESSION_GRACE_MS = 8_000L
 
         private const val AUDIO_CONFIG_DEBOUNCE_MS = 500L
     }

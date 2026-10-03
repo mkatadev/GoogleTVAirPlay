@@ -56,6 +56,11 @@ class SettingsViewModel @Inject constructor(
             is Intent.SetAdvertiseVideo -> update(restart = true) { copy(advertiseVideo = intent.enabled) }
             is Intent.SetAdvertiseAudio -> update(restart = true) { copy(advertiseAudio = intent.enabled) }
             is Intent.SetHevcEnabled -> update(restart = true) { copy(hevcEnabled = intent.enabled) }
+            Intent.PickIdleDim -> setState { copy(pickingIdleDim = true) }
+            is Intent.IdleDimPicked -> {
+                setState { copy(pickingIdleDim = false) }
+                intent.minutes?.let { m -> update { copy(idleDimMinutes = m) } }
+            }
             Intent.PickLatencyMode -> setState { copy(pickingLatencyMode = true) }
             is Intent.LatencyModePicked -> {
                 setState { copy(pickingLatencyMode = false) }

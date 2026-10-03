@@ -13,6 +13,8 @@ data class ReceiverUiState(
     val keepScreenOn: Boolean = false,
     val runInBackground: Boolean = true,
     val overlayPermissionGranted: Boolean = true,
+    /** Audio-only session idle long enough: show the dim overlay, let the TV sleep when paused. */
+    val dimmed: Boolean = false,
 ) : UiState
 
 sealed interface ReceiverIntent : UiIntent {
@@ -22,6 +24,8 @@ sealed interface ReceiverIntent : UiIntent {
     data object AppBackgrounded : ReceiverIntent
     data object ToggleReceiver : ReceiverIntent
     data object GrantOverlay : ReceiverIntent
+    /** Any remote key: wakes a dimmed screen and restarts the idle timer. */
+    data object UserInteraction : ReceiverIntent
 
     data object PlayPause : ReceiverIntent
     data class SeekBy(val deltaMs: Long) : ReceiverIntent

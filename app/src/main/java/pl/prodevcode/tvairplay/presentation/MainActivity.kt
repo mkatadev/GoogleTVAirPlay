@@ -41,6 +41,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        receiverViewModel.onIntent(ReceiverIntent.UserInteraction)
+    }
+
     override fun onResume() {
         super.onResume()
         receiverViewModel.onIntent(ReceiverIntent.AppResumed)

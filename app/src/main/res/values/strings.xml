@@ -118,4 +118,12 @@
     <string name="latency_balanced_desc">Default — good for most content</string>
     <string name="latency_smooth">Smooth</string>
     <string name="latency_smooth_desc">Larger buffer for video and shaky Wi-Fi; every frame is shown, delay grows slightly</string>
+
+    <!-- Idle dim -->
+    <string name="setting_idle_dim">Dim screen while music plays</string>
+    <string name="idle_dim_never">Never</string>
+    <plurals name="idle_dim_minutes">
+        <item quantity="one">After %d minute</item>
+        <item quantity="other">After %d minutes</item>
+    </plurals>
 </resources>

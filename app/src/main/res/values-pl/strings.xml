@@ -120,4 +120,14 @@
     <string name="latency_balanced_desc">Domyślne — dobre dla większości treści</string>
     <string name="latency_smooth">Płynne</string>
     <string name="latency_smooth_desc">Większy bufor do filmów i słabego Wi-Fi; każda klatka jest pokazywana, opóźnienie nieco rośnie</string>
+
+    <!-- Wygaszanie -->
+    <string name="setting_idle_dim">Przyciemniaj ekran przy muzyce</string>
+    <string name="idle_dim_never">Nigdy</string>
+    <plurals name="idle_dim_minutes">
+        <item quantity="one">Po %d minucie</item>
+        <item quantity="few">Po %d minutach</item>
+        <item quantity="many">Po %d minutach</item>
+        <item quantity="other">Po %d minutach</item>
+    </plurals>
 </resources>

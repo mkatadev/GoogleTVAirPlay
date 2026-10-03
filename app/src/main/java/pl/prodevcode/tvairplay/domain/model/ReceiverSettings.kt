@@ -3,6 +3,8 @@ package pl.prodevcode.tvairplay.domain.model
 /** Mirroring/audio trade-off between delay and smoothness. */
 enum class LatencyMode { LOW, BALANCED, SMOOTH }
 
+val IDLE_DIM_OPTIONS = listOf(0, 1, 5, 15)
+
 data class ReceiverSettings(
     val deviceName: String = "Google TV",
     val startOnBoot: Boolean = true,
@@ -15,4 +17,6 @@ data class ReceiverSettings(
     val advertiseVideo: Boolean = true,
     val advertiseAudio: Boolean = true,
     val latencyMode: LatencyMode = LatencyMode.BALANCED,
+    /** Minutes of audio-only idling before the screen dims; 0 = never. */
+    val idleDimMinutes: Int = 5,
 )

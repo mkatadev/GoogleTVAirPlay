@@ -1,8 +1,13 @@
 package pl.prodevcode.tvairplay.presentation.receiver
 
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveReceiverStateUseCase
@@ -30,17 +35,53 @@ class ReceiverViewModel @Inject constructor(
     private val surfaces: VideoSurfaceHost,
 ) : MviViewModel<ReceiverUiState, Intent, ReceiverEffect>(ReceiverUiState()) {
 
+    private var idleTimer: Job? = null
+    private var idleDimMinutes = 0
+
     init {
         combine(observeState(), observeDevice(), observeSettings(), observeOverlay()) { state, device, settings, overlay ->
-            ReceiverUiState(
-                receiver = state,
-                device = device,
-                keepScreenOn = state.connectedClients > 0,
-                runInBackground = settings.runInBackground,
-                // only relevant when we are expected to pop up on connect
-                overlayPermissionGranted = overlay || !settings.openAppOnConnect,
+            idleDimMinutes = settings.idleDimMinutes
+            Pair(
+                ReceiverUiState(
+                    receiver = state,
+                    device = device,
+                    runInBackground = settings.runInBackground,
+                    // only relevant when we are expected to pop up on connect
+                    overlayPermissionGranted = overlay || !settings.openAppOnConnect,
+                ),
+                IdleKey(state.mode, state.nowPlaying.title, state.nowPlaying.playing),
             )
-        }.reduceInto { it }
+        }.reduceInto { (ui, key) ->
+            // a new track, play/pause or a mode change counts as activity
+            if (key != lastIdleKey) { lastIdleKey = key; restartIdleTimer(key.mode) }
+            withDerived(ui.copy(dimmed = idleDimmed && key.mode == SessionMode.AUDIO))
+        }
+    }
+
+    private data class IdleKey(val mode: SessionMode, val title: String, val playing: Boolean)
+    private var lastIdleKey: IdleKey? = null
+    private var idleDimmed = false
+
+    private fun withDerived(ui: ReceiverUiState): ReceiverUiState {
+        val paused = ui.receiver.mode == SessionMode.AUDIO && !ui.receiver.nowPlaying.playing
+        return ui.copy(keepScreenOn = ui.receiver.connectedClients > 0 && !(ui.dimmed && paused))
+    }
+
+    private fun restartIdleTimer(mode: SessionMode) {
+        idleTimer?.cancel()
+        idleDimmed = false
+        if (mode != SessionMode.AUDIO || idleDimMinutes <= 0) return
+        idleTimer = viewModelScope.launch {
+            delay(idleDimMinutes * 60_000L)
+            idleDimmed = true
+            setState { withDerived(copy(dimmed = true)) }
+        }
+    }
+
+    private fun wake() {
+        val wasDimmed = idleDimmed
+        restartIdleTimer(currentState.receiver.mode)
+        if (wasDimmed) setState { withDerived(copy(dimmed = false)) }
     }
 
     override fun onIntent(intent: Intent) {
@@ -53,8 +94,9 @@ class ReceiverViewModel @Inject constructor(
             }
             Intent.ToggleReceiver -> toggleReceiver(currentState.receiver.status)
             Intent.GrantOverlay -> requestOverlay()
+            Intent.UserInteraction -> wake()
 
-            Intent.PlayPause -> playback.togglePlayPause()
+            Intent.PlayPause -> { wake(); playback.togglePlayPause() }
             is Intent.SeekBy -> playback.seekBy(intent.deltaMs)
             is Intent.SeekTo -> playback.seekTo(intent.positionMs)
             Intent.Next -> playback.next()

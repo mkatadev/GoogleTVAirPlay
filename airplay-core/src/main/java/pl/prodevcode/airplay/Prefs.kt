@@ -49,6 +49,8 @@ object Prefs {
     const val IDLE_PREVIEW = "idle_preview"; const val DEF_IDLE_PREVIEW = false
     const val AUTO_FULLSCREEN = "auto_fullscreen"; const val DEF_AUTO_FULLSCREEN = true
     const val KEEP_SCREEN_ON = "keep_screen_on"; const val DEF_KEEP_SCREEN_ON = true
+    /** Minutes of audio-only idling before the now-playing screen dims; 0 = never. */
+    const val IDLE_DIM_MINUTES = "idle_dim_minutes"; const val DEF_IDLE_DIM_MINUTES = 5
     const val ADVERTISE_VIDEO = "advertise_video"; const val DEF_ADVERTISE_VIDEO = true
     const val ADVERTISE_AUDIO = "advertise_audio"; const val DEF_ADVERTISE_AUDIO = true
     const val LAUNCH_ON_CONNECT = "launch_on_connect"; const val DEF_LAUNCH_ON_CONNECT = true

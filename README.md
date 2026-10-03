@@ -25,6 +25,8 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 - ⏱️ **Latency presets** — Low / Balanced / Smooth, switchable live for games vs. shaky Wi-Fi
 - 🔒 **PIN pairing** (on by default) — devices that entered the PIN once are remembered; manage them under *Settings → Trusted devices*
 - 🩺 **Diagnostics** screen — receiver, network, mDNS announcement and port checks with plain-language hints; re-announces automatically when the TV changes network
+- 🌙 **Screen dimming** while music plays (OLED-friendly); a paused session lets the TV sleep
+- 🔁 **Survives short drop-outs** — locking the iPhone no longer ends audio/video playback
 - 🚀 **Runs in the background** and **starts at boot** — the TV is always ready to receive
 - 🎛️ Built for the remote: Compose for TV UI, no touch required
 - 🌍 English and Polish

@@ -14,6 +14,7 @@ data class SettingsUiState(
     val trustedDevices: List<TrustedDevice> = emptyList(),
     val managingTrustedDevices: Boolean = false,
     val pickingLatencyMode: Boolean = false,
+    val pickingIdleDim: Boolean = false,
 ) : UiState
 
 sealed interface SettingsIntent : UiIntent {
@@ -36,6 +37,9 @@ sealed interface SettingsIntent : UiIntent {
     data class SetAdvertiseVideo(val enabled: Boolean) : SettingsIntent
     data class SetAdvertiseAudio(val enabled: Boolean) : SettingsIntent
     data class SetHevcEnabled(val enabled: Boolean) : SettingsIntent
+    data object PickIdleDim : SettingsIntent
+    /** `null` = picker dismissed without a choice. */
+    data class IdleDimPicked(val minutes: Int?) : SettingsIntent
     data object PickLatencyMode : SettingsIntent
     /** `null` = picker dismissed without a choice. */
     data class LatencyModePicked(val mode: LatencyMode?) : SettingsIntent
