@@ -64,10 +64,6 @@ class TrustedDeviceStore(private val prefs: SharedPreferences, private val now: 
         save(emptyList())
     }
 
-    /** Re-read after an external change to the preference (e.g. another process). */
-    @Synchronized
-    fun reload() { _devices.value = load() }
-
     private fun save(list: List<TrustedDevice>) {
         _devices.value = list
         val arr = JSONArray()

@@ -1,5 +1,6 @@
 package pl.prodevcode.airplay.service
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 import pl.prodevcode.airplay.Prefs
 import pl.prodevcode.airplay.audio.DacpController
 import pl.prodevcode.airplay.audio.DacpPlayer
@@ -55,8 +57,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     val videoRenderer = VideoRenderer(this)
     val audioRenderer = AudioRenderer()
-    private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    private val prefs: SharedPreferences by lazy { getSharedPreferences(Prefs.NAME, Context.MODE_PRIVATE) }
+    private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
+    private val prefs: SharedPreferences by lazy { getSharedPreferences(Prefs.NAME, MODE_PRIVATE) }
     private val mainHandler = Handler(Looper.getMainLooper())
 
     val video = VideoSession(this)
@@ -88,8 +90,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     private val _videoAspect = MutableStateFlow(16f / 9f)
     val videoAspect = _videoAspect.asStateFlow()
 
-    private val _videoResolution = MutableStateFlow("")
-    val videoResolution = _videoResolution.asStateFlow()
+    private var videoResolution = ""
 
     private val _audioOnly = MutableStateFlow(false)
     val audioOnly = _audioOnly.asStateFlow()
@@ -121,8 +122,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     val durationMs get() = nowPlaying.durationMs
     val playing get() = nowPlaying.playing
 
-    fun videoSessionPending(): Boolean = video.pending(otherSessionActive = _audioOnly.value || _mirroringActive.value)
-    fun currentPositionMs(): Long = nowPlaying.currentPositionMs()
 
     var logCallback: ((String) -> Unit)? = null
 
@@ -221,7 +220,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         )
         lifecycleScope.launch {
             prefs.audioConfigFlow()
-                .debounce(AUDIO_CONFIG_DEBOUNCE_MS)
+                .debounce(AUDIO_CONFIG_DEBOUNCE)
                 .collect { audioRenderer.updateConfig(it) }
         }
         // takes effect when the next mirroring session configures its decoder
@@ -236,6 +235,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         if (intent?.action == ACTION_START_SERVER) {
             notifications.promoteToForeground()
             val name = prefs.getString(Prefs.SERVER_NAME, Prefs.DEF_SERVER_NAME) ?: Prefs.DEF_SERVER_NAME
@@ -264,7 +264,9 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         if (_serverState.value == ServerState.RUNNING) return
         val effectiveName = name.ifBlank { Prefs.DEF_SERVER_NAME }
 
-        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        // held for as long as the receiver runs; released in stopServer()/failStart()
+        @SuppressLint("WakelockTimeout")
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "airplay:server").apply { acquire() }
 
         nsdManager = NsdServiceManager(this).apply { acquireMulticastLock() }
@@ -322,7 +324,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         lastOrientation = resources.configuration.orientation
         val (w, h) = displaySize()
         videoRenderer.setResolution(w, h)
-        _videoResolution.value = "${w}x${h}"
+        videoResolution = "${w}x${h}"
         _videoAspect.value = w.toFloat() / h
         NativeBridge.nativeSetDisplaySize(nativeHandle, w, h, maxFps)
 
@@ -441,9 +443,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     fun clearVideoPlaybackSurface(surface: Surface) = video.clearSurface(surface)
     fun setVideoPlaying(playing: Boolean) = video.setPlaying(playing)
     fun seekVideoTo(positionMs: Long) = video.scrub(positionMs / 1000f)
-    fun setVideoScrubbing(enabled: Boolean) = video.setScrubbing(enabled)
-    fun setVideoSpeed(speed: Float) = video.setSpeed(speed)
-    fun setVideoSkipSilence(enabled: Boolean) = video.setSkipSilence(enabled)
     fun seekVideoBy(deltaMs: Long) = video.seekBy(deltaMs)
     fun stopVideoPlayback() = endVideoPlayback("AirPlay Video stopped (local)")
 
@@ -464,7 +463,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         videoRenderer.feedFrame(data, ntpTimeNs, isH265)
     }
 
-    override fun onVideoSessionPoll() = video.onPoll()
+    // senders poll /playback-info before /play; nothing to track until a "video pending" ui exists
+    override fun onVideoSessionPoll() {}
 
     override fun onVideoPlay(location: String, startPositionSeconds: Float) {
         video.play(location, startPositionSeconds)
@@ -493,7 +493,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         clearPin()
         if (w > 0 && h > 0) {
             _videoAspect.value = w / h
-            _videoResolution.value = "${w.toInt()}x${h.toInt()}"
+            videoResolution = "${w.toInt()}x${h.toInt()}"
             videoRenderer.setResolution(w.toInt(), h.toInt())
             _mirroringActive.value = true
         }
@@ -505,7 +505,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     override fun onConnectionInit() {
         liveConnections++
-        // a sender that dropped moments ago (iPhone lock, wi-fi power save) is the same session
+        // a sender that dropped moments ago (iPhone lock, Wi-Fi power save) is the same session
         val resumed = mainHandler.hasCallbacks(sessionEnd)
         mainHandler.removeCallbacks(sessionEnd)
         if (resumed) {
@@ -543,7 +543,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         // last client gone: release audio output devices to save power
         audioRenderer.stop()
         _audioOnly.value = false
-        video.onAllClientsGone()
         nowPlaying.clear()
         dacpController?.reset()
         volumeSync.onSessionEnded()
@@ -648,7 +647,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     fun collectDebugInfo() = DebugInfo(
         videoCodec = videoRenderer.codecName,
-        videoRes = _videoResolution.value,
+        videoRes = videoResolution,
         videoFps = videoRenderer.fps,
         videoBitrate = videoRenderer.bitrateBps,
         videoFrames = videoRenderer.frameCount,
@@ -692,10 +691,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         const val ACTION_NEXT = "pl.prodevcode.airplay.NEXT"
         const val ACTION_PREV = "pl.prodevcode.airplay.PREV"
         const val ACTION_START_SERVER = "pl.prodevcode.airplay.START_SERVER"
-        // shared with dpad/double-tap seeks
-        const val VIDEO_SEEK_STEP_MS = 10_000L
         private const val SESSION_GRACE_MS = 8_000L
 
-        private const val AUDIO_CONFIG_DEBOUNCE_MS = 500L
+        private val AUDIO_CONFIG_DEBOUNCE = 500.milliseconds
     }
 }

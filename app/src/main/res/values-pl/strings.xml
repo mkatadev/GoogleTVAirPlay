@@ -159,4 +159,5 @@
     <string name="update_failed_checksum">Niezgodna suma kontrolna — plik odrzucony, wybierz, aby ponowić</string>
     <string name="update_failed_installer">Błąd instalatora — użyj install.sh albo wgraj APK ręcznie</string>
     <string name="update_failed_aborted">Instalacja anulowana — wybierz, aby spróbować ponownie</string>
+    <string name="audio_hint">OK odtwórz/pauza · ◀ ▶ poprzedni/następny utwór</string>
 </resources>

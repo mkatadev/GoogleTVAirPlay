@@ -30,9 +30,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,6 +51,7 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
+import pl.prodevcode.tvairplay.R
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.presentation.components.ProgressTrack
 import pl.prodevcode.tvairplay.presentation.components.rememberCoverArt
@@ -67,8 +76,26 @@ fun AudioSession(
     }
 
     val art = rememberCoverArt(nowPlaying.coverArt)
+    val playFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { playFocus.requestFocus() }
 
-    Box(Modifier.fillMaxSize().background(AirPlayColors.Background)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(AirPlayColors.Background)
+            // ◀ ▶ and media keys act directly, like on the video overlay; OK stays on play/pause
+            .onPreviewKeyEvent { event ->
+                val action: () -> Unit = when (event.key) {
+                    Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> onPlayPause
+                    Key.DirectionRight, Key.MediaNext, Key.MediaSkipForward, Key.MediaFastForward -> onNext
+                    Key.DirectionLeft, Key.MediaPrevious, Key.MediaSkipBackward, Key.MediaRewind -> onPrevious
+                    else -> return@onPreviewKeyEvent false
+                }
+                // consume KeyDown (and repeats) so focus does not move; act once on KeyUp
+                if (event.type == KeyEventType.KeyUp) action()
+                true
+            },
+    ) {
         art?.let {
             Image(
                 bitmap = it,
@@ -126,10 +153,12 @@ fun AudioSession(
                 Spacer(Modifier.height(24.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     IconButton(onClick = onPrevious) { Icon(Icons.Default.SkipPrevious, null) }
-                    IconButton(onClick = onPlayPause) {
+                    IconButton(onClick = onPlayPause, modifier = Modifier.focusRequester(playFocus)) {
                         Icon(if (nowPlaying.playing) Icons.Default.Pause else Icons.Default.PlayArrow, null)
                     }
                     IconButton(onClick = onNext) { Icon(Icons.Default.SkipNext, null) }
+                    Spacer(Modifier.width(16.dp))
+                    Text(stringResource(R.string.audio_hint), fontSize = 14.sp, color = AirPlayColors.Muted)
                 }
             }
         }

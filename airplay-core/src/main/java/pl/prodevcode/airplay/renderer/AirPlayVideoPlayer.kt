@@ -90,12 +90,6 @@ class AirPlayVideoPlayer(private val context: Context) {
         player?.seekTo((positionSeconds * 1000).toLong())
     }
 
-    // coalesces the seek spam from drag-seeking
-    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-    fun setScrubbing(enabled: Boolean) = mainHandler.post {
-        player?.isScrubbingModeEnabled = enabled
-    }
-
     fun setRate(rate: Float) = mainHandler.post {
         val p = player ?: return@post
         if (rate <= 0f) {
@@ -109,15 +103,6 @@ class AirPlayVideoPlayer(private val context: Context) {
     // local-only: the sender self-syncs from its next /playback-info poll
     fun setPlaying(playing: Boolean) = mainHandler.post {
         player?.playWhenReady = playing
-    }
-
-    // local speed toggle: unlike setRate it must not resume a paused player
-    fun setSpeed(speed: Float) = mainHandler.post {
-        player?.playbackParameters = PlaybackParameters(speed.coerceAtLeast(0.1f))
-    }
-
-    fun setSkipSilence(enabled: Boolean) = mainHandler.post {
-        player?.skipSilenceEnabled = enabled
     }
 
     fun seekBy(deltaMs: Long) = mainHandler.post {
