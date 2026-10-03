@@ -19,9 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -54,10 +52,20 @@ fun SettingsScreen(
     onOpenLicenses: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val s by viewModel.settings.collectAsStateWithLifecycle()
-    val overlayGranted by viewModel.overlayGranted.collectAsStateWithLifecycle()
-    var pickingName by remember { mutableStateOf(false) }
-    LifecycleResumeEffect(Unit) { viewModel.refreshOverlay(); onPauseOrDispose { } }
+    val ui by viewModel.state.collectAsStateWithLifecycle()
+    SettingsContent(ui = ui, onIntent = viewModel::onIntent, onBack = onBack, onOpenLicenses = onOpenLicenses)
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun SettingsContent(
+    ui: SettingsUiState,
+    onIntent: (SettingsIntent) -> Unit,
+    onBack: () -> Unit,
+    onOpenLicenses: () -> Unit,
+) {
+    val s = ui.settings
+    LifecycleResumeEffect(Unit) { onIntent(SettingsIntent.ScreenResumed); onPauseOrDispose { } }
 
     Row(Modifier.fillMaxSize().background(AirPlayColors.Background)) {
         Column(
@@ -70,11 +78,8 @@ fun SettingsScreen(
             Button(onClick = onBack) { Text(stringResource(R.string.action_back)) }
         }
 
-        if (pickingName) {
-            DeviceNamePicker(current = s.deviceName) { name ->
-                pickingName = false
-                name?.let { n -> viewModel.update(requiresRestart = true) { it.copy(deviceName = n) } }
-            }
+        if (ui.pickingDeviceName) {
+            DeviceNamePicker(current = s.deviceName) { onIntent(SettingsIntent.DeviceNamePicked(it)) }
             return@Row
         }
 
@@ -88,53 +93,53 @@ fun SettingsScreen(
                 ValueRow(
                     title = stringResource(R.string.setting_device_name),
                     value = s.deviceName,
-                    onClick = { pickingName = true },
+                    onClick = { onIntent(SettingsIntent.PickDeviceName) },
                 )
             }
             item {
                 ToggleRow(stringResource(R.string.setting_start_on_boot), stringResource(R.string.setting_start_on_boot_desc), s.startOnBoot) {
-                    viewModel.update { c -> c.copy(startOnBoot = it) }
+                    onIntent(SettingsIntent.SetStartOnBoot(it))
                 }
             }
             item {
                 ToggleRow(stringResource(R.string.setting_background), stringResource(R.string.setting_background_desc), s.runInBackground) {
-                    viewModel.update { c -> c.copy(runInBackground = it) }
+                    onIntent(SettingsIntent.SetRunInBackground(it))
                 }
             }
             item {
                 ToggleRow(stringResource(R.string.setting_open_on_connect), stringResource(R.string.setting_open_on_connect_desc), s.openAppOnConnect) {
-                    viewModel.update { c -> c.copy(openAppOnConnect = it) }
+                    onIntent(SettingsIntent.SetOpenAppOnConnect(it))
                 }
             }
             item {
                 ValueRow(
                     title = stringResource(R.string.setting_overlay),
-                    value = stringResource(if (overlayGranted) R.string.setting_overlay_granted else R.string.setting_overlay_missing),
-                    onClick = viewModel::grantOverlay,
+                    value = stringResource(if (ui.overlayGranted) R.string.setting_overlay_granted else R.string.setting_overlay_missing),
+                    onClick = { onIntent(SettingsIntent.GrantOverlay) },
                 )
             }
 
             item { Section(stringResource(R.string.section_security)) }
             item {
                 ToggleRow(stringResource(R.string.setting_require_pin), stringResource(R.string.setting_require_pin_desc), s.requirePin) {
-                    viewModel.update(requiresRestart = true) { c -> c.copy(requirePin = it) }
+                    onIntent(SettingsIntent.SetRequirePin(it))
                 }
             }
 
             item { Section(stringResource(R.string.section_media)) }
             item {
                 ToggleRow(stringResource(R.string.setting_video), stringResource(R.string.setting_video_desc), s.advertiseVideo) {
-                    viewModel.update(requiresRestart = true) { c -> c.copy(advertiseVideo = it) }
+                    onIntent(SettingsIntent.SetAdvertiseVideo(it))
                 }
             }
             item {
                 ToggleRow(stringResource(R.string.setting_audio), stringResource(R.string.setting_audio_desc), s.advertiseAudio) {
-                    viewModel.update(requiresRestart = true) { c -> c.copy(advertiseAudio = it) }
+                    onIntent(SettingsIntent.SetAdvertiseAudio(it))
                 }
             }
             item {
                 ToggleRow(stringResource(R.string.setting_hevc), stringResource(R.string.setting_hevc_desc), s.hevcEnabled) {
-                    viewModel.update(requiresRestart = true) { c -> c.copy(hevcEnabled = it) }
+                    onIntent(SettingsIntent.SetHevcEnabled(it))
                 }
             }
 

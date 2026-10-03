@@ -33,6 +33,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import pl.prodevcode.tvairplay.R
 import pl.prodevcode.tvairplay.presentation.components.SupportingText
+import pl.prodevcode.tvairplay.presentation.mvi.CollectEffects
 import pl.prodevcode.tvairplay.presentation.components.appListItemColors
 import pl.prodevcode.tvairplay.presentation.theme.AirPlayColors
 
@@ -43,8 +44,14 @@ fun LicensesScreen(
     viewModel: LicensesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    CollectEffects(viewModel.effects) { if (it == LicensesEffect.NavigateBack) onBack() }
+    LicensesContent(state = state, onIntent = viewModel::onIntent)
+}
 
-    BackHandler { if (!viewModel.closeDetail()) onBack() }
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun LicensesContent(state: LicensesUiState, onIntent: (LicensesIntent) -> Unit) {
+    BackHandler { onIntent(LicensesIntent.Back) }
 
     Row(Modifier.fillMaxSize().background(AirPlayColors.Background)) {
         Column(Modifier.width(360.dp).fillMaxSize().background(AirPlayColors.Surface).padding(40.dp)) {
@@ -54,7 +61,7 @@ fun LicensesScreen(
             Spacer(Modifier.height(24.dp))
             Text(stringResource(R.string.about_credit), color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
             Spacer(Modifier.weight(1f))
-            Button(onClick = { if (!viewModel.closeDetail()) onBack() }) { Text(stringResource(R.string.action_back)) }
+            Button(onClick = { onIntent(LicensesIntent.Back) }) { Text(stringResource(R.string.action_back)) }
         }
 
         val selected = state.selected
@@ -86,7 +93,7 @@ fun LicensesScreen(
                 items(state.components) { c ->
                     ListItem(
                         selected = false,
-                        onClick = { viewModel.select(c) },
+                        onClick = { onIntent(LicensesIntent.Select(c)) },
                         headlineContent = { Text(c.name) },
                         supportingContent = { SupportingText(c.license) },
                         trailingContent = { SupportingText(c.url, fontSize = 12.sp) },

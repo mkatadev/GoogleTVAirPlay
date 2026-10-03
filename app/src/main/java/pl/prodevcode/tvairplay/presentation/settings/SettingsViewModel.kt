@@ -1,21 +1,19 @@
 package pl.prodevcode.tvairplay.presentation.settings
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RestartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.UpdateSettingsUseCase
+import pl.prodevcode.tvairplay.presentation.mvi.MviViewModel
+import pl.prodevcode.tvairplay.presentation.settings.SettingsIntent as Intent
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -24,24 +22,39 @@ class SettingsViewModel @Inject constructor(
     private val restartReceiver: RestartReceiverUseCase,
     private val observeOverlay: ObserveOverlayPermissionUseCase,
     private val requestOverlay: RequestOverlayPermissionUseCase,
-) : ViewModel() {
-
-    val overlayGranted: StateFlow<Boolean> = observeOverlay()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-
-    fun refreshOverlay() = observeOverlay.refresh()
-    fun grantOverlay() = requestOverlay()
-
-    val settings: StateFlow<ReceiverSettings> = observeSettings()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReceiverSettings())
+) : MviViewModel<SettingsUiState, Intent, SettingsEffect>(SettingsUiState()) {
 
     private var restartJob: Job? = null
 
+    init {
+        observeSettings().reduceInto { copy(settings = it) }
+        observeOverlay().reduceInto { copy(overlayGranted = it) }
+    }
+
+    override fun onIntent(intent: Intent) {
+        when (intent) {
+            Intent.ScreenResumed -> observeOverlay.refresh()
+            Intent.GrantOverlay -> requestOverlay()
+            Intent.PickDeviceName -> setState { copy(pickingDeviceName = true) }
+            is Intent.DeviceNamePicked -> {
+                setState { copy(pickingDeviceName = false) }
+                intent.name?.let { n -> update(restart = true) { copy(deviceName = n) } }
+            }
+            is Intent.SetStartOnBoot -> update { copy(startOnBoot = intent.enabled) }
+            is Intent.SetRunInBackground -> update { copy(runInBackground = intent.enabled) }
+            is Intent.SetOpenAppOnConnect -> update { copy(openAppOnConnect = intent.enabled) }
+            is Intent.SetRequirePin -> update(restart = true) { copy(requirePin = intent.enabled) }
+            is Intent.SetAdvertiseVideo -> update(restart = true) { copy(advertiseVideo = intent.enabled) }
+            is Intent.SetAdvertiseAudio -> update(restart = true) { copy(advertiseAudio = intent.enabled) }
+            is Intent.SetHevcEnabled -> update(restart = true) { copy(hevcEnabled = intent.enabled) }
+        }
+    }
+
     /** Settings advertised over mDNS only take effect after the receiver restarts. */
-    fun update(requiresRestart: Boolean = false, transform: (ReceiverSettings) -> ReceiverSettings) {
+    private fun update(restart: Boolean = false, transform: ReceiverSettings.() -> ReceiverSettings) {
         viewModelScope.launch {
             updateSettings(transform)
-            if (requiresRestart) scheduleRestart()
+            if (restart) scheduleRestart()
         }
     }
 

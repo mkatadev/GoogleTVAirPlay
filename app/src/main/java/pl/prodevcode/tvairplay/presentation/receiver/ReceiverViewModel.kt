@@ -1,25 +1,20 @@
 package pl.prodevcode.tvairplay.presentation.receiver
 
-import android.view.Surface
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
-import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveReceiverStateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.PlaybackControlUseCase
+import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StopReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ToggleReceiverUseCase
+import pl.prodevcode.tvairplay.presentation.mvi.MviViewModel
+import pl.prodevcode.tvairplay.presentation.receiver.ReceiverIntent as Intent
 
 @HiltViewModel
 class ReceiverViewModel @Inject constructor(
@@ -33,44 +28,43 @@ class ReceiverViewModel @Inject constructor(
     private val stopReceiver: StopReceiverUseCase,
     private val playback: PlaybackControlUseCase,
     private val surfaces: ReceiverRepository,
-) : ViewModel() {
+) : MviViewModel<ReceiverUiState, Intent, ReceiverEffect>(ReceiverUiState()) {
 
-    val uiState: StateFlow<ReceiverUiState> = combine(
-        observeState(), observeDevice(), observeSettings(), observeOverlay()
-    ) { state, device, settings, overlay ->
-        ReceiverUiState(
-            receiver = state,
-            device = device,
-            keepScreenOn = state.connectedClients > 0,
-            runInBackground = settings.runInBackground,
-            // only relevant when we are expected to pop up on connect
-            overlayPermissionGranted = overlay || !settings.openAppOnConnect,
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReceiverUiState())
-
-    fun ensureStarted() = startReceiver()
-
-    /** Called when the app leaves the foreground; never interrupts an active session. */
-    fun onAppBackgrounded() {
-        val ui = uiState.value
-        if (!ui.runInBackground && ui.receiver.connectedClients == 0) stopReceiver()
+    init {
+        combine(observeState(), observeDevice(), observeSettings(), observeOverlay()) { state, device, settings, overlay ->
+            ReceiverUiState(
+                receiver = state,
+                device = device,
+                keepScreenOn = state.connectedClients > 0,
+                runInBackground = settings.runInBackground,
+                // only relevant when we are expected to pop up on connect
+                overlayPermissionGranted = overlay || !settings.openAppOnConnect,
+            )
+        }.reduceInto { it }
     }
-    fun toggleReceiver() = toggleReceiver(uiState.value.receiver.status)
 
-    fun onPlayPause() = playback.togglePlayPause()
-    fun onSeek(deltaMs: Long) = playback.seekBy(deltaMs)
-    fun onSeekTo(positionMs: Long) = playback.seekTo(positionMs)
-    fun onGrantOverlay() = requestOverlay()
-    fun onResumed() = observeOverlay.refresh()
-    fun onNext() = playback.next()
-    fun onPrevious() = playback.previous()
-    fun onStopVideo() = playback.stopVideo()
+    override fun onIntent(intent: Intent) {
+        when (intent) {
+            Intent.EnsureStarted -> startReceiver()
+            Intent.AppResumed -> observeOverlay.refresh()
+            // leaving the foreground never interrupts an active session
+            Intent.AppBackgrounded -> with(currentState) {
+                if (!runInBackground && receiver.connectedClients == 0) stopReceiver()
+            }
+            Intent.ToggleReceiver -> toggleReceiver(currentState.receiver.status)
+            Intent.GrantOverlay -> requestOverlay()
 
-    fun onMirrorSurface(surface: Surface) = surfaces.attachMirrorSurface(surface)
-    fun onMirrorSurfaceGone(surface: Surface) = surfaces.detachMirrorSurface(surface)
-    fun onVideoSurface(surface: Surface) = surfaces.attachVideoSurface(surface)
-    fun onVideoSurfaceGone(surface: Surface) = surfaces.detachVideoSurface(surface)
+            Intent.PlayPause -> playback.togglePlayPause()
+            is Intent.SeekBy -> playback.seekBy(intent.deltaMs)
+            is Intent.SeekTo -> playback.seekTo(intent.positionMs)
+            Intent.Next -> playback.next()
+            Intent.Previous -> playback.previous()
+            Intent.StopVideo -> playback.stopVideo()
 
-    val isPlayingMedia: Boolean
-        get() = uiState.value.receiver.mode in setOf(SessionMode.VIDEO, SessionMode.AUDIO)
+            is Intent.MirrorSurfaceReady -> surfaces.attachMirrorSurface(intent.surface)
+            is Intent.MirrorSurfaceGone -> surfaces.detachMirrorSurface(intent.surface)
+            is Intent.VideoSurfaceReady -> surfaces.attachVideoSurface(intent.surface)
+            is Intent.VideoSurfaceGone -> surfaces.detachVideoSurface(intent.surface)
+        }
+    }
 }

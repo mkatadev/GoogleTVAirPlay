@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import pl.prodevcode.tvairplay.presentation.navigation.AppNavigation
+import pl.prodevcode.tvairplay.presentation.receiver.ReceiverIntent
 import pl.prodevcode.tvairplay.presentation.receiver.ReceiverViewModel
 import pl.prodevcode.tvairplay.presentation.theme.TvAirPlayTheme
 
@@ -26,7 +27,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                receiverViewModel.uiState.map { it.keepScreenOn }.distinctUntilChanged().collect { keep ->
+                receiverViewModel.state.map { it.keepScreenOn }.distinctUntilChanged().collect { keep ->
                     if (keep) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
@@ -42,11 +43,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        receiverViewModel.onResumed()
+        receiverViewModel.onIntent(ReceiverIntent.AppResumed)
     }
 
     override fun onStop() {
         super.onStop()
-        if (!isChangingConfigurations) receiverViewModel.onAppBackgrounded()
+        if (!isChangingConfigurations) receiverViewModel.onIntent(ReceiverIntent.AppBackgrounded)
     }
 }

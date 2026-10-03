@@ -27,10 +27,19 @@ fun ReceiverScreen(
     onOpenSettings: () -> Unit,
     viewModel: ReceiverViewModel = hiltViewModel(),
 ) {
-    val ui by viewModel.uiState.collectAsStateWithLifecycle()
+    val ui by viewModel.state.collectAsStateWithLifecycle()
+    ReceiverContent(ui = ui, onIntent = viewModel::onIntent, onOpenSettings = onOpenSettings)
+}
+
+@Composable
+private fun ReceiverContent(
+    ui: ReceiverUiState,
+    onIntent: (ReceiverIntent) -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     val state = ui.receiver
 
-    LaunchedEffect(Unit) { viewModel.ensureStarted() }
+    LaunchedEffect(Unit) { onIntent(ReceiverIntent.EnsureStarted) }
 
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black),
@@ -44,38 +53,38 @@ fun ReceiverScreen(
             when (mode) {
                 SessionMode.MIRRORING -> VideoSurface(
                     aspectRatio = state.mirrorAspectRatio,
-                    onSurfaceAvailable = viewModel::onMirrorSurface,
-                    onSurfaceDestroyed = viewModel::onMirrorSurfaceGone,
+                    onSurfaceAvailable = { onIntent(ReceiverIntent.MirrorSurfaceReady(it)) },
+                    onSurfaceDestroyed = { onIntent(ReceiverIntent.MirrorSurfaceGone(it)) },
                 )
 
                 SessionMode.VIDEO -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     VideoSurface(
                         aspectRatio = state.video.aspectRatio,
-                        onSurfaceAvailable = viewModel::onVideoSurface,
-                        onSurfaceDestroyed = viewModel::onVideoSurfaceGone,
+                        onSurfaceAvailable = { onIntent(ReceiverIntent.VideoSurfaceReady(it)) },
+                        onSurfaceDestroyed = { onIntent(ReceiverIntent.VideoSurfaceGone(it)) },
                     )
                     VideoOverlay(
                         video = state.video,
-                        onPlayPause = viewModel::onPlayPause,
-                        onSeekTo = viewModel::onSeekTo,
-                        onStop = viewModel::onStopVideo,
+                        onPlayPause = { onIntent(ReceiverIntent.PlayPause) },
+                        onSeekTo = { onIntent(ReceiverIntent.SeekTo(it)) },
+                        onStop = { onIntent(ReceiverIntent.StopVideo) },
                     )
                 }
 
                 SessionMode.AUDIO -> AudioSession(
                     nowPlaying = state.nowPlaying,
-                    onPlayPause = viewModel::onPlayPause,
-                    onNext = viewModel::onNext,
-                    onPrevious = viewModel::onPrevious,
+                    onPlayPause = { onIntent(ReceiverIntent.PlayPause) },
+                    onNext = { onIntent(ReceiverIntent.Next) },
+                    onPrevious = { onIntent(ReceiverIntent.Previous) },
                 )
 
                 SessionMode.IDLE, SessionMode.CONNECTED -> IdleScreen(
                     state = state,
                     device = ui.device,
-                    onToggleReceiver = viewModel::toggleReceiver,
+                    onToggleReceiver = { onIntent(ReceiverIntent.ToggleReceiver) },
                     onOpenSettings = onOpenSettings,
                     overlayPermissionGranted = ui.overlayPermissionGranted,
-                    onGrantOverlay = viewModel::onGrantOverlay,
+                    onGrantOverlay = { onIntent(ReceiverIntent.GrantOverlay) },
                 )
             }
         }
