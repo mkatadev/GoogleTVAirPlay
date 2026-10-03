@@ -10,7 +10,7 @@ import pl.prodevcode.airplay.renderer.DecoderSelector.Companion.videoCaps
 
 class VideoRenderer(ctx: Context) {
 
-    private val lock = Object()
+    private val lock = Any()
     private val pipeline = VideoPipeline()
     val selector = DecoderSelector(ctx)
     private var avcDecoder: MediaCodecInfo? = null

@@ -16,6 +16,7 @@ import java.nio.FloatBuffer
 // gl thread blits it to any surface attached, so fullscreen toggles re-point display without restarting codec
 class VideoPipeline {
 
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN") // wait()/notifyAll() need a real Java monitor
     private val lock = Object()
     private var thread: Thread? = null
     @Volatile private var running = false

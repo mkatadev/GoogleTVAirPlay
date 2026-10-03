@@ -36,7 +36,7 @@ class GitHubUpdateRepository @Inject constructor(
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "dev"
     }
 
-    override suspend fun check(force: Boolean) = mutex.withLock {
+    override suspend fun check(force: Boolean): Unit = mutex.withLock {
         val now = SystemClock.elapsedRealtime()
         if (!force && lastCheckedAt != 0L && now - lastCheckedAt < CACHE_MS) return
         if (!VersionComparator.isRelease(currentVersion)) {

@@ -1,7 +1,7 @@
 [versions]
 agp = "9.4.1"
 ksp = "2.3.12"
-composeCompiler = "2.2.10"
+composeCompiler = "2.4.20"
 hilt = "2.60.1"
 hiltNavigation = "1.4.0"
 coreKtx = "1.19.1"
