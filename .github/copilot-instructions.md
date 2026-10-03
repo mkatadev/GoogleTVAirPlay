@@ -27,6 +27,7 @@
 ## Code
 
 - Minimal, surgical changes; do not touch unrelated code or "fix" unrelated issues.
+- **No compiler warnings.** After every change run the Kotlin compile for the touched module(s) with warnings visible (`./gradlew :app:compileDebugKotlin :airplay-core:compileDebugKotlin`, look at `w:` lines) and fix every warning in files you touched — unused imports/variables/parameters, deprecated APIs, unchecked casts, redundant qualifiers. Do not suppress warnings with `@Suppress` unless there is no correct alternative, and then explain why in a one-line comment.
 - `:app` layering: `domain/` has no Android/Hilt dependencies beyond `javax.inject`; `data/` implements repositories; `presentation/` is Compose for TV; `di/` holds Hilt bindings.
 - Verify with the smallest relevant command: `./gradlew :app:testDebugUnitTest`, `./gradlew :app:assembleDebug`.
 - Comment code only where clarification is genuinely needed.
