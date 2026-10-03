@@ -23,4 +23,7 @@ interface RaopCallbackHandler {
     fun onVideoStop()
     // fired per sender GET /playback-info poll; polling starts before /play
     fun onVideoSessionPoll()
+    // pin flow: a sender that entered the pin is reported here; a known key skips the pin on pair-verify
+    fun onClientRegistered(deviceId: String, publicKey: String, name: String)
+    fun isClientRegistered(publicKey: String): Boolean
 }

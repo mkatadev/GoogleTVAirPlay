@@ -5,7 +5,9 @@ data class ReceiverSettings(
     val startOnBoot: Boolean = true,
     val runInBackground: Boolean = true,
     val openAppOnConnect: Boolean = true,
-    val requirePin: Boolean = false,
+    val requirePin: Boolean = true,
+    /** Senders that entered the PIN once skip it next time. */
+    val rememberDevices: Boolean = true,
     val hevcEnabled: Boolean = true,
     val advertiseVideo: Boolean = true,
     val advertiseAudio: Boolean = true,

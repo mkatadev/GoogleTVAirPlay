@@ -51,6 +51,7 @@ class SettingsRepositoryImpl @Inject constructor(
         runInBackground = prefs.getBoolean(Prefs.RUN_IN_BACKGROUND, Prefs.DEF_RUN_IN_BACKGROUND),
         openAppOnConnect = prefs.getBoolean(Prefs.LAUNCH_ON_CONNECT, Prefs.DEF_LAUNCH_ON_CONNECT),
         requirePin = prefs.getBoolean(Prefs.REQUIRE_PIN, Prefs.DEF_REQUIRE_PIN),
+        rememberDevices = prefs.getBoolean(Prefs.REMEMBER_DEVICES, Prefs.DEF_REMEMBER_DEVICES),
         hevcEnabled = prefs.getBoolean(Prefs.H265_ENABLED, Prefs.DEF_H265_ENABLED),
         advertiseVideo = prefs.getBoolean(Prefs.ADVERTISE_VIDEO, Prefs.DEF_ADVERTISE_VIDEO),
         advertiseAudio = prefs.getBoolean(Prefs.ADVERTISE_AUDIO, Prefs.DEF_ADVERTISE_AUDIO),
@@ -62,6 +63,7 @@ class SettingsRepositoryImpl @Inject constructor(
         putBoolean(Prefs.RUN_IN_BACKGROUND, s.runInBackground)
         putBoolean(Prefs.LAUNCH_ON_CONNECT, s.openAppOnConnect)
         putBoolean(Prefs.REQUIRE_PIN, s.requirePin)
+        putBoolean(Prefs.REMEMBER_DEVICES, s.rememberDevices)
         putBoolean(Prefs.H265_ENABLED, s.hevcEnabled)
         putBoolean(Prefs.ADVERTISE_VIDEO, s.advertiseVideo)
         putBoolean(Prefs.ADVERTISE_AUDIO, s.advertiseAudio)

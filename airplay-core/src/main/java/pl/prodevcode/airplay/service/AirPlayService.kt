@@ -38,6 +38,7 @@ import pl.prodevcode.airplay.model.DebugInfo
 import pl.prodevcode.airplay.realDisplaySize
 import pl.prodevcode.airplay.renderer.AudioRenderer
 import pl.prodevcode.airplay.renderer.VideoRenderer
+import pl.prodevcode.airplay.security.TrustedDeviceStore
 
 /**
  * Foreground service hosting the native AirPlay receiver. Owns the lifecycle (start/stop,
@@ -60,6 +61,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     val video = VideoSession(this)
     val nowPlaying = NowPlayingState()
+    val trustedDevices by lazy { TrustedDeviceStore(prefs) }
     private lateinit var volumeSync: VolumeSync
     private lateinit var mediaSession: MediaSessionController
     private lateinit var notifications: ServiceNotifications
@@ -578,6 +580,13 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         dacpController?.update(dacpId, activeRemote)
         log("DACP: $dacpId")
     }
+
+    override fun onClientRegistered(deviceId: String, publicKey: String, name: String) {
+        trustedDevices.register(deviceId, publicKey, name)
+        log("Paired: ${name.ifBlank { deviceId }}")
+    }
+
+    override fun isClientRegistered(publicKey: String): Boolean = trustedDevices.isTrusted(publicKey)
 
     override fun onMirrorRunning(running: Boolean) {
         if (running) bringUiToFront()

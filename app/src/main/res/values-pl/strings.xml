@@ -36,7 +36,7 @@
     <string name="setting_open_on_connect">Otwieraj po połączeniu</string>
     <string name="setting_open_on_connect_desc">Pokaż tę aplikację, gdy urządzenie się połączy</string>
     <string name="setting_require_pin">Wymagaj PIN</string>
-    <string name="setting_require_pin_desc">Proś o jednorazowy PIN przy każdym nowym połączeniu</string>
+    <string name="setting_require_pin_desc">Pokaż na TV PIN, który musi wpisać łączące się urządzenie</string>
     <string name="setting_video">Wideo i zdjęcia</string>
     <string name="setting_video_desc">Przyjmuj strumienie wideo i zdjęć</string>
     <string name="setting_audio">Muzyka</string>
@@ -96,4 +96,19 @@
     <string name="diagnostics_mode_mirroring">mirroring</string>
     <string name="diagnostics_mode_video">wideo</string>
     <string name="diagnostics_mode_audio">audio</string>
+
+    <!-- Zaufane urządzenia -->
+    <string name="setting_remember_devices">Pamiętaj sparowane urządzenia</string>
+    <string name="setting_remember_devices_desc">Urządzenie, które raz wpisało PIN, następnym razem łączy się bez niego</string>
+    <string name="setting_trusted_devices">Zaufane urządzenia</string>
+    <plurals name="trusted_devices_count">
+        <item quantity="one">%d urządzenie</item>
+        <item quantity="few">%d urządzenia</item>
+        <item quantity="many">%d urządzeń</item>
+        <item quantity="other">%d urządzenia</item>
+    </plurals>
+    <string name="trusted_devices_empty">Brak urządzeń — pojawią się tu po wpisaniu PIN-u na iPhonie, iPadzie lub Macu.</string>
+    <string name="trusted_device_last_seen">Ostatnie połączenie %1$s</string>
+    <string name="trusted_device_forget">Zapomnij</string>
+    <string name="trusted_devices_forget_all">Zapomnij wszystkie</string>
 </resources>

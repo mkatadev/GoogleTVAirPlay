@@ -16,14 +16,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
+import pl.prodevcode.tvairplay.domain.model.TrustedDevice
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
 import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
+import pl.prodevcode.tvairplay.domain.repository.TrustedDevicesRepository
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RestartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.UpdateSettingsUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ForgetTrustedDeviceUseCase
 import pl.prodevcode.tvairplay.presentation.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -43,13 +47,43 @@ class SettingsViewModelTest {
         every { granted } returns MutableStateFlow(false)
     }
 
+    private val trusted = MutableStateFlow(emptyList<TrustedDevice>())
+    private val trustedRepo = mockk<TrustedDevicesRepository>(relaxed = true) { every { devices } returns trusted }
+
     private fun viewModel() = SettingsViewModel(
         observeSettings = ObserveSettingsUseCase(settingsRepo),
         updateSettings = UpdateSettingsUseCase(settingsRepo),
         restartReceiver = RestartReceiverUseCase(receiverRepo),
         observeOverlay = ObserveOverlayPermissionUseCase(overlayRepo),
         requestOverlay = RequestOverlayPermissionUseCase(overlayRepo),
+        observeTrustedDevices = ObserveTrustedDevicesUseCase(trustedRepo),
+        forgetTrustedDevice = ForgetTrustedDeviceUseCase(trustedRepo),
     )
+
+    @Test fun `trusted devices pane lists devices and forgets them`() = runTest {
+        trusted.value = listOf(TrustedDevice("pk1", "Ania's iPhone", 1, 2))
+        val vm = viewModel()
+        advanceUntilIdle()
+        vm.onIntent(SettingsIntent.ManageTrustedDevices)
+        assertTrue(vm.state.value.managingTrustedDevices)
+        assertEquals("Ania's iPhone", vm.state.value.trustedDevices.single().name)
+
+        vm.onIntent(SettingsIntent.ForgetTrustedDevice("pk1"))
+        verify { trustedRepo.forget("pk1") }
+        vm.onIntent(SettingsIntent.ForgetTrustedDevice(null))
+        verify { trustedRepo.forgetAll() }
+
+        vm.onIntent(SettingsIntent.CloseTrustedDevices)
+        assertFalse(vm.state.value.managingTrustedDevices)
+    }
+
+    @Test fun `remember devices is a local setting`() = runTest {
+        val vm = viewModel()
+        vm.onIntent(SettingsIntent.SetRememberDevices(false))
+        advanceUntilIdle()
+        assertFalse(vm.state.value.settings.rememberDevices)
+        verify(exactly = 0) { receiverRepo.restart() }
+    }
 
     @Test fun `mDNS-relevant settings restart the receiver after a debounce`() = runTest {
         val vm = viewModel()

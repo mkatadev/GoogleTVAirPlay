@@ -35,9 +35,7 @@ void android_callbacks_init(android_callback_ctx_t *ctx, JNIEnv *env, jobject ca
     ctx->callback_obj = (*env)->NewGlobalRef(env, callback_obj);
     ctx->h265_enabled = 1;
     ctx->require_pin = 0;
-    ctx->registered_count = 0;
     ctx->audio_engine = NULL;
-    memset(ctx->registered_keys, 0, sizeof(ctx->registered_keys));
 
     pthread_mutex_init(&ctx->playback_info_lock, NULL);
     pthread_cond_init(&ctx->play_ready_cond, NULL);
@@ -64,6 +62,9 @@ void android_callbacks_init(android_callback_ctx_t *ctx, JNIEnv *env, jobject ca
     ctx->on_progress = (*env)->GetMethodID(env, cls, "onProgress", "(JJJ)V");
     ctx->on_dacp_id = (*env)->GetMethodID(env, cls, "onDacpId", "(Ljava/lang/String;Ljava/lang/String;)V");
     ctx->on_mirror_running = (*env)->GetMethodID(env, cls, "onMirrorRunning", "(Z)V");
+    ctx->on_client_registered = (*env)->GetMethodID(env, cls, "onClientRegistered",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+    ctx->is_client_registered = (*env)->GetMethodID(env, cls, "isClientRegistered", "(Ljava/lang/String;)Z");
     ctx->on_video_play = (*env)->GetMethodID(env, cls, "onVideoPlay", "(Ljava/lang/String;F)V");
     ctx->on_video_scrub = (*env)->GetMethodID(env, cls, "onVideoScrub", "(F)V");
     ctx->on_video_rate = (*env)->GetMethodID(env, cls, "onVideoRate", "(F)V");
@@ -77,11 +78,6 @@ void android_callbacks_destroy(android_callback_ctx_t *ctx, JNIEnv *env) {
         (*env)->DeleteGlobalRef(env, ctx->callback_obj);
         ctx->callback_obj = NULL;
     }
-    for (int i = 0; i < ctx->registered_count; i++) {
-        free(ctx->registered_keys[i]);
-        ctx->registered_keys[i] = NULL;
-    }
-    ctx->registered_count = 0;
     pthread_cond_destroy(&ctx->play_ready_cond);
     pthread_mutex_destroy(&ctx->playback_info_lock);
 }
@@ -280,23 +276,30 @@ static void _mirror_video_running(void *cls, bool running) {
     LOGI("mirror running: %d", running);
     (*env)->CallVoidMethod(env, ctx->callback_obj, ctx->on_mirror_running, (jboolean)running);
 }
+/* pin accepted: kotlin decides whether to remember the sender (trusted devices) */
 static void _register_client(void *cls, const char *device_id, const char *pk_str, const char *name) {
     android_callback_ctx_t *ctx = (android_callback_ctx_t *)cls;
-    (void)device_id; (void)name;
-    if (ctx->registered_count >= 16) return;
-    for (int i = 0; i < ctx->registered_count; i++) {
-        if (ctx->registered_keys[i] && strcmp(ctx->registered_keys[i], pk_str) == 0) return;
-    }
-    ctx->registered_keys[ctx->registered_count++] = strdup(pk_str);
-    LOGI("registered client pk (slot %d)", ctx->registered_count);
+    JNIEnv *env = _get_env(ctx);
+    if (!env || !pk_str) return;
+    jstring jid = (*env)->NewStringUTF(env, device_id ? device_id : "");
+    jstring jpk = (*env)->NewStringUTF(env, pk_str);
+    jstring jname = (*env)->NewStringUTF(env, name ? name : "");
+    (*env)->CallVoidMethod(env, ctx->callback_obj, ctx->on_client_registered, jid, jpk, jname);
+    (*env)->DeleteLocalRef(env, jid);
+    (*env)->DeleteLocalRef(env, jpk);
+    (*env)->DeleteLocalRef(env, jname);
+    LOGI("registered client %s", name ? name : "?");
 }
 
+/* pair-verify: a remembered sender skips the pin prompt */
 static bool _check_register(void *cls, const char *pk_str) {
     android_callback_ctx_t *ctx = (android_callback_ctx_t *)cls;
-    for (int i = 0; i < ctx->registered_count; i++) {
-        if (ctx->registered_keys[i] && strcmp(ctx->registered_keys[i], pk_str) == 0) return true;
-    }
-    return false;
+    JNIEnv *env = _get_env(ctx);
+    if (!env || !pk_str) return false;
+    jstring jpk = (*env)->NewStringUTF(env, pk_str);
+    jboolean known = (*env)->CallBooleanMethod(env, ctx->callback_obj, ctx->is_client_registered, jpk);
+    (*env)->DeleteLocalRef(env, jpk);
+    return known == JNI_TRUE;
 }
 
 /* --- AirPlay Video (HLS) playback callbacks --- */

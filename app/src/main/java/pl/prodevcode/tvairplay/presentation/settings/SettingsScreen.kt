@@ -1,5 +1,6 @@
 package pl.prodevcode.tvairplay.presentation.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,7 +40,10 @@ import androidx.tv.material3.Switch
 import androidx.tv.material3.SwitchDefaults
 import androidx.tv.material3.Text
 import pl.prodevcode.tvairplay.R
+import java.text.DateFormat
+import java.util.Date
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
+import pl.prodevcode.tvairplay.domain.model.TrustedDevice
 import pl.prodevcode.tvairplay.presentation.components.SupportingText
 import pl.prodevcode.tvairplay.presentation.components.appListItemColors
 import pl.prodevcode.tvairplay.presentation.theme.AirPlayColors
@@ -87,6 +92,15 @@ private fun SettingsContent(
             DeviceNamePicker(current = s.deviceName) { onIntent(SettingsIntent.DeviceNamePicked(it)) }
             return@Row
         }
+        if (ui.managingTrustedDevices) {
+            BackHandler { onIntent(SettingsIntent.CloseTrustedDevices) }
+            TrustedDevicesPane(
+                devices = ui.trustedDevices,
+                onForget = { onIntent(SettingsIntent.ForgetTrustedDevice(it)) },
+                onClose = { onIntent(SettingsIntent.CloseTrustedDevices) },
+            )
+            return@Row
+        }
 
         LazyColumn(
             Modifier.weight(1f).fillMaxSize(),
@@ -129,6 +143,18 @@ private fun SettingsContent(
                 ToggleRow(stringResource(R.string.setting_require_pin), stringResource(R.string.setting_require_pin_desc), s.requirePin) {
                     onIntent(SettingsIntent.SetRequirePin(it))
                 }
+            }
+            item {
+                ToggleRow(stringResource(R.string.setting_remember_devices), stringResource(R.string.setting_remember_devices_desc), s.rememberDevices) {
+                    onIntent(SettingsIntent.SetRememberDevices(it))
+                }
+            }
+            item {
+                ValueRow(
+                    title = stringResource(R.string.setting_trusted_devices),
+                    value = pluralStringResource(R.plurals.trusted_devices_count, ui.trustedDevices.size, ui.trustedDevices.size),
+                    onClick = { onIntent(SettingsIntent.ManageTrustedDevices) },
+                )
             }
 
             item { Section(stringResource(R.string.section_media)) }
@@ -231,6 +257,50 @@ private fun ValueRow(title: String, value: String, onClick: () -> Unit) {
         supportingContent = { SupportingText(value) },
         colors = appListItemColors(),
     )
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TrustedDevicesPane(devices: List<TrustedDevice>, onForget: (String?) -> Unit, onClose: () -> Unit) {
+    val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item { Section(stringResource(R.string.setting_trusted_devices)) }
+        if (devices.isEmpty()) {
+            item {
+                Text(
+                    stringResource(R.string.trusted_devices_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        }
+        items(devices, key = { it.id }) { d ->
+            ListItem(
+                selected = false,
+                onClick = { onForget(d.id) },
+                headlineContent = { Text(d.name) },
+                supportingContent = {
+                    SupportingText(stringResource(R.string.trusted_device_last_seen, dateFormat.format(Date(d.lastSeenAt))))
+                },
+                trailingContent = { SupportingText(stringResource(R.string.trusted_device_forget), fontSize = 12.sp) },
+                colors = appListItemColors(),
+            )
+        }
+        item {
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                if (devices.isNotEmpty()) {
+                    Button(onClick = { onForget(null) }) { Text(stringResource(R.string.trusted_devices_forget_all)) }
+                    Spacer(Modifier.width(12.dp))
+                }
+                Button(onClick = onClose) { Text(stringResource(R.string.action_back)) }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)

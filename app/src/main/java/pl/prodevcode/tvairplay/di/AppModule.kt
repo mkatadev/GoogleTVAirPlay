@@ -11,6 +11,7 @@ import pl.prodevcode.tvairplay.data.network.DeviceInfoRepositoryImpl
 import pl.prodevcode.tvairplay.data.permission.OverlayPermissionRepositoryImpl
 import pl.prodevcode.tvairplay.data.receiver.ReceiverRepositoryImpl
 import pl.prodevcode.tvairplay.data.receiver.ServiceVideoSurfaceHost
+import pl.prodevcode.tvairplay.data.security.TrustedDevicesRepositoryImpl
 import pl.prodevcode.tvairplay.data.settings.SettingsRepositoryImpl
 import pl.prodevcode.tvairplay.domain.repository.DeviceInfoRepository
 import pl.prodevcode.tvairplay.domain.repository.DiagnosticsRepository
@@ -18,6 +19,7 @@ import pl.prodevcode.tvairplay.domain.repository.LicensesRepository
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
 import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
+import pl.prodevcode.tvairplay.domain.repository.TrustedDevicesRepository
 import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 
 @Module
@@ -43,4 +45,7 @@ abstract class AppModule {
 
     @Binds @Singleton
     abstract fun bindDiagnosticsRepository(impl: DiagnosticsRepositoryImpl): DiagnosticsRepository
+
+    @Binds @Singleton
+    abstract fun bindTrustedDevicesRepository(impl: TrustedDevicesRepositoryImpl): TrustedDevicesRepository
 }

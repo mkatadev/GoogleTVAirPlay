@@ -36,7 +36,7 @@
     <string name="setting_open_on_connect">Open on connect</string>
     <string name="setting_open_on_connect_desc">Bring this app to the front when a device connects</string>
     <string name="setting_require_pin">Require PIN</string>
-    <string name="setting_require_pin_desc">Ask for a one‑time PIN on every new connection</string>
+    <string name="setting_require_pin_desc">Show a PIN on the TV that the connecting device must enter</string>
     <string name="setting_video">Video &amp; photos</string>
     <string name="setting_video_desc">Accept video and photo streaming</string>
     <string name="setting_audio">Music</string>
@@ -96,4 +96,17 @@
     <string name="diagnostics_mode_mirroring">mirroring</string>
     <string name="diagnostics_mode_video">video</string>
     <string name="diagnostics_mode_audio">audio</string>
+
+    <!-- Trusted devices -->
+    <string name="setting_remember_devices">Remember paired devices</string>
+    <string name="setting_remember_devices_desc">A device that entered the PIN once connects without it next time</string>
+    <string name="setting_trusted_devices">Trusted devices</string>
+    <plurals name="trusted_devices_count">
+        <item quantity="one">%d device</item>
+        <item quantity="other">%d devices</item>
+    </plurals>
+    <string name="trusted_devices_empty">No devices yet — they appear here after entering the PIN on an iPhone, iPad or Mac.</string>
+    <string name="trusted_device_last_seen">Last connected %1$s</string>
+    <string name="trusted_device_forget">Forget</string>
+    <string name="trusted_devices_forget_all">Forget all</string>
 </resources>
