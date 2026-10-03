@@ -120,7 +120,7 @@ Pushing a tag publishes a signed APK + SHA-256 to GitHub Releases ([`release.yml
 git tag v1.2.0 && git push origin v1.2.0
 ```
 
-`versionName` comes from the tag, and each published release gets the next increasing `versionCode` starting at 1. When rebuilding an existing release with *Run workflow*, pass its original version code to avoid changing its install order. The workflow needs these repository secrets: `KEYSTORE_BASE64` (`base64 -i release.keystore`), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. *Run workflow* from the Actions tab builds a signed APK as an artifact without publishing a release. Every push and PR runs [`ci.yml`](.github/workflows/ci.yml) (unit tests + debug build).
+`versionName` comes from the tag, and each published release gets the next increasing `versionCode` starting at 1. When rebuilding an existing release with *Run workflow*, pass its original version code; enable **Build from matching tag** to use that release's source. The workflow needs these repository secrets: `KEYSTORE_BASE64` (`base64 -i release.keystore`), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. *Run workflow* from the Actions tab builds a signed APK as an artifact without publishing a release. Every push and PR runs [`ci.yml`](.github/workflows/ci.yml) (unit tests + debug build).
 
 ## Architecture
 
