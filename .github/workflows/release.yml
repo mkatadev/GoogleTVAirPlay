@@ -20,6 +20,11 @@ on:
       version_code:
         description: Optional version code override (use when rebuilding an existing release)
         required: false
+      use_tag_source:
+        description: Build from the matching vX.Y.Z tag instead of the selected ref
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -36,6 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.use_tag_source && format('refs/tags/v{0}', inputs.version) || github.ref }}
           submodules: recursive
 
       - name: Resolve version
