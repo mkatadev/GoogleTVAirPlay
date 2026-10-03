@@ -116,14 +116,20 @@ git tag v1.2.0 && git push origin v1.2.0
 ```
 :airplay-core  (biblioteka Android, NDK/CMake)
   src/main/cpp/            most JNI, silnik audio, shim dnssd; third_party/ submoduły (UxPlay, libplist, FFmpeg, openssl-cmake)
-  pl.prodevcode.airplay    AirPlayService — foreground service, MediaSession, mDNS, renderery
+  pl.prodevcode.airplay    AirPlayService (cienki host) + współpracownicy: VideoSession, NowPlayingState, VolumeSync,
+                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, renderery
 
-:app  (tylko Google TV, Compose for TV)
-  domain/         model · interfejsy repozytoriów · use case'y   ← bez zależności Android/Hilt poza javax.inject
-  data/           ReceiverRepositoryImpl (bind do AirPlayService), SettingsRepositoryImpl, DeviceInfoRepositoryImpl
-  presentation/   MainActivity · ReceiverScreen (idle / mirroring / wideo / audio) · SettingsScreen · theme
+:app  (tylko Google TV, Compose for TV, Clean Architecture + MVI)
+  domain/         model · interfejsy repozytoriów · use case'y     ← czysty Kotlin, bez android.* (tylko javax.inject)
+  data/           ReceiverRepositoryImpl (binduje AirPlayService), SettingsRepositoryImpl, DeviceInfoRepositoryImpl
+  platform/       porty specyficzne dla Androida poza domeną (VideoSurfaceHost)
+  presentation/   per ekran: Contract (UiState · Intent · Effect) + MviViewModel + composable Screen/Content
   di/             bindingi Hilt
 ```
+
+Każdy ekran to jeden niemutowalny `UiState` renderowany przez bezstanowy composable `Content`; UI wysyła `Intent`y
+do ViewModelu, który redukuje stan i emituje jednorazowe `Effect`y (nawigacja). ViewModele mają testy jednostkowe
+(`app/src/test`, JUnit 4 + coroutines-test + MockK + Turbine).
 
 Stack: AGP 9.4 (wbudowany Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow.
 

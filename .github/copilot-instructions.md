@@ -37,3 +37,37 @@
 - `:app` layering: `domain/` has no Android/Hilt dependencies beyond `javax.inject`; `data/` implements repositories; `presentation/` is Compose for TV; `di/` holds Hilt bindings.
 - Verify with the smallest relevant command: `./gradlew :app:testDebugUnitTest`, `./gradlew :app:assembleDebug`.
 - Comment code only where clarification is genuinely needed.
+- Use the Maven Central metadata (`https://repo1.maven.org/maven2/<group path>/<artifact>/maven-metadata.xml`) and Google Maven (`https://dl.google.com/dl/android/maven2/<group path>/group-index.xml`) to check versions; the search.maven.org index lags.
+
+## Architecture (`:app`)
+
+Clean Architecture + MVI. Dependency direction: `presentation → domain ← data`; `di/` wires it with Hilt.
+
+- **`domain/`** — pure Kotlin (`javax.inject` only, **no `android.*`**). `model/` (immutable data classes, e.g. `ReceiverState`, `ReceiverSettings`, `CoverArt` carries encoded bytes, never `Bitmap`), `repository/` (interfaces), `usecase/` (one class per action, `operator fun invoke`). Domain must be unit-testable on the JVM without Robolectric.
+- **`data/`** — repository implementations, `AirPlayServiceConnector` (binds the foreground service), SharedPreferences-backed `SettingsRepositoryImpl`. Maps `airplay-core` types to domain models here, nowhere else.
+- **`platform/`** — Android-specific ports that are not domain concepts (e.g. `VideoSurfaceHost` for `Surface`). Interface here, implementation in `data/`, bound in `di/AppModule`.
+- **`presentation/`** — one package per screen (`receiver/`, `settings/`, `licenses/`), each with:
+  - `XxxContract.kt`: `data class XxxUiState : UiState`, `sealed interface XxxIntent : UiIntent`, `sealed interface XxxEffect : UiEffect` (or `typealias XxxEffect = NoEffect`).
+  - `XxxViewModel : MviViewModel<State, Intent, Effect>` (`presentation/mvi/Mvi.kt`): single `state: StateFlow`, `onIntent(intent)` is the only entry point, one-shot `effects` (navigation, toasts) via `sendEffect`. Derive state from flows with `Flow.reduceInto { }`; never expose extra flows or ad-hoc public methods on a ViewModel.
+  - `XxxScreen.kt`: a thin `@Composable XxxScreen(viewModel = hiltViewModel())` that collects state and delegates to a stateless `XxxContent(state, onIntent, …)`. UI never calls repositories/use cases directly. Screen-local UI flags (pickers, dialogs) live in the UiState, not in `remember { mutableStateOf }`.
+  - Collect effects with `CollectEffects(viewModel.effects) { … }`.
+- **Adding a setting**: `ReceiverSettings` field → `SettingsRepositoryImpl` mapping to a `Prefs` key → `SettingsIntent.SetXxx` → `SettingsViewModel.onIntent` (`update(restart = true)` if the receiver must re-advertise) → row in `SettingsContent` → strings in `values/` **and** `values-pl/`.
+- **Adding a screen**: contract + ViewModel + Screen as above, `Destination` entry in `presentation/navigation/AppNavigation.kt`, tests for the ViewModel.
+
+## Architecture (`:airplay-core`)
+
+`AirPlayService` is a thin host: lifecycle, native configuration and dispatch of `RaopCallbackHandler` callbacks. Behaviour lives in collaborators — extend those, do not grow the service:
+
+- `service/VideoSession` — AirPlay Video (HLS) state + `AirPlayVideoPlayer` wrapper.
+- `audio/NowPlayingState` — track metadata, artwork bytes, extrapolated position.
+- `audio/VolumeSync` — two-way volume (RAOP ↔ DACP), `audio/DacpController`, `audio/DacpPlayer` (Media3 `SimpleBasePlayer`).
+- `service/MediaSessionController` — `MediaSessionCompat` (pending migration to Media3 `MediaSession`), `service/ServiceNotifications` — foreground notification.
+- `discovery/NsdServiceManager` — mDNS registration + `status`; `discovery/NetworkWatcher` — re-announce after network change.
+- `renderer/VideoRenderer`, `DecoderSelector`, `VideoPipeline`, `AudioRenderer` — mirroring decode/render; `bridge/NativeBridge` — the only JNI surface.
+- State crosses to `:app` only as `StateFlow`s on the service; the app maps them in `ReceiverRepositoryImpl`.
+
+## Tests
+
+- JVM unit tests in `app/src/test`: JUnit 4, `kotlinx-coroutines-test`, MockK, Turbine. `presentation/MainDispatcherRule` for ViewModels.
+- Every ViewModel and non-trivial use case gets tests (intent → state / effect). Mock repositories, not use cases.
+- Run `./gradlew :app:testDebugUnitTest`; do not add Robolectric or instrumentation tests unless asked.
