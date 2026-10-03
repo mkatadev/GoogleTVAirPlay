@@ -69,6 +69,6 @@ Clean Architecture + MVI. Dependency direction: `presentation → domain ← dat
 
 ## Tests
 
-- JVM unit tests in `app/src/test`: JUnit 4, `kotlinx-coroutines-test`, MockK, Turbine. `presentation/MainDispatcherRule` for ViewModels.
+- JVM unit tests in `app/src/test` (JUnit 4, `kotlinx-coroutines-test`, MockK, Turbine; `presentation/MainDispatcherRule` for ViewModels) and `airplay-core/src/test` (JUnit 4, real `org.json`, `testing/FakeSharedPreferences` for preference-backed classes).
 - Every ViewModel and non-trivial use case gets tests (intent → state / effect). Mock repositories, not use cases.
-- Run `./gradlew :app:testDebugUnitTest`; do not add Robolectric or instrumentation tests unless asked.
+- Run `./gradlew :airplay-core:testDebugUnitTest :app:testDebugUnitTest`; do not add Robolectric or instrumentation tests unless asked. CI runs both plus `:app:lintDebug`.

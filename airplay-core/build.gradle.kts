@@ -45,4 +45,8 @@ dependencies {
     implementation(libs.media3.session)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.oboe)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.org.json)
 }

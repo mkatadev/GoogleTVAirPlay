@@ -15,6 +15,7 @@ oboe = "1.11.0"
 junit = "4.13.2"
 mockk = "1.14.11"
 turbine = "1.2.1"
+orgJson = "20260814"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -45,6 +46,8 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+# real org.json for JVM unit tests; the android.jar stub throws
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
