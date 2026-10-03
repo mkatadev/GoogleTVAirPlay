@@ -31,6 +31,8 @@ sealed interface ReceiverIntent : UiIntent {
     data object GrantOverlay : ReceiverIntent
     /** Any remote key: wakes a dimmed screen and restarts the idle timer. */
     data object UserInteraction : ReceiverIntent
+    /** Back on the PIN prompt: hide it. */
+    data object DismissPin : ReceiverIntent
 
     data object PlayPause : ReceiverIntent
     data class SeekBy(val deltaMs: Long) : ReceiverIntent

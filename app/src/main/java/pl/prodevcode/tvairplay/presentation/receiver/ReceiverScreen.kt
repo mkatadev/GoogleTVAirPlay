@@ -21,7 +21,6 @@ import pl.prodevcode.tvairplay.presentation.components.VideoSurface
 import pl.prodevcode.tvairplay.presentation.receiver.screens.AudioSession
 import pl.prodevcode.tvairplay.presentation.receiver.screens.DimOverlay
 import pl.prodevcode.tvairplay.presentation.receiver.screens.IdleScreen
-import pl.prodevcode.tvairplay.presentation.receiver.screens.PinOverlay
 import pl.prodevcode.tvairplay.presentation.receiver.screens.VideoOverlay
 
 @Composable
@@ -95,7 +94,6 @@ private fun ReceiverContent(
             }
         }
 
-        state.pin?.let { PinOverlay(pin = it) }
         if (ui.dimmed) DimOverlay(nowPlaying = state.nowPlaying)
     }
 }

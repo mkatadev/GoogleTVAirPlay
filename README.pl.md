@@ -29,8 +29,8 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 - 🔁 **Odporność na chwilowe zerwania** — zablokowanie iPhone'a nie kończy już odtwarzania audio/wideo
 - 🚀 **Działa w tle** i **startuje z telewizorem** — odbiornik zawsze gotowy
 - 🔔 **Aktualizacje w aplikacji** — sprawdza GitHub Releases, pobiera podpisany APK, weryfikuje SHA-256 i przekazuje do instalatora systemowego; potwierdzasz pilotem (bez telemetrii)
-- 🎛️ Zaprojektowany pod pilota: UI w Compose for TV, bez dotyku
-- 🌍 Polski i angielski
+- 🎛️ Zaprojektowany pod pilota: UI w Compose for TV, bez dotyku; edytor nazwy urządzenia z gotowymi podpowiedziami
+- 🌍 Polski i angielski — przełączane w aplikacji (Ustawienia → Język), niezależnie od języka telewizora
 
 <div align="center">
 <img src="docs/screenshots/settings-pl.png" width="800" alt="Ustawienia">
@@ -79,6 +79,12 @@ Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad 
 1. Telewizor i urządzenie Apple muszą być w tej samej sieci Wi-Fi.
 2. Otwórz Zdjęcia, Muzykę, YouTube, Safari… i dotknij ikony AirPlay.
 3. Wybierz telewizor (domyślna nazwa **Google TV**, do zmiany w Ustawieniach).
+4. Przy włączonym parowaniu PIN-em telewizor pokazuje 4-cyfrowy PIN przez 60 s — wpisz go na urządzeniu Apple. Zaufane urządzenia pomijają ten krok następnym razem.
+
+<div align="center">
+<img src="docs/screenshots/pin-pl.png" width="49%" alt="Ekran PIN z odliczaniem">
+<img src="docs/screenshots/devicename-pl.png" width="49%" alt="Edytor nazwy urządzenia z podpowiedziami">
+</div>
 
 Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przytrzymaj, aby przyspieszyć) · **▲ ▼** skok ±10 % · **0–9** skok do 0–90 % · **Wstecz** stop. Jeśli strumień ma kilka ścieżek audio lub napisy, **▼** otwiera menu ścieżek.
 
@@ -128,7 +134,8 @@ git tag v1.2.0 && git push origin v1.2.0
   domain/         model · interfejsy repozytoriów · use case'y     ← czysty Kotlin, bez android.* (tylko javax.inject)
   data/           ReceiverRepositoryImpl (binduje AirPlayService), SettingsRepositoryImpl, DeviceInfoRepositoryImpl
   platform/       porty specyficzne dla Androida poza domeną (VideoSurfaceHost)
-  presentation/   per ekran: Contract (UiState · Intent · Effect) + MviViewModel + composable Screen/Content
+  presentation/   per ekran: Contract (UiState · Intent · Effect) + MviViewModel + composable Screen/Content (+ @Preview)
+                  settings/ to hub; każde pod-ustawienie (nazwa urządzenia, język, …) ma własny ekran i ViewModel
   di/             bindingi Hilt
 ```
 

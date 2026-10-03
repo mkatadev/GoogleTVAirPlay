@@ -5,6 +5,15 @@ enum class LatencyMode { LOW, BALANCED, SMOOTH }
 
 val IDLE_DIM_OPTIONS = listOf(0, 1, 5, 15)
 
+/** UI language; SYSTEM follows the TV. */
+enum class AppLanguage(val tag: String) {
+    SYSTEM(""), ENGLISH("en"), POLISH("pl");
+
+    companion object {
+        fun fromTag(tag: String?) = entries.firstOrNull { it.tag == (tag ?: "") } ?: SYSTEM
+    }
+}
+
 data class ReceiverSettings(
     val deviceName: String = "Google TV",
     val startOnBoot: Boolean = true,
@@ -21,4 +30,5 @@ data class ReceiverSettings(
     val idleDimMinutes: Int = 5,
     /** Show HLS subtitles in the system language without asking. */
     val subtitlesByDefault: Boolean = false,
+    val language: AppLanguage = AppLanguage.SYSTEM,
 )

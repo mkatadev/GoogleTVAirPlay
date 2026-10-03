@@ -2,7 +2,7 @@ package pl.prodevcode.tvairplay.presentation
 
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
@@ -18,7 +18,7 @@ import pl.prodevcode.tvairplay.presentation.receiver.ReceiverViewModel
 import pl.prodevcode.tvairplay.presentation.theme.TvAirPlayTheme
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val receiverViewModel: ReceiverViewModel by viewModels()
 

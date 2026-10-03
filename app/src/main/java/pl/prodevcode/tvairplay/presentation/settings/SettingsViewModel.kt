@@ -13,7 +13,6 @@ import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RestartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.UpdateSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
-import pl.prodevcode.tvairplay.domain.usecase.ForgetTrustedDeviceUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveInstallProgressUseCase
@@ -29,7 +28,6 @@ class SettingsViewModel @Inject constructor(
     private val observeOverlay: ObserveOverlayPermissionUseCase,
     private val requestOverlay: RequestOverlayPermissionUseCase,
     observeTrustedDevices: ObserveTrustedDevicesUseCase,
-    private val forgetTrustedDevice: ForgetTrustedDeviceUseCase,
     observeUpdate: ObserveUpdateUseCase,
     private val checkForUpdate: CheckForUpdateUseCase,
     observeInstallProgress: ObserveInstallProgressUseCase,
@@ -41,7 +39,7 @@ class SettingsViewModel @Inject constructor(
     init {
         observeSettings().reduceInto { copy(settings = it) }
         observeOverlay().reduceInto { copy(overlayGranted = it) }
-        observeTrustedDevices().reduceInto { copy(trustedDevices = it) }
+        observeTrustedDevices().reduceInto { copy(trustedDeviceCount = it.size) }
         observeUpdate().reduceInto { copy(update = it) }
         observeInstallProgress().reduceInto { copy(install = it) }
     }
@@ -55,33 +53,19 @@ class SettingsViewModel @Inject constructor(
             Intent.CheckForUpdate -> viewModelScope.launch { checkForUpdate(force = true) }
             Intent.InstallUpdate -> viewModelScope.launch { installUpdate() }
             Intent.GrantOverlay -> requestOverlay()
-            Intent.PickDeviceName -> setState { copy(pickingDeviceName = true) }
-            is Intent.DeviceNamePicked -> {
-                setState { copy(pickingDeviceName = false) }
-                intent.name?.let { n -> update(restart = true) { copy(deviceName = n) } }
+            is Intent.Open -> {
+                setState { copy(lastOpened = intent.sub) }
+                sendEffect(SettingsEffect.Navigate(intent.sub))
             }
             is Intent.SetStartOnBoot -> update { copy(startOnBoot = intent.enabled) }
             is Intent.SetRunInBackground -> update { copy(runInBackground = intent.enabled) }
             is Intent.SetOpenAppOnConnect -> update { copy(openAppOnConnect = intent.enabled) }
             is Intent.SetRequirePin -> update(restart = true) { copy(requirePin = intent.enabled) }
             is Intent.SetRememberDevices -> update { copy(rememberDevices = intent.enabled) }
-            Intent.ManageTrustedDevices -> setState { copy(managingTrustedDevices = true) }
-            Intent.CloseTrustedDevices -> setState { copy(managingTrustedDevices = false) }
-            is Intent.ForgetTrustedDevice -> forgetTrustedDevice(intent.id)
             is Intent.SetAdvertiseVideo -> update(restart = true) { copy(advertiseVideo = intent.enabled) }
             is Intent.SetAdvertiseAudio -> update(restart = true) { copy(advertiseAudio = intent.enabled) }
             is Intent.SetHevcEnabled -> update(restart = true) { copy(hevcEnabled = intent.enabled) }
             is Intent.SetSubtitlesByDefault -> update { copy(subtitlesByDefault = intent.enabled) }
-            Intent.PickIdleDim -> setState { copy(pickingIdleDim = true) }
-            is Intent.IdleDimPicked -> {
-                setState { copy(pickingIdleDim = false) }
-                intent.minutes?.let { m -> update { copy(idleDimMinutes = m) } }
-            }
-            Intent.PickLatencyMode -> setState { copy(pickingLatencyMode = true) }
-            is Intent.LatencyModePicked -> {
-                setState { copy(pickingLatencyMode = false) }
-                intent.mode?.let { m -> update { copy(latencyMode = m) } }
-            }
         }
     }
 

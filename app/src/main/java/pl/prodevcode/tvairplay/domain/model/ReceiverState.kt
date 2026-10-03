@@ -48,6 +48,9 @@ data class VideoPlayback(
     val hasTrackChoices: Boolean get() = audioTracks.size > 1 || subtitleTracks.isNotEmpty()
 }
 
+/** PIN the connecting device must enter. */
+data class PinRequest(val pin: String, val shownAtMs: Long, val expiresAtMs: Long)
+
 data class ReceiverState(
     val status: ReceiverStatus = ReceiverStatus.STOPPED,
     val mode: SessionMode = SessionMode.IDLE,
@@ -55,7 +58,7 @@ data class ReceiverState(
     val mirrorAspectRatio: Float = 16f / 9f,
     val nowPlaying: NowPlaying = NowPlaying(),
     val video: VideoPlayback = VideoPlayback(),
-    val pin: String? = null,
+    val pin: PinRequest? = null,
     val lastLog: String = "",
 )
 

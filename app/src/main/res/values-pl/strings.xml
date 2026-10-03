@@ -170,4 +170,21 @@
     <string name="tracks_unnamed">Ścieżka %1$d</string>
     <string name="setting_subtitles">Napisy domyślnie włączone</string>
     <string name="setting_subtitles_desc">Pokazuj napisy w języku telewizora, gdy wideo je ma; ścieżki zmienisz przyciskiem ▼ podczas odtwarzania</string>
+    <string name="action_cancel">Anuluj</string>
+    <string name="setting_language">Język</string>
+    <string name="language_system">Taki jak telewizor</string>
+    <string name="device_name_hint">Nazwa widoczna na iPhonie, iPadzie i Macu</string>
+    <string name="device_name_suggestions">Podpowiedzi</string>
+    <string name="action_save">Zapisz</string>
+    <string-array name="device_name_presets">
+        <item>Google TV</item>
+        <item>Salon TV</item>
+        <item>Sypialnia TV</item>
+        <item>Kuchnia TV</item>
+        <item>Gabinet TV</item>
+    </string-array>
+    <string name="language_subtitle">Język ekranów tej aplikacji. Język telewizora się nie zmienia.</string>
+    <string name="idle_dim_subtitle">Gdy gra tylko muzyka, ekran przyciemni się po tym czasie. Dowolny klawisz pilota go wybudza.</string>
+    <string name="latency_subtitle">Kompromis między opóźnieniem a płynnością przy mirroringu ekranu. Działa natychmiast.</string>
+    <string name="trusted_devices_subtitle">Urządzenia, które raz wpisały PIN, łączą się bez pytania. Wybierz, aby zapomnieć.</string>
 </resources>

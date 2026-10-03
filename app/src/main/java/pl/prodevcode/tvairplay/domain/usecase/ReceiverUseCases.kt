@@ -27,6 +27,10 @@ class RestartReceiverUseCase @Inject constructor(private val repo: ReceiverRepos
     operator fun invoke() = repo.restart()
 }
 
+class PinControlUseCase @Inject constructor(private val repo: ReceiverRepository) {
+    fun dismiss() = repo.dismissPin()
+}
+
 /** Transport controls: routed to AirPlay video (HLS) or to the sender via DACP depending on session. */
 class PlaybackControlUseCase @Inject constructor(private val repo: ReceiverRepository) {
     fun togglePlayPause() = repo.togglePlayPause()

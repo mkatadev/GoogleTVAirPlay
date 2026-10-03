@@ -162,4 +162,21 @@
     <string name="tracks_unnamed">Track %1$d</string>
     <string name="setting_subtitles">Subtitles on by default</string>
     <string name="setting_subtitles_desc">Show subtitles in the TV language when the video has them; switch tracks with ▼ while playing</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="setting_language">Language</string>
+    <string name="language_system">Same as the TV</string>
+    <string name="device_name_hint">Name shown on your iPhone, iPad and Mac</string>
+    <string name="device_name_suggestions">Suggestions</string>
+    <string name="action_save">Save</string>
+    <string-array name="device_name_presets">
+        <item>Google TV</item>
+        <item>Living Room TV</item>
+        <item>Bedroom TV</item>
+        <item>Kitchen TV</item>
+        <item>Office TV</item>
+    </string-array>
+    <string name="language_subtitle">Language of this app’s screens. The TV’s own language is not changed.</string>
+    <string name="idle_dim_subtitle">While only music plays, the screen dims after this time. Any key on the remote wakes it.</string>
+    <string name="latency_subtitle">Trade-off between delay and smoothness for screen mirroring. Applies immediately.</string>
+    <string name="trusted_devices_subtitle">Devices that entered the PIN once connect without asking again. Select one to forget it.</string>
 </resources>

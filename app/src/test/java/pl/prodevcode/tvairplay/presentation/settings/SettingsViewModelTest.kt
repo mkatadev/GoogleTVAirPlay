@@ -1,5 +1,6 @@
 package pl.prodevcode.tvairplay.presentation.settings
 
+import app.cash.turbine.test
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -15,7 +16,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import pl.prodevcode.tvairplay.domain.model.LatencyMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.AppUpdate
 import pl.prodevcode.tvairplay.domain.model.InstallProgress
@@ -32,7 +32,6 @@ import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RestartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.UpdateSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
-import pl.prodevcode.tvairplay.domain.usecase.ForgetTrustedDeviceUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveInstallProgressUseCase
@@ -66,7 +65,6 @@ class SettingsViewModelTest {
         observeOverlay = ObserveOverlayPermissionUseCase(overlayRepo),
         requestOverlay = RequestOverlayPermissionUseCase(overlayRepo),
         observeTrustedDevices = ObserveTrustedDevicesUseCase(trustedRepo),
-        forgetTrustedDevice = ForgetTrustedDeviceUseCase(trustedRepo),
         observeUpdate = ObserveUpdateUseCase(updateRepo),
         checkForUpdate = CheckForUpdateUseCase(updateRepo),
         observeInstallProgress = ObserveInstallProgressUseCase(updateRepo),
@@ -103,32 +101,20 @@ class SettingsViewModelTest {
         assertEquals("1.1.0", (vm.state.value.update as UpdateCheck.Available).update.latestVersion)
     }
 
-    @Test fun `trusted devices pane lists devices and forgets them`() = runTest {
+    @Test fun `opening a sub-screen navigates and remembers the row to refocus`() = runTest {
+        val vm = viewModel()
+        vm.effects.test {
+            vm.onIntent(SettingsIntent.Open(SettingsSub.LANGUAGE))
+            assertEquals(SettingsEffect.Navigate(SettingsSub.LANGUAGE), awaitItem())
+        }
+        assertEquals(SettingsSub.LANGUAGE, vm.state.value.lastOpened)
+    }
+
+    @Test fun `trusted device count follows the repository`() = runTest {
         trusted.value = listOf(TrustedDevice("pk1", "Ania's iPhone", 1, 2))
         val vm = viewModel()
         advanceUntilIdle()
-        vm.onIntent(SettingsIntent.ManageTrustedDevices)
-        assertTrue(vm.state.value.managingTrustedDevices)
-        assertEquals("Ania's iPhone", vm.state.value.trustedDevices.single().name)
-
-        vm.onIntent(SettingsIntent.ForgetTrustedDevice("pk1"))
-        verify { trustedRepo.forget("pk1") }
-        vm.onIntent(SettingsIntent.ForgetTrustedDevice(null))
-        verify { trustedRepo.forgetAll() }
-
-        vm.onIntent(SettingsIntent.CloseTrustedDevices)
-        assertFalse(vm.state.value.managingTrustedDevices)
-    }
-
-    @Test fun `latency mode picker applies live without restart`() = runTest {
-        val vm = viewModel()
-        vm.onIntent(SettingsIntent.PickLatencyMode)
-        assertTrue(vm.state.value.pickingLatencyMode)
-        vm.onIntent(SettingsIntent.LatencyModePicked(LatencyMode.LOW))
-        advanceUntilIdle()
-        assertFalse(vm.state.value.pickingLatencyMode)
-        assertEquals(LatencyMode.LOW, vm.state.value.settings.latencyMode)
-        verify(exactly = 0) { receiverRepo.restart() }
+        assertEquals(1, vm.state.value.trustedDeviceCount)
     }
 
     @Test fun `remember devices is a local setting`() = runTest {
@@ -163,23 +149,6 @@ class SettingsViewModelTest {
         vm.onIntent(SettingsIntent.SetAdvertiseAudio(false))
         vm.onIntent(SettingsIntent.SetHevcEnabled(false))
         advanceUntilIdle()
-        verify(exactly = 1) { receiverRepo.restart() }
-    }
-
-    @Test fun `device name picker flow`() = runTest {
-        val vm = viewModel()
-        vm.onIntent(SettingsIntent.PickDeviceName)
-        assertTrue(vm.state.value.pickingDeviceName)
-
-        vm.onIntent(SettingsIntent.DeviceNamePicked(null))
-        advanceUntilIdle()
-        assertFalse(vm.state.value.pickingDeviceName)
-        coVerify(exactly = 0) { settingsRepo.update(any()) }
-
-        vm.onIntent(SettingsIntent.PickDeviceName)
-        vm.onIntent(SettingsIntent.DeviceNamePicked("Kuchnia TV"))
-        advanceUntilIdle()
-        assertEquals("Kuchnia TV", vm.state.value.settings.deviceName)
         verify(exactly = 1) { receiverRepo.restart() }
     }
 

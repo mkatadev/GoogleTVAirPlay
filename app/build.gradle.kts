@@ -69,6 +69,7 @@ android {
 
 dependencies {
     implementation(libs.media3.ui)
+    implementation(libs.androidx.appcompat)
     // AirPlay receiver core (UxPlay, GPL-3.0) — native build, see airplay-core/README.md
     implementation(project(":airplay-core"))
 
@@ -84,6 +85,8 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
     implementation(libs.tv.material)
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

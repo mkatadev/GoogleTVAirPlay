@@ -13,6 +13,7 @@ import pl.prodevcode.tvairplay.data.receiver.ReceiverRepositoryImpl
 import pl.prodevcode.tvairplay.data.receiver.ServiceSubtitleCues
 import pl.prodevcode.tvairplay.data.receiver.ServiceVideoSurfaceHost
 import pl.prodevcode.tvairplay.data.security.TrustedDevicesRepositoryImpl
+import pl.prodevcode.tvairplay.data.settings.AppCompatAppLocale
 import pl.prodevcode.tvairplay.data.settings.SettingsRepositoryImpl
 import pl.prodevcode.tvairplay.data.update.GitHubUpdateRepository
 import pl.prodevcode.tvairplay.domain.repository.DeviceInfoRepository
@@ -23,6 +24,7 @@ import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
 import pl.prodevcode.tvairplay.domain.repository.TrustedDevicesRepository
 import pl.prodevcode.tvairplay.domain.repository.UpdateRepository
+import pl.prodevcode.tvairplay.platform.AppLocale
 import pl.prodevcode.tvairplay.platform.SubtitleCues
 import pl.prodevcode.tvairplay.platform.VideoSurfaceHost
 
@@ -58,4 +60,7 @@ abstract class AppModule {
 
     @Binds @Singleton
     abstract fun bindSubtitleCues(impl: ServiceSubtitleCues): SubtitleCues
+
+    @Binds @Singleton
+    abstract fun bindAppLocale(impl: AppCompatAppLocale): AppLocale
 }

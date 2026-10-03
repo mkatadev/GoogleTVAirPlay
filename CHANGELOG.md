@@ -16,6 +16,10 @@ The section for the version being released is used verbatim as the GitHub releas
 - **Update check and in-app install**: Settings → About compares with GitHub Releases, downloads the signed APK, verifies its SHA-256 and hands it to the system installer (confirmed with the remote). The idle screen hints when an update is available.
 - **Audio track and subtitle selection** for AirPlay Video (HLS): ▼ on the playback overlay opens the track menu; subtitles render through Media3; *Subtitles on by default* setting.
 - Now-playing screen: focus lands on play/pause, ◀ ▶ and media keys switch tracks directly.
+- **App language** (Settings → General): *Same as the TV*, English or Polish, applied instantly and remembered (per-app locale, also in the Android 13+ system language settings).
+- **Device name editor** with ready-made suggestions (Living Room TV, Bedroom TV, …).
+- Settings sub-pages (device name, language, dimming, latency, trusted devices) are separate screens; Back returns to the row you came from.
+- PIN prompt: shown on every screen, with a 60 s countdown ring; *Cancel* / Back hides it while the PIN stays valid; blocks remote keys from reaching the screen underneath.
 - `install.sh` one-liner installer documented in the README (EN/PL).
 - Project rules for AI assistants (`.github/copilot-instructions.md`).
 
@@ -25,7 +29,7 @@ The section for the version being released is used verbatim as the GitHub releas
 - Locking the iPhone no longer ends audio/video playback: the session is held for 8 s over the short connection drop and a reconnecting sender is treated as the same client.
 - Media controls moved to a Media3 `MediaSession` (system now-playing surface, media keys, notification) backed by the sender's audio session or the video player.
 - Architecture: `:app` is Clean Architecture + MVI with a contract (UiState · Intent · Effect) per screen and a pure-Kotlin domain; `AirPlayService` is split into focused collaborators (video session, now-playing state, volume sync, media session, notifications, network watcher, device identity).
-- Toolchain: Gradle 9.8, Compose compiler plugin 2.4.20, Compose BOM 2026.09, Media3 1.11.1, coroutines 1.11, Oboe 1.11; `androidx.media` dropped.
+- Toolchain: Gradle 9.8, Compose compiler plugin 2.4.20, Compose BOM 2026.09, Media3 1.11.1, coroutines 1.11, Oboe 1.11; `androidx.media` dropped, `androidx.appcompat` added for per-app locales.
 - CI runs unit tests of both modules and Android Lint; compiler and Lint are warning-free.
 
 ### Fixed

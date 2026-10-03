@@ -16,6 +16,8 @@ interface ReceiverRepository {
     fun skipNext()
     fun skipPrevious()
     fun stopVideo()
+    /** Hide the PIN prompt; the PIN stays valid until it expires. */
+    fun dismissPin()
     fun selectAudioTrack(id: String)
     /** `null` turns subtitles off. */
     fun selectSubtitleTrack(id: String?)

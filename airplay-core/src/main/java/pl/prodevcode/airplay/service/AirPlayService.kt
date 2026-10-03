@@ -42,6 +42,9 @@ import pl.prodevcode.airplay.renderer.AudioRenderer
 import pl.prodevcode.airplay.renderer.VideoRenderer
 import pl.prodevcode.airplay.security.TrustedDeviceStore
 
+/** A PIN currently shown to the user. */
+data class PinPrompt(val pin: String, val shownAtMs: Long, val expiresAtMs: Long)
+
 /**
  * Foreground service hosting the native AirPlay receiver. Owns the lifecycle (start/stop,
  * wake lock, mDNS) and dispatches native callbacks to the session collaborators:
@@ -78,6 +81,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     // tcp connections currently open; _connectionCount is what the ui sees and lags by the grace period
     private var liveConnections = 0
     private val sessionEnd = Runnable { finishSession() }
+    // a pin nobody enters (sender cancelled without closing the socket) must not stay on screen forever
+    private val pinExpiry = Runnable { clearPin() }
 
     // --- state exposed to the app -------------------------------------------------------------------
 
@@ -125,13 +130,10 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     var logCallback: ((String) -> Unit)? = null
 
-    @Volatile private var lastPin: String? = null
-    var pinCallback: ((String?) -> Unit)? = null
-        set(value) {
-            field = value
-            // ui replay only: binding the activity must not mint a new native pin
-            value?.invoke(lastPin)
-        }
+    private val _pinPrompt = MutableStateFlow<PinPrompt?>(null)
+    /** PIN the connecting device must enter, with who asked and when it expires. */
+    val pinPrompt = _pinPrompt.asStateFlow()
+    private val lastPin: String? get() = _pinPrompt.value?.pin
 
     private fun log(msg: String) {
         Log.i(TAG, msg)
@@ -561,8 +563,10 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onDisplayPin(pin: String) {
         // a new pin is the sync point with the client prompt: show every new value immediately
         if (lastPin == pin) return
-        lastPin = pin
-        pinCallback?.invoke(pin)
+        val now = System.currentTimeMillis()
+        _pinPrompt.value = PinPrompt(pin, shownAtMs = now, expiresAtMs = now + PIN_EXPIRY_MS)
+        mainHandler.removeCallbacks(pinExpiry)
+        mainHandler.postDelayed(pinExpiry, PIN_EXPIRY_MS)
         updateNotification()
     }
 
@@ -639,10 +643,14 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     private fun clearPin() {
-        lastPin = null
-        pinCallback?.invoke(null)
+        mainHandler.removeCallbacks(pinExpiry)
+        if (_pinPrompt.value == null) return
+        _pinPrompt.value = null
         updateNotification()
     }
+
+    /** Back on the prompt: hide it. The PIN itself stays valid until the sender gives up or it expires. */
+    fun dismissPin() = clearPin()
 
     private fun updateNotification() {
         if (_serverState.value == ServerState.RUNNING) notifications.update()
@@ -695,6 +703,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         const val ACTION_PREV = "pl.prodevcode.airplay.PREV"
         const val ACTION_START_SERVER = "pl.prodevcode.airplay.START_SERVER"
         private const val SESSION_GRACE_MS = 8_000L
+        private const val PIN_EXPIRY_MS = 60_000L
 
         private val AUDIO_CONFIG_DEBOUNCE = 500.milliseconds
     }

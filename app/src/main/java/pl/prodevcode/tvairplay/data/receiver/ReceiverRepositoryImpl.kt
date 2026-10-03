@@ -11,10 +11,12 @@ import androidx.media3.common.C
 import pl.prodevcode.airplay.Prefs
 import pl.prodevcode.airplay.renderer.VideoTrack
 import pl.prodevcode.airplay.service.AirPlayService
+import pl.prodevcode.airplay.service.PinPrompt
 import pl.prodevcode.tvairplay.domain.model.CoverArt
 import pl.prodevcode.tvairplay.domain.model.MediaTrack
 import pl.prodevcode.tvairplay.domain.model.TrackKind
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
+import pl.prodevcode.tvairplay.domain.model.PinRequest
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
 import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
 import pl.prodevcode.tvairplay.domain.model.SessionMode
@@ -58,7 +60,7 @@ class ReceiverRepositoryImpl @Inject constructor(
                 subtitleTracks = tracks.filter { it.type == C.TRACK_TYPE_TEXT }.map { it.toDomain(TrackKind.SUBTITLE) },
             )
         }
-        return combine(session, music, hls, videoAspect, connector.pin, connector.logs) { values ->
+        return combine(session, music, hls, videoAspect, pinPrompt, connector.logs) { values ->
             @Suppress("UNCHECKED_CAST")
             val session = values[0] as Triple<ReceiverStatus, Int, SessionMode>
             val (status, clients, mode) = session
@@ -69,7 +71,7 @@ class ReceiverRepositoryImpl @Inject constructor(
                 mirrorAspectRatio = values[3] as Float,
                 nowPlaying = values[1] as NowPlaying,
                 video = values[2] as VideoPlayback,
-                pin = values[4] as String?,
+                pin = (values[4] as PinPrompt?)?.let { PinRequest(it.pin, it.shownAtMs, it.expiresAtMs) },
                 lastLog = values[5] as String,
             )
         }
@@ -125,6 +127,7 @@ class ReceiverRepositoryImpl @Inject constructor(
     override fun skipNext() { svc?.dacpController?.nextItem() }
     override fun skipPrevious() { svc?.dacpController?.prevItem() }
     override fun stopVideo() { svc?.stopVideoPlayback() }
+    override fun dismissPin() { svc?.dismissPin() }
     override fun selectAudioTrack(id: String) { svc?.selectVideoTrack(C.TRACK_TYPE_AUDIO, id) }
     override fun selectSubtitleTrack(id: String?) { svc?.selectVideoTrack(C.TRACK_TYPE_TEXT, id) }
 }

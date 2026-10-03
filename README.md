@@ -29,8 +29,8 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 - 🔁 **Survives short drop-outs** — locking the iPhone no longer ends audio/video playback
 - 🚀 **Runs in the background** and **starts at boot** — the TV is always ready to receive
 - 🔔 **In-app updates** — checks GitHub Releases, downloads the signed APK, verifies its SHA-256 and hands it to the system installer; you confirm with the remote (no telemetry)
-- 🎛️ Built for the remote: Compose for TV UI, no touch required
-- 🌍 English and Polish
+- 🎛️ Built for the remote: Compose for TV UI, no touch required; device name editor with ready-made suggestions
+- 🌍 English and Polish — switchable in the app (Settings → Language), independent of the TV language
 
 <div align="center">
 <img src="docs/screenshots/settings-en.png" width="800" alt="Settings">
@@ -79,6 +79,12 @@ Afterwards open the app once and grant **Display over other apps** so playback c
 1. Make sure the TV and the Apple device are on the same Wi-Fi network.
 2. Open Photos, Music, YouTube, Safari… and tap the AirPlay icon.
 3. Pick the TV (default name **Google TV**, changeable in Settings).
+4. With PIN pairing on, the TV shows a 4-digit PIN for 60 s — type it on the Apple device. Trusted devices skip this step next time.
+
+<div align="center">
+<img src="docs/screenshots/pin-en.png" width="49%" alt="PIN prompt with countdown">
+<img src="docs/screenshots/devicename-en.png" width="49%" alt="Device name editor with suggestions">
+</div>
 
 While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop. If the stream has several audio tracks or subtitles, **▼** opens the track menu instead.
 
@@ -128,7 +134,8 @@ git tag v1.2.0 && git push origin v1.2.0
   domain/         model · repository interfaces · use cases     ← pure Kotlin, no android.* (javax.inject only)
   data/           ReceiverRepositoryImpl (binds AirPlayService), SettingsRepositoryImpl, DeviceInfoRepositoryImpl
   platform/       Android-specific ports kept out of the domain (VideoSurfaceHost)
-  presentation/   per screen: Contract (UiState · Intent · Effect) + MviViewModel + Screen/Content composable
+  presentation/   per screen: Contract (UiState · Intent · Effect) + MviViewModel + Screen/Content composable (+ @Preview)
+                  settings/ is a hub; each sub-setting (device name, language, …) is its own screen with its own ViewModel
   di/             Hilt bindings
 ```
 

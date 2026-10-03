@@ -28,16 +28,12 @@ class AirPlayServiceConnector @Inject constructor(
     private val _logs = MutableStateFlow("")
     val logs: StateFlow<String> = _logs.asStateFlow()
 
-    private val _pin = MutableStateFlow<String?>(null)
-    val pin: StateFlow<String?> = _pin.asStateFlow()
-
     private var bound = false
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val svc = (binder as? AirPlayService.LocalBinder)?.service ?: return
             svc.logCallback = { _logs.value = it }
-            svc.pinCallback = { _pin.value = it }
             _service.value = svc
         }
 

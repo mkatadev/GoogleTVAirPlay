@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.TvAirPlay" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.TvAirPlay" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/background</item>
         <item name="android:colorBackground">@color/background</item>
     </style>

@@ -34,6 +34,7 @@ import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveReceiverStateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveSettingsUseCase
+import pl.prodevcode.tvairplay.domain.usecase.PinControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.PlaybackControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
@@ -71,11 +72,18 @@ class ReceiverViewModelTest {
         toggleReceiver = ToggleReceiverUseCase(receiverRepo),
         stopReceiver = StopReceiverUseCase(receiverRepo),
         playback = PlaybackControlUseCase(receiverRepo),
+        pin = PinControlUseCase(receiverRepo),
         surfaces = mockk<VideoSurfaceHost>(relaxed = true),
         observeUpdate = ObserveUpdateUseCase(updateRepo),
         checkForUpdate = CheckForUpdateUseCase(updateRepo),
         subtitleCues = mockk<SubtitleCues> { every { cues } returns MutableStateFlow(emptyList()) },
     )
+
+    @Test fun `pin prompt intents are forwarded`() = runTest {
+        val vm = viewModel()
+        vm.onIntent(ReceiverIntent.DismissPin)
+        verify { receiverRepo.dismissPin() }
+    }
 
     @Test fun `track intents are forwarded`() = runTest {
         val vm = viewModel()

@@ -15,6 +15,7 @@ import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveReceiverStateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveSettingsUseCase
+import pl.prodevcode.tvairplay.domain.usecase.PinControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.PlaybackControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
@@ -36,6 +37,7 @@ class ReceiverViewModel @Inject constructor(
     private val toggleReceiver: ToggleReceiverUseCase,
     private val stopReceiver: StopReceiverUseCase,
     private val playback: PlaybackControlUseCase,
+    private val pin: PinControlUseCase,
     private val surfaces: VideoSurfaceHost,
     observeUpdate: ObserveUpdateUseCase,
     private val checkForUpdate: CheckForUpdateUseCase,
@@ -61,7 +63,9 @@ class ReceiverViewModel @Inject constructor(
         }.reduceInto { (ui, key) ->
             // a new track, play/pause or a mode change counts as activity
             if (key != lastIdleKey) { lastIdleKey = key; restartIdleTimer(key.mode) }
-            withDerived(ui.copy(dimmed = idleDimmed && key.mode == SessionMode.AUDIO, updateAvailable = latestRelease))
+            withDerived(
+                ui.copy(dimmed = idleDimmed && key.mode == SessionMode.AUDIO, updateAvailable = latestRelease, cues = cues)
+            )
         }
         subtitleCues.cues.reduceInto { copy(cues = it) }
         observeUpdate().reduceInto {
@@ -112,6 +116,7 @@ class ReceiverViewModel @Inject constructor(
             Intent.ToggleReceiver -> toggleReceiver(currentState.receiver.status)
             Intent.GrantOverlay -> requestOverlay()
             Intent.UserInteraction -> wake()
+            Intent.DismissPin -> pin.dismiss()
 
             Intent.PlayPause -> { wake(); playback.togglePlayPause() }
             is Intent.SeekBy -> playback.seekBy(intent.deltaMs)

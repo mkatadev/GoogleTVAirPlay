@@ -14,7 +14,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import pl.prodevcode.airplay.Prefs
 import pl.prodevcode.airplay.service.LatencyMode as CoreLatencyMode
+import pl.prodevcode.tvairplay.domain.model.AppLanguage
 import pl.prodevcode.tvairplay.domain.model.LatencyMode
+import pl.prodevcode.tvairplay.platform.AppLocale
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
 
@@ -25,6 +27,7 @@ import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
 @Singleton
 class SettingsRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
+    private val appLocale: AppLocale,
 ) : SettingsRepository {
 
     private val prefs: SharedPreferences = context.getSharedPreferences(Prefs.NAME, Context.MODE_PRIVATE)
@@ -44,8 +47,13 @@ class SettingsRepositoryImpl @Inject constructor(
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
 
-    override suspend fun update(transform: (ReceiverSettings) -> ReceiverSettings) =
-        withContext(Dispatchers.IO) { write(transform(read())) }
+    override suspend fun update(transform: (ReceiverSettings) -> ReceiverSettings) {
+        val before = read()
+        val after = transform(before)
+        withContext(Dispatchers.IO) { write(after) }
+        // setApplicationLocales recreates activities; it must run on the main thread
+        if (after.language != before.language) withContext(Dispatchers.Main) { appLocale.apply(after.language.tag) }
+    }
 
     private fun read() = ReceiverSettings(
         deviceName = prefs.getString(Prefs.SERVER_NAME, null) ?: DEFAULT_NAME,
@@ -59,6 +67,7 @@ class SettingsRepositoryImpl @Inject constructor(
         advertiseAudio = prefs.getBoolean(Prefs.ADVERTISE_AUDIO, Prefs.DEF_ADVERTISE_AUDIO),
         idleDimMinutes = prefs.getInt(Prefs.IDLE_DIM_MINUTES, Prefs.DEF_IDLE_DIM_MINUTES),
         subtitlesByDefault = prefs.getBoolean(Prefs.SUBTITLES_DEFAULT, Prefs.DEF_SUBTITLES_DEFAULT),
+        language = AppLanguage.fromTag(prefs.getString(KEY_LANGUAGE, null) ?: appLocale.current()),
         latencyMode = CoreLatencyMode.fromPref(prefs.getString(Prefs.LATENCY_MODE, Prefs.DEF_LATENCY_MODE)).toDomain(),
     )
 
@@ -75,6 +84,8 @@ class SettingsRepositoryImpl @Inject constructor(
         putString(Prefs.LATENCY_MODE, s.latencyMode.toCore().pref)
         putInt(Prefs.IDLE_DIM_MINUTES, s.idleDimMinutes)
         putBoolean(Prefs.SUBTITLES_DEFAULT, s.subtitlesByDefault)
+        // mirrored in prefs so the settings flow sees the change; AppCompat keeps its own copy
+        putString(KEY_LANGUAGE, s.language.tag)
     }
 
     private fun CoreLatencyMode.toDomain() = when (this) {
@@ -91,5 +102,6 @@ class SettingsRepositoryImpl @Inject constructor(
 
     private companion object {
         const val DEFAULT_NAME = "Google TV"
+        const val KEY_LANGUAGE = "app_language"
     }
 }
