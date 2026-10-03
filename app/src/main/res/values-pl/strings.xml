@@ -58,4 +58,42 @@
     <string name="setting_overlay_granted">Przyznane</string>
     <string name="setting_overlay_missing">Brak — kliknij, aby otworzyć ustawienia systemowe</string>
     <string name="video_hint_seeking">◀ ▶ przewijaj · ▲ ▼ skok o 10% · 0–9 skok do 0–90%</string>
+
+    <!-- Diagnostyka -->
+    <string name="setting_diagnostics">Diagnostyka</string>
+    <string name="setting_diagnostics_desc">Dlaczego iPhone nie widzi telewizora?</string>
+    <string name="diagnostics_title">Diagnostyka</string>
+    <string name="diagnostics_subtitle">Podgląd na żywo odbiornika, sieci i rozgłaszania AirPlay</string>
+    <string name="diagnostics_version">Wersja %1$s</string>
+    <string name="diagnostics_restart">Uruchom odbiornik ponownie</string>
+    <string name="diagnostics_section_checks">Sprawdzenia</string>
+    <string name="diagnostics_section_session">Sesja</string>
+    <string name="diagnostics_check_receiver">Odbiornik</string>
+    <string name="diagnostics_check_network">Sieć</string>
+    <string name="diagnostics_check_advertising">Rozgłaszanie AirPlay (mDNS)</string>
+    <string name="diagnostics_check_port">Port</string>
+    <string name="diagnostics_receiver_running">Działa jako „%1$s”</string>
+    <string name="diagnostics_receiver_starting">Uruchamianie…</string>
+    <string name="diagnostics_receiver_stopped">Zatrzymany — naciśnij Start na ekranie głównym</string>
+    <string name="diagnostics_network_none">Brak adresu Wi-Fi ani Ethernet. Podłącz telewizor do tej samej sieci co iPhone.</string>
+    <string name="diagnostics_network_link_local">Adres link-local (169.254.x.x) — router nie przydzielił IP. Sprawdź DHCP / kabel.</string>
+    <string name="diagnostics_network_changes">rozgłoszono ponownie %1$d×</string>
+    <string name="diagnostics_advertising_off">Nie rozgłasza — odbiornik nie działa</string>
+    <string name="diagnostics_adv_ok">OK</string>
+    <string name="diagnostics_adv_pending">rejestracja…</string>
+    <string name="diagnostics_adv_failed">błąd (%1$d)</string>
+    <string name="diagnostics_adv_hint">Rejestracja nie powiodła się — inna aplikacja może używać tej samej nazwy albo TV blokuje mDNS. Zmień nazwę urządzenia lub uruchom odbiornik ponownie.</string>
+    <string name="diagnostics_port_listening">Nasłuchuje na TCP %1$d</string>
+    <string name="diagnostics_port_busy">Port zajęty przez inną aplikację — zmień port albo zamknij drugi odbiornik</string>
+    <string name="diagnostics_clients">Połączone urządzenia</string>
+    <string name="diagnostics_video">Wideo</string>
+    <string name="diagnostics_audio">Audio</string>
+    <string name="diagnostics_dropped">%1$d pominiętych</string>
+    <string name="diagnostics_underruns">%1$d underrunów</string>
+    <string name="diagnostics_last_event">Ostatnie zdarzenie</string>
+    <string name="diagnostics_mode_idle">bezczynny</string>
+    <string name="diagnostics_mode_connected">połączony</string>
+    <string name="diagnostics_mode_mirroring">mirroring</string>
+    <string name="diagnostics_mode_video">wideo</string>
+    <string name="diagnostics_mode_audio">audio</string>
 </resources>

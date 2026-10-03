@@ -96,6 +96,14 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     private val _nsdStatus = MutableStateFlow(NsdServiceManager.Status())
     val nsdStatus = _nsdStatus.asStateFlow()
 
+    /** Port the receiver listens on, 0 when stopped. */
+    private val _port = MutableStateFlow(0)
+    val port = _port.asStateFlow()
+
+    /** Why the last start failed; cleared on the next successful start. */
+    private val _lastError = MutableStateFlow<String?>(null)
+    val lastError = _lastError.asStateFlow()
+
     val networkStatus get() = networkWatcher.status
 
     // flattened aliases kept for existing consumers
@@ -279,8 +287,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         )
         nativeHandle = NativeBridge.nativeInit(this, hwAddr, effectiveName, keyFile, nohold, requirePin)
         if (nativeHandle == 0L) {
-            log("Native init failed")
-            failStart()
+            failStart("Native init failed")
             return
         }
         audioRenderer.attachEngine(nativeHandle)
@@ -326,10 +333,11 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         val requestedPort = prefs.getInt(Prefs.SERVER_PORT, Prefs.DEF_SERVER_PORT).coerceIn(1, 65535)
         val port = NativeBridge.nativeStart(nativeHandle, requestedPort)
         if (port < 0) {
-            log("Failed to start on port $requestedPort")
-            failStart()
+            failStart("Failed to start on port $requestedPort")
             return
         }
+        _port.value = port
+        _lastError.value = null
 
         // register mdns services
         val raopTxt = NativeBridge.nativeGetRaopTxtRecords(nativeHandle) ?: emptyMap()
@@ -367,9 +375,12 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         nsdManager = null
         wakeLock?.release()
         wakeLock = null
+        _port.value = 0
     }
 
-    private fun failStart() {
+    private fun failStart(reason: String) {
+        log(reason)
+        _lastError.value = reason
         releaseServerResources()
         _serverState.value = ServerState.ERROR
         notifications.dismiss()

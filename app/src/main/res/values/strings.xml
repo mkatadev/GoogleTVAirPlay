@@ -58,4 +58,42 @@
     <string name="setting_overlay_granted">Granted</string>
     <string name="setting_overlay_missing">Not granted — tap to open system settings</string>
     <string name="video_hint_seeking">◀ ▶ seek · ▲ ▼ jump 10% · 0–9 jump to 0–90%</string>
+
+    <!-- Diagnostics -->
+    <string name="setting_diagnostics">Diagnostics</string>
+    <string name="setting_diagnostics_desc">Why can\'t my iPhone see the TV?</string>
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_subtitle">Live view of the receiver, network and AirPlay announcement</string>
+    <string name="diagnostics_version">Version %1$s</string>
+    <string name="diagnostics_restart">Restart receiver</string>
+    <string name="diagnostics_section_checks">Checks</string>
+    <string name="diagnostics_section_session">Session</string>
+    <string name="diagnostics_check_receiver">Receiver</string>
+    <string name="diagnostics_check_network">Network</string>
+    <string name="diagnostics_check_advertising">AirPlay announcement (mDNS)</string>
+    <string name="diagnostics_check_port">Port</string>
+    <string name="diagnostics_receiver_running">Running as “%1$s”</string>
+    <string name="diagnostics_receiver_starting">Starting…</string>
+    <string name="diagnostics_receiver_stopped">Stopped — press Start on the home screen</string>
+    <string name="diagnostics_network_none">No Wi-Fi or Ethernet address. Connect the TV to the same network as your iPhone.</string>
+    <string name="diagnostics_network_link_local">Link-local address (169.254.x.x) — the router did not hand out an IP. Check DHCP / the cable.</string>
+    <string name="diagnostics_network_changes">re-announced %1$d×</string>
+    <string name="diagnostics_advertising_off">Not announcing — the receiver is not running</string>
+    <string name="diagnostics_adv_ok">OK</string>
+    <string name="diagnostics_adv_pending">registering…</string>
+    <string name="diagnostics_adv_failed">failed (%1$d)</string>
+    <string name="diagnostics_adv_hint">Registration failed — another app may use the same name, or the TV blocks mDNS. Try a different device name or restart the receiver.</string>
+    <string name="diagnostics_port_listening">Listening on TCP %1$d</string>
+    <string name="diagnostics_port_busy">Port in use by another app — change the port or close the other receiver</string>
+    <string name="diagnostics_clients">Connected devices</string>
+    <string name="diagnostics_video">Video</string>
+    <string name="diagnostics_audio">Audio</string>
+    <string name="diagnostics_dropped">%1$d dropped</string>
+    <string name="diagnostics_underruns">%1$d underruns</string>
+    <string name="diagnostics_last_event">Last event</string>
+    <string name="diagnostics_mode_idle">idle</string>
+    <string name="diagnostics_mode_connected">connected</string>
+    <string name="diagnostics_mode_mirroring">mirroring</string>
+    <string name="diagnostics_mode_video">video</string>
+    <string name="diagnostics_mode_audio">audio</string>
 </resources>

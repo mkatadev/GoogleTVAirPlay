@@ -23,6 +23,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 - 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info
 - ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
 - 🔒 **Optional PIN** for every new connection
+- 🩺 **Diagnostics** screen — receiver, network, mDNS announcement and port checks with plain-language hints; re-announces automatically when the TV changes network
 - 🚀 **Runs in the background** and **starts at boot** — the TV is always ready to receive
 - 🎛️ Built for the remote: Compose for TV UI, no touch required
 - 🌍 English and Polish

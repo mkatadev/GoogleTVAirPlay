@@ -50,10 +50,14 @@ private val DEVICE_NAME_PRESETS = listOf("Google TV", "Salon TV", "Sypialnia TV"
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenLicenses: () -> Unit,
+    onOpenDiagnostics: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.state.collectAsStateWithLifecycle()
-    SettingsContent(ui = ui, onIntent = viewModel::onIntent, onBack = onBack, onOpenLicenses = onOpenLicenses)
+    SettingsContent(
+        ui = ui, onIntent = viewModel::onIntent,
+        onBack = onBack, onOpenLicenses = onOpenLicenses, onOpenDiagnostics = onOpenDiagnostics,
+    )
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -63,6 +67,7 @@ private fun SettingsContent(
     onIntent: (SettingsIntent) -> Unit,
     onBack: () -> Unit,
     onOpenLicenses: () -> Unit,
+    onOpenDiagnostics: () -> Unit,
 ) {
     val s = ui.settings
     LifecycleResumeEffect(Unit) { onIntent(SettingsIntent.ScreenResumed); onPauseOrDispose { } }
@@ -144,6 +149,13 @@ private fun SettingsContent(
             }
 
             item { Section(stringResource(R.string.section_about)) }
+            item {
+                ValueRow(
+                    title = stringResource(R.string.setting_diagnostics),
+                    value = stringResource(R.string.setting_diagnostics_desc),
+                    onClick = onOpenDiagnostics,
+                )
+            }
             item {
                 ValueRow(
                     title = stringResource(R.string.about_credit),
