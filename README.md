@@ -35,7 +35,24 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 
 The app is not on Google Play — sideload the APK from [**Releases**](https://github.com/mkatadev/GoogleTVAirPlay/releases/latest).
 
-**With adb** (TV: Settings → System → About → tap *Android TV OS build* 7× → Developer options → *USB / Wireless debugging*):
+On the TV first: Settings → System → About → tap *Android TV OS build* 7× → Developer options → enable *USB debugging* (cable) or *Wireless debugging* (Wi-Fi).
+
+**One-liner (macOS / Linux, no Android Studio or SDK needed).** [`install.sh`](install.sh) downloads adb and the latest release APK, verifies its SHA-256, finds the TV (USB, or Wi-Fi via mDNS) and installs & launches the app:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mkatadev/GoogleTVAirPlay/main/install.sh | bash
+```
+
+```bash
+./install.sh --pair                      # Wireless debugging on Android 11+: pair once with the code shown on the TV
+./install.sh --ip 192.168.1.42[:port]    # connect to a specific TV (port defaults to 5555)
+./install.sh --version 1.2.0             # install a specific release instead of the latest
+./install.sh --apk path/to/file.apk      # install a local APK (e.g. one you built yourself)
+```
+
+Without `--ip` the script looks for the TV itself: devices already visible to adb (USB or previously connected over Wi-Fi), then Wireless-debugging services advertised over mDNS on the local network. If it finds more than one device it asks which to use; if the TV shows up as *unauthorized*, accept the debugging prompt on the TV and re-run. If an existing install is signed with a different key, the script offers to uninstall it first. On Windows use WSL.
+
+**With adb by hand:**
 
 ```bash
 adb connect <tv-ip>            # wireless debugging — pair once with `adb pair <ip:port>`

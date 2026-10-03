@@ -35,7 +35,24 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 
 Aplikacji nie ma w Google Play — zainstaluj APK z [**Releases**](https://github.com/mkatadev/GoogleTVAirPlay/releases/latest).
 
-**Przez adb** (TV: Ustawienia → System → Informacje → 7× *Kompilacja systemu* → Opcje programisty → *Debugowanie USB / bezprzewodowe*):
+Najpierw na TV: Ustawienia → System → Informacje → 7× *Kompilacja systemu* → Opcje programisty → włącz *Debugowanie USB* (kabel) lub *Debugowanie bezprzewodowe* (Wi-Fi).
+
+**Jedna komenda (macOS / Linux, bez Android Studio i SDK).** [`install.sh`](install.sh) pobiera adb i najnowsze APK z wydań, sprawdza SHA-256, znajduje telewizor (USB albo Wi-Fi przez mDNS), instaluje i uruchamia aplikację:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mkatadev/GoogleTVAirPlay/main/install.sh | bash
+```
+
+```bash
+./install.sh --pair                      # debugowanie bezprzewodowe (Android 11+): jednorazowe parowanie kodem z TV
+./install.sh --ip 192.168.1.42[:port]    # połącz z konkretnym TV (domyślny port 5555)
+./install.sh --version 1.2.0             # konkretne wydanie zamiast najnowszego
+./install.sh --apk sciezka/do/pliku.apk  # lokalne APK (np. zbudowane samodzielnie)
+```
+
+Bez `--ip` skrypt sam szuka telewizora: najpierw urządzenia już widoczne dla adb (USB lub wcześniej połączone po Wi-Fi), potem usługi debugowania bezprzewodowego rozgłaszane przez mDNS w sieci lokalnej. Gdy znajdzie więcej niż jedno urządzenie, pyta, które wybrać; jeśli TV jest *unauthorized*, zaakceptuj monit o debugowanie na telewizorze i uruchom skrypt ponownie. Jeśli zainstalowana wersja jest podpisana innym kluczem, skrypt zaproponuje jej odinstalowanie. Na Windows użyj WSL.
+
+**Ręcznie przez adb:**
 
 ```bash
 adb connect <ip-telewizora>     # debugowanie bezprzewodowe — jednorazowo `adb pair <ip:port>`
