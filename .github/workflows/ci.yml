@@ -55,7 +55,7 @@ jobs:
 
       # build-only check; nothing is published from CI — releases come from release.yml on a v* tag
       - name: Unit tests & debug build
-        run: ./gradlew :airplay-core:testDebugUnitTest :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --no-daemon
+        run: ./gradlew :homekit:testDebugUnitTest :airplay-core:testDebugUnitTest :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --no-daemon
 
       - name: Upload test reports
         if: failure()

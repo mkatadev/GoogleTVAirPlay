@@ -187,4 +187,26 @@
     <string name="idle_dim_subtitle">Gdy gra tylko muzyka, ekran przyciemni się po tym czasie. Dowolny klawisz pilota go wybudza.</string>
     <string name="latency_subtitle">Kompromis między opóźnieniem a płynnością przy mirroringu ekranu. Działa natychmiast.</string>
     <string name="trusted_devices_subtitle">Urządzenia, które raz wpisały PIN, łączą się bez pytania. Wybierz, aby zapomnieć.</string>
+
+    <!-- HomeKit -->
+    <string name="section_smart_home">Inteligentny dom</string>
+    <string name="setting_homekit">Apple Home (HomeKit)</string>
+    <string name="homekit_subtitle">Dodaj ten telewizor do aplikacji Dom na iPhonie, iPadzie lub Macu, aby włączać i wyłączać odbiornik oraz sterować odtwarzaniem i głośnością.</string>
+    <string name="homekit_enable">Pokazuj w Apple Home</string>
+    <string name="homekit_enable_desc">Rozgłasza telewizor jako akcesorium HomeKit w sieci lokalnej. Usługa odbiornika działa wtedy stale w tle.</string>
+    <string name="homekit_status_off">Wyłączone</string>
+    <string name="homekit_status_starting">Uruchamianie…</string>
+    <string name="homekit_status_unpaired">Niesparowane — wpisz kod konfiguracji w aplikacji Dom</string>
+    <plurals name="homekit_status_paired">
+        <item quantity="one">Sparowano z %d urządzeniem</item>
+        <item quantity="few">Sparowano z %d urządzeniami</item>
+        <item quantity="many">Sparowano z %d urządzeniami</item>
+        <item quantity="other">Sparowano z %d urządzenia</item>
+    </plurals>
+    <string name="homekit_setup_code">Kod konfiguracji</string>
+    <string name="homekit_setup_code_hint">W aplikacji Dom stuknij + › Dodaj akcesorium › Więcej opcji… › wybierz „%1$s” i wpisz ten kod. Potwierdź „Dodaj mimo to”, gdy pojawi się ostrzeżenie o niecertyfikowanym akcesorium.</string>
+    <string name="homekit_accessory_id">Identyfikator akcesorium</string>
+    <string name="homekit_reset">Usuń z aplikacji Dom</string>
+    <string name="homekit_reset_desc">Zapomina wszystkie sparowane urządzenia. Telewizor trzeba będzie dodać do Domu ponownie.</string>
+    <string name="homekit_reset_confirm">Tak, usuń</string>
 </resources>

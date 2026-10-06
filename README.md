@@ -24,6 +24,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 - ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
 - ⏱️ **Latency presets** — Low / Balanced / Smooth, switchable live for games vs. shaky Wi-Fi
 - 🔒 **PIN pairing** (on by default) — devices that entered the PIN once are remembered; manage them under *Settings → Trusted devices*
+- 🏠 **Apple Home (HomeKit)** — optional: the TV shows up in the Home app on iPhone, iPad and Mac as a *Television* accessory; switch the receiver on/off, use the remote keys (play/pause, next/previous) and volume, locally or via a home hub. Own HAP implementation in the `:homekit` module, no bridge needed (*Settings → Apple Home*)
 - 🩺 **Diagnostics** screen — receiver, network, mDNS announcement and port checks with plain-language hints; re-announces automatically when the TV changes network
 - 🌙 **Screen dimming** while music plays (OLED-friendly); a paused session lets the TV sleep
 - 🔁 **Survives short drop-outs** — locking the iPhone no longer ends audio/video playback
@@ -86,6 +87,8 @@ Afterwards open the app once and grant **Display over other apps** so playback c
 <img src="docs/screenshots/devicename-en.png" width="49%" alt="Device name editor with suggestions">
 </div>
 
+**Apple Home:** enable *Settings → Apple Home → Show in Apple Home*, then in the Home app tap **+ › Add Accessory › More options…**, pick the TV and type the setup code shown on screen (confirm *Add Anyway* for the uncertified accessory). The receiver service then keeps running in the background so Home can switch it on even when it is off. *Remove from Home* on the same screen forgets all pairings.
+
 While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop. If the stream has several audio tracks or subtitles, **▼** opens the track menu instead.
 
 ## Build from source
@@ -96,7 +99,7 @@ The first build compiles OpenSSL and FFmpeg from source for three ABIs and takes
 ```bash
 git clone --recurse-submodules https://github.com/mkatadev/GoogleTVAirPlay.git   # third-party code lives in submodules
 ./gradlew :app:assembleDebug           # debug APK
-./gradlew :app:testDebugUnitTest       # unit tests
+./gradlew :homekit:testDebugUnitTest :airplay-core:testDebugUnitTest :app:testDebugUnitTest   # unit tests
 ./gradlew installChromecast            # build release → pick a TV → install & launch
 ```
 
@@ -128,7 +131,16 @@ git tag v1.2.0 && git push origin v1.2.0
 :airplay-core  (Android library, NDK/CMake)
   src/main/cpp/            JNI bridge, audio engine, dnssd shim; third_party/ submodules (UxPlay, libplist, FFmpeg, openssl-cmake)
   pl.prodevcode.airplay    AirPlayService (thin host) + collaborators: VideoSession, NowPlayingState, VolumeSync,
-                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, renderers
+                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, HomeKitBridge, renderers
+
+:homekit  (Android library, pure Kotlin — HomeKit Accessory Protocol over IP)
+  crypto/      TLV8, SRP-6a (3072-bit, SHA-512), HKDF/Ed25519/X25519 (Tink), ChaCha20-Poly1305 (platform JCA)
+  pairing/     PairingStore (identity, pairings, config number), PairSetup, PairVerify, /pairings endpoint
+  server/      HapServer (sockets) · HapConnection (plain → encrypted framing) · HapRouter (/accessories, /characteristics, events)
+  accessory/   Characteristic/Service/Accessory model, TelevisionAccessory (Television + InputSource + TelevisionSpeaker)
+  HomeKitAccessoryServer (facade) · HapAdvertiser (_hap._tcp via NsdManager)
+
+:testing  (JVM test helpers shared by the library modules, e.g. FakeSharedPreferences)
 
 :app  (Google TV only, Compose for TV, Clean Architecture + MVI)
   domain/         model · repository interfaces · use cases     ← pure Kotlin, no android.* (javax.inject only)
@@ -141,9 +153,10 @@ git tag v1.2.0 && git push origin v1.2.0
 
 Each screen is a single immutable `UiState` rendered by a stateless `Content` composable; the UI emits `Intent`s
 to the ViewModel, which reduces state and sends one-shot `Effect`s (navigation). ViewModels are unit-tested
-(`app/src/test`, JUnit 4 + coroutines-test + MockK + Turbine).
+(`app/src/test`, JUnit 4 + coroutines-test + MockK + Turbine). `:homekit` is tested end-to-end on the JVM: a fake controller pairs,
+verifies and talks to the server over an encrypted loopback session (`homekit/src/test`).
 
-Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow.
+Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow, Tink.
 
 ### Third-party code & updates
 

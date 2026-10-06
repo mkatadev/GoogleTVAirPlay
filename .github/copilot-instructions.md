@@ -68,10 +68,15 @@ Clean Architecture + MVI. Dependency direction: `presentation → domain ← dat
 - `service/MediaSessionController` — Media3 `MediaSession` whose player is switched between `DacpPlayer` (audio) and the AirPlay Video ExoPlayer; `service/ServiceNotifications` — foreground notification (`MediaStyleNotificationHelper`).
 - `discovery/NsdServiceManager` — mDNS registration + `status`; `discovery/NetworkWatcher` — re-announce after network change.
 - `renderer/VideoRenderer`, `DecoderSelector`, `VideoPipeline`, `AudioRenderer` — mirroring decode/render; `bridge/NativeBridge` — the only JNI surface.
+- `service/HomeKitBridge` — hosts the `:homekit` accessory: receiver state → `TelevisionAccessory`, Home writes → receiver actions on the main thread. Enabling HomeKit keeps the service started/foreground while the receiver is off.
 - State crosses to `:app` only as `StateFlow`s on the service; the app maps them in `ReceiverRepositoryImpl`.
+
+## Architecture (`:homekit`)
+
+Self-contained HomeKit Accessory Protocol (IP) library; no dependency on `:airplay-core` or `:app`. `crypto/` (TLV8, SRP-6a, HKDF/Ed25519/X25519 via Tink, ChaCha20-Poly1305 via JCA), `pairing/` (`PairingStore`, `PairSetup`, `PairVerify`, `PairingsEndpoint`), `server/` (`HapServer`, `HapConnection`, `SecureChannel`, `HapRouter`), `accessory/` (characteristic model, `TelevisionAccessory`, `TelevisionControls`), `HomeKitAccessoryServer` facade + `HapAdvertiser`. Never edit the HAP wire format casually — every change must keep `HapServerTest` (fake controller over loopback) green.
 
 ## Tests
 
-- JVM unit tests in `app/src/test` (JUnit 4, `kotlinx-coroutines-test`, MockK, Turbine; `presentation/MainDispatcherRule` for ViewModels) and `airplay-core/src/test` (JUnit 4, real `org.json`, `testing/FakeSharedPreferences` for preference-backed classes).
+- JVM unit tests in `app/src/test` (JUnit 4, `kotlinx-coroutines-test`, MockK, Turbine; `presentation/MainDispatcherRule` for ViewModels) and `airplay-core/src/test` / `homekit/src/test` (JUnit 4, real `org.json`; `FakeSharedPreferences` from the shared `:testing` module for preference-backed classes; `homekit/src/test/.../testing/FakeController` drives the HAP server end-to-end).
 - Every ViewModel and non-trivial use case gets tests (intent → state / effect). Mock repositories, not use cases.
-- Run `./gradlew :airplay-core:testDebugUnitTest :app:testDebugUnitTest`; do not add Robolectric or instrumentation tests unless asked. CI runs both plus `:app:lintDebug`.
+- Run `./gradlew :homekit:testDebugUnitTest :airplay-core:testDebugUnitTest :app:testDebugUnitTest`; do not add Robolectric or instrumentation tests unless asked. CI runs all three plus `:app:lintDebug`.

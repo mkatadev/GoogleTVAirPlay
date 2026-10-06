@@ -24,6 +24,7 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 - ⚡ **Dekodowanie sprzętowe** — H.264 i HEVC (H.265), gdy telewizor to wspiera
 - ⏱️ **Presety opóźnienia** — Niskie / Zrównoważone / Płynne, przełączane na żywo (gry vs. słabe Wi-Fi)
 - 🔒 **Parowanie PIN-em** (domyślnie włączone) — urządzenia, które raz wpisały PIN, są zapamiętywane; zarządzasz nimi w *Ustawienia → Zaufane urządzenia*
+- 🏠 **Apple Home (HomeKit)** — opcjonalnie: telewizor pojawia się w aplikacji Dom na iPhonie, iPadzie i Macu jako akcesorium *Telewizor*; włączasz/wyłączasz odbiornik, używasz przycisków pilota (play/pauza, następny/poprzedni) i głośności — lokalnie lub przez centrum domu. Własna implementacja HAP w module `:homekit`, bez mostka (*Ustawienia → Apple Home*)
 - 🩺 **Diagnostyka** — sprawdzenie odbiornika, sieci, rozgłaszania mDNS i portu z podpowiedziami po ludzku; po zmianie sieci TV rozgłasza się ponownie automatycznie
 - 🌙 **Przyciemnianie ekranu** przy muzyce (przyjazne OLED); zapauzowana sesja pozwala TV usnąć
 - 🔁 **Odporność na chwilowe zerwania** — zablokowanie iPhone'a nie kończy już odtwarzania audio/wideo
@@ -86,6 +87,8 @@ Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad 
 <img src="docs/screenshots/devicename-pl.png" width="49%" alt="Edytor nazwy urządzenia z podpowiedziami">
 </div>
 
+**Apple Home:** włącz *Ustawienia → Apple Home → Pokazuj w Apple Home*, a potem w aplikacji Dom stuknij **+ › Dodaj akcesorium › Więcej opcji…**, wybierz telewizor i wpisz kod konfiguracji z ekranu (potwierdź *Dodaj mimo to* przy ostrzeżeniu o niecertyfikowanym akcesorium). Usługa odbiornika działa wtedy stale w tle, więc Dom może go włączyć, nawet gdy jest wyłączony. *Usuń z aplikacji Dom* na tym samym ekranie zapomina wszystkie parowania.
+
 Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przytrzymaj, aby przyspieszyć) · **▲ ▼** skok ±10 % · **0–9** skok do 0–90 % · **Wstecz** stop. Jeśli strumień ma kilka ścieżek audio lub napisy, **▼** otwiera menu ścieżek.
 
 ## Budowanie ze źródeł
@@ -96,7 +99,7 @@ Pierwszy build kompiluje OpenSSL i FFmpeg ze źródeł dla trzech ABI i trwa ~10
 ```bash
 git clone --recurse-submodules https://github.com/mkatadev/GoogleTVAirPlay.git   # kod third-party jest w submodułach
 ./gradlew :app:assembleDebug           # APK debug
-./gradlew :app:testDebugUnitTest       # testy jednostkowe
+./gradlew :homekit:testDebugUnitTest :airplay-core:testDebugUnitTest :app:testDebugUnitTest   # testy jednostkowe
 ./gradlew installChromecast            # build release → wybór TV → instalacja i uruchomienie
 ```
 
@@ -128,7 +131,16 @@ git tag v1.2.0 && git push origin v1.2.0
 :airplay-core  (biblioteka Android, NDK/CMake)
   src/main/cpp/            most JNI, silnik audio, shim dnssd; third_party/ submoduły (UxPlay, libplist, FFmpeg, openssl-cmake)
   pl.prodevcode.airplay    AirPlayService (cienki host) + współpracownicy: VideoSession, NowPlayingState, VolumeSync,
-                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, renderery
+                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, HomeKitBridge, renderery
+
+:homekit  (biblioteka Android, czysty Kotlin — HomeKit Accessory Protocol po IP)
+  crypto/      TLV8, SRP-6a (3072 bitów, SHA-512), HKDF/Ed25519/X25519 (Tink), ChaCha20-Poly1305 (JCA platformy)
+  pairing/     PairingStore (tożsamość, parowania, numer konfiguracji), PairSetup, PairVerify, endpoint /pairings
+  server/      HapServer (gniazda) · HapConnection (ramkowanie jawne → szyfrowane) · HapRouter (/accessories, /characteristics, zdarzenia)
+  accessory/   model Characteristic/Service/Accessory, TelevisionAccessory (Television + InputSource + TelevisionSpeaker)
+  HomeKitAccessoryServer (fasada) · HapAdvertiser (_hap._tcp przez NsdManager)
+
+:testing  (pomocniki testów JVM współdzielone przez moduły bibliotek, np. FakeSharedPreferences)
 
 :app  (tylko Google TV, Compose for TV, Clean Architecture + MVI)
   domain/         model · interfejsy repozytoriów · use case'y     ← czysty Kotlin, bez android.* (tylko javax.inject)
@@ -141,9 +153,10 @@ git tag v1.2.0 && git push origin v1.2.0
 
 Każdy ekran to jeden niemutowalny `UiState` renderowany przez bezstanowy composable `Content`; UI wysyła `Intent`y
 do ViewModelu, który redukuje stan i emituje jednorazowe `Effect`y (nawigacja). ViewModele mają testy jednostkowe
-(`app/src/test`, JUnit 4 + coroutines-test + MockK + Turbine).
+(`app/src/test`, JUnit 4 + coroutines-test + MockK + Turbine). `:homekit` jest testowany end-to-end na JVM: sztuczny kontroler paruje się,
+weryfikuje i rozmawia z serwerem przez szyfrowaną sesję loopback (`homekit/src/test`).
 
-Stack: AGP 9.4 (wbudowany Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow.
+Stack: AGP 9.4 (wbudowany Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material`, Hilt, KSP, Media3, Coroutines/Flow, Tink.
 
 ### Kod third-party i aktualizacje
 

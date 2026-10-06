@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import pl.prodevcode.tvairplay.data.diagnostics.DiagnosticsRepositoryImpl
+import pl.prodevcode.tvairplay.data.homekit.HomeKitRepositoryImpl
 import pl.prodevcode.tvairplay.data.licenses.AssetLicensesRepository
 import pl.prodevcode.tvairplay.data.network.DeviceInfoRepositoryImpl
 import pl.prodevcode.tvairplay.data.permission.OverlayPermissionRepositoryImpl
@@ -18,6 +19,7 @@ import pl.prodevcode.tvairplay.data.settings.SettingsRepositoryImpl
 import pl.prodevcode.tvairplay.data.update.GitHubUpdateRepository
 import pl.prodevcode.tvairplay.domain.repository.DeviceInfoRepository
 import pl.prodevcode.tvairplay.domain.repository.DiagnosticsRepository
+import pl.prodevcode.tvairplay.domain.repository.HomeKitRepository
 import pl.prodevcode.tvairplay.domain.repository.LicensesRepository
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
 import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
@@ -54,6 +56,9 @@ abstract class AppModule {
 
     @Binds @Singleton
     abstract fun bindTrustedDevicesRepository(impl: TrustedDevicesRepositoryImpl): TrustedDevicesRepository
+
+    @Binds @Singleton
+    abstract fun bindHomeKitRepository(impl: HomeKitRepositoryImpl): HomeKitRepository
 
     @Binds @Singleton
     abstract fun bindUpdateRepository(impl: GitHubUpdateRepository): UpdateRepository

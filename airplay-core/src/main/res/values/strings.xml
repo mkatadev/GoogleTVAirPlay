@@ -5,4 +5,6 @@
     <string name="notification_text">Ready to receive photos, music and video</string>
     <string name="notification_pin_title">AirPlay PIN required</string>
     <string name="notification_pin_text">PIN: %1$s</string>
+    <string name="notification_off_title">AirPlay receiver is off</string>
+    <string name="notification_off_text">Switch it on from Apple Home or the app</string>
 </resources>

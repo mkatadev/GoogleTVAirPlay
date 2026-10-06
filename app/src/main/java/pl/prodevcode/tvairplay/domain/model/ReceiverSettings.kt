@@ -31,4 +31,6 @@ data class ReceiverSettings(
     /** Show HLS subtitles in the system language without asking. */
     val subtitlesByDefault: Boolean = false,
     val language: AppLanguage = AppLanguage.SYSTEM,
+    /** Show up in Apple Home as a TV (power, remote keys, volume). */
+    val homeKitEnabled: Boolean = false,
 )
