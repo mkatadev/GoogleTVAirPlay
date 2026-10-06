@@ -24,6 +24,7 @@ class AssetLicensesRepository @Inject constructor(
         OpenSourceComponent("Oboe", "Apache-2.0", "https://github.com/google/oboe", "apache-2.0.txt"),
         OpenSourceComponent("AndroidX, Jetpack Compose, Media3", "Apache-2.0", "https://developer.android.com/jetpack", "apache-2.0.txt"),
         OpenSourceComponent("Dagger Hilt", "Apache-2.0", "https://dagger.dev/hilt", "apache-2.0.txt"),
+        OpenSourceComponent("Tink (HomeKit pairing crypto)", "Apache-2.0", "https://github.com/tink-crypto/tink-java", "apache-2.0.txt"),
         OpenSourceComponent("Kotlin & kotlinx.coroutines", "Apache-2.0", "https://kotlinlang.org", "apache-2.0.txt"),
     )
 

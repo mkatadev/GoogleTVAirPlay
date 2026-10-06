@@ -41,6 +41,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     api(libs.androidx.lifecycle.service)
     api(libs.media3.exoplayer)
+    // HomeKit accessory hosted by the service; its status type is part of the service surface
+    api(project(":homekit"))
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.session)
     implementation(libs.kotlinx.coroutines.android)
@@ -49,4 +51,5 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.org.json)
+    testImplementation(project(":testing"))
 }

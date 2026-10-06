@@ -23,6 +23,7 @@ import pl.prodevcode.tvairplay.presentation.components.SettingsPage
 import pl.prodevcode.tvairplay.presentation.components.ToggleRow
 import pl.prodevcode.tvairplay.presentation.components.ValueRow
 import pl.prodevcode.tvairplay.presentation.mvi.CollectEffects
+import pl.prodevcode.tvairplay.presentation.settings.homekit.homeKitSummary
 import pl.prodevcode.tvairplay.presentation.settings.idledim.idleDimLabel
 import pl.prodevcode.tvairplay.presentation.settings.language.languageLabel
 import pl.prodevcode.tvairplay.presentation.settings.latency.latencyModeTitle
@@ -130,6 +131,9 @@ private fun SettingsContent(ui: SettingsUiState, onIntent: (SettingsIntent) -> U
                 }
             }
             item { SubRow(SettingsSub.LATENCY, stringResource(R.string.setting_latency), stringResource(latencyModeTitle(s.latencyMode))) }
+
+            item { SectionHeader(stringResource(R.string.section_smart_home)) }
+            item { SubRow(SettingsSub.HOMEKIT, stringResource(R.string.setting_homekit), homeKitSummary(s.homeKitEnabled, ui.homeKit)) }
 
             item { SectionHeader(stringResource(R.string.section_about)) }
             item {

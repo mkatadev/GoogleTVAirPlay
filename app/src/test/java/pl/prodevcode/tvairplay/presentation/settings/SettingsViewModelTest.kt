@@ -32,6 +32,9 @@ import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RestartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.UpdateSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveHomeKitStatusUseCase
+import pl.prodevcode.tvairplay.domain.repository.HomeKitRepository
+import pl.prodevcode.tvairplay.domain.model.HomeKitStatus
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveInstallProgressUseCase
@@ -57,6 +60,8 @@ class SettingsViewModelTest {
 
     private val trusted = MutableStateFlow(emptyList<TrustedDevice>())
     private val trustedRepo = mockk<TrustedDevicesRepository>(relaxed = true) { every { devices } returns trusted }
+    private val homeKit = MutableStateFlow(HomeKitStatus())
+    private val homeKitRepo = mockk<HomeKitRepository>(relaxed = true) { every { status } returns homeKit }
 
     private fun viewModel() = SettingsViewModel(
         observeSettings = ObserveSettingsUseCase(settingsRepo),
@@ -65,6 +70,7 @@ class SettingsViewModelTest {
         observeOverlay = ObserveOverlayPermissionUseCase(overlayRepo),
         requestOverlay = RequestOverlayPermissionUseCase(overlayRepo),
         observeTrustedDevices = ObserveTrustedDevicesUseCase(trustedRepo),
+        observeHomeKitStatus = ObserveHomeKitStatusUseCase(homeKitRepo),
         observeUpdate = ObserveUpdateUseCase(updateRepo),
         checkForUpdate = CheckForUpdateUseCase(updateRepo),
         observeInstallProgress = ObserveInstallProgressUseCase(updateRepo),
@@ -108,6 +114,13 @@ class SettingsViewModelTest {
             assertEquals(SettingsEffect.Navigate(SettingsSub.LANGUAGE), awaitItem())
         }
         assertEquals(SettingsSub.LANGUAGE, vm.state.value.lastOpened)
+    }
+
+    @Test fun `homekit status follows the repository`() = runTest {
+        homeKit.value = HomeKitStatus(running = true, paired = true, controllers = 2)
+        val vm = viewModel()
+        advanceUntilIdle()
+        assertEquals(2, vm.state.value.homeKit.controllers)
     }
 
     @Test fun `trusted device count follows the repository`() = runTest {

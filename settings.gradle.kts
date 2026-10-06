@@ -25,4 +25,5 @@ dependencyResolutionManagement {
 rootProject.name = "AirPlayForGoogleTV"
 include(":app")
 include(":airplay-core")
- 
+include(":homekit")
+include(":testing")

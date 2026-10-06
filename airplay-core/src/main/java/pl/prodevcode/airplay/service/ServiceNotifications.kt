@@ -25,6 +25,8 @@ internal class ServiceNotifications(
         val audioOnly: Boolean,
         val pin: String?,
         val session: MediaSession?,
+        /** Receiver stopped but the service stays up for HomeKit. */
+        val receiverOff: Boolean = false,
     )
 
     var foreground = false
@@ -79,6 +81,9 @@ internal class ServiceNotifications(
                 builder.addAction(android.R.drawable.ic_media_pause, "Pause", action(AirPlayService.ACTION_PLAY_PAUSE))
                 builder.addAction(android.R.drawable.ic_media_next, "Next", action(AirPlayService.ACTION_NEXT))
             }
+        } else if (s.receiverOff) {
+            builder.setContentTitle(service.getString(R.string.notification_off_title))
+                .setContentText(service.getString(R.string.notification_off_text))
         } else if (s.pin != null) {
             // passive handoff only: do not launch/reorder the activity during pin auth
             builder.setContentTitle(service.getString(R.string.notification_pin_title))

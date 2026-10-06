@@ -12,10 +12,13 @@ class BootReceiver : BroadcastReceiver() {
             intent.action != "android.intent.action.QUICKBOOT_POWERON") return
 
         val prefs = context.getSharedPreferences(Prefs.NAME, Context.MODE_PRIVATE)
-        if (!prefs.getBoolean(Prefs.BOOT_AUTO_START, Prefs.DEF_BOOT_AUTO_START)) return
+        val autoStart = prefs.getBoolean(Prefs.BOOT_AUTO_START, Prefs.DEF_BOOT_AUTO_START)
+        val homeKit = prefs.getBoolean(Prefs.HOMEKIT_ENABLED, Prefs.DEF_HOMEKIT_ENABLED)
+        if (!autoStart && !homeKit) return
 
+        // with HomeKit alone the receiver stays off until Apple Home switches it on
         val serviceIntent = Intent(context, AirPlayService::class.java)
-            .setAction(AirPlayService.ACTION_START_SERVER)
+            .setAction(if (autoStart) AirPlayService.ACTION_START_SERVER else AirPlayService.ACTION_START_HOMEKIT)
         ContextCompat.startForegroundService(context, serviceIntent)
     }
 }

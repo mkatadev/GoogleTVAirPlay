@@ -179,4 +179,24 @@
     <string name="idle_dim_subtitle">While only music plays, the screen dims after this time. Any key on the remote wakes it.</string>
     <string name="latency_subtitle">Trade-off between delay and smoothness for screen mirroring. Applies immediately.</string>
     <string name="trusted_devices_subtitle">Devices that entered the PIN once connect without asking again. Select one to forget it.</string>
+
+    <!-- HomeKit -->
+    <string name="section_smart_home">Smart home</string>
+    <string name="setting_homekit">Apple Home (HomeKit)</string>
+    <string name="homekit_subtitle">Add this TV to the Home app on iPhone, iPad or Mac to switch the receiver on and off and control playback and volume.</string>
+    <string name="homekit_enable">Show in Apple Home</string>
+    <string name="homekit_enable_desc">Advertise the TV as a HomeKit accessory on the local network. Keeps the receiver service running in the background.</string>
+    <string name="homekit_status_off">Off</string>
+    <string name="homekit_status_starting">Starting…</string>
+    <string name="homekit_status_unpaired">Not paired — enter the setup code in Home</string>
+    <plurals name="homekit_status_paired">
+        <item quantity="one">Paired with %d device</item>
+        <item quantity="other">Paired with %d devices</item>
+    </plurals>
+    <string name="homekit_setup_code">Setup code</string>
+    <string name="homekit_setup_code_hint">In Home tap + › Add Accessory › More options… › choose “%1$s” and enter this code. Confirm “Add Anyway” when asked about an uncertified accessory.</string>
+    <string name="homekit_accessory_id">Accessory ID</string>
+    <string name="homekit_reset">Remove from Home</string>
+    <string name="homekit_reset_desc">Forget all paired devices. The TV then has to be added to Home again.</string>
+    <string name="homekit_reset_confirm">Yes, remove</string>
 </resources>

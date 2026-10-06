@@ -1,4 +1,4 @@
-package pl.prodevcode.airplay.testing
+package pl.prodevcode.testing
 
 import android.content.SharedPreferences
 

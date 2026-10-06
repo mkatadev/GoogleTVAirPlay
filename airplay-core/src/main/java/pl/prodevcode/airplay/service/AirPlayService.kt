@@ -21,8 +21,11 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -49,7 +52,7 @@ data class PinPrompt(val pin: String, val shownAtMs: Long, val expiresAtMs: Long
  * Foreground service hosting the native AirPlay receiver. Owns the lifecycle (start/stop,
  * wake lock, mDNS) and dispatches native callbacks to the session collaborators:
  * [VideoSession] (HLS video), [NowPlayingState] (audio metadata), [VolumeSync],
- * [MediaSessionController] and [ServiceNotifications].
+ * [MediaSessionController], [ServiceNotifications] and [HomeKitBridge].
  */
 class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
@@ -71,6 +74,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     private lateinit var mediaSession: MediaSessionController
     private lateinit var notifications: ServiceNotifications
     private lateinit var networkWatcher: NetworkWatcher
+    private lateinit var homeKit: HomeKitBridge
     private var nsdStatusJob: Job? = null
 
     var dacpController: DacpController? = null
@@ -116,6 +120,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     val lastError = _lastError.asStateFlow()
 
     val networkStatus get() = networkWatcher.status
+    /** Apple Home pairing state and setup code, see [pl.prodevcode.homekit.HomeKitAccessoryServer]. */
+    val homeKitStatus get() = homeKit.server.status
 
     // flattened aliases kept for existing consumers
     val videoPlaybackActive get() = video.active
@@ -164,6 +170,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
                 audioOnly = _audioOnly.value,
                 pin = lastPin,
                 session = mediaSession.session,
+                receiverOff = _serverState.value != ServerState.RUNNING,
             )
         }
         notifications.createChannel()
@@ -190,10 +197,13 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         volumeSync = VolumeSync(this, audioManager, dacp = { dacpController }, sessionActive = { _connectionCount.value > 0 })
         volumeSync.start()
         networkWatcher = NetworkWatcher(this) { addrs ->
+            homeKit.server.reannounce()
             if (_serverState.value != ServerState.RUNNING) return@NetworkWatcher
             log("Network changed (${addrs.joinToString()}), re-announcing AirPlay")
             nsdManager?.reregister()
         }
+        homeKit = HomeKitBridge(this, prefs, audioManager, lifecycleScope)
+        lifecycleScope.launch { prefs.changes(Prefs.HOMEKIT_ENABLED, Prefs.SERVER_NAME).collect { syncHomeKit() } }
 
         mediaReceiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
@@ -238,20 +248,54 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        if (intent?.action == ACTION_START_SERVER) {
-            notifications.promoteToForeground()
-            val name = prefs.getString(Prefs.SERVER_NAME, Prefs.DEF_SERVER_NAME) ?: Prefs.DEF_SERVER_NAME
-            startServer(name, ensureServiceStarted = false)
-            if (_serverState.value != ServerState.RUNNING) stopSelf(startId)
+        when (intent?.action) {
+            ACTION_START_SERVER -> {
+                notifications.promoteToForeground()
+                val name = prefs.getString(Prefs.SERVER_NAME, Prefs.DEF_SERVER_NAME) ?: Prefs.DEF_SERVER_NAME
+                startServer(name, ensureServiceStarted = false)
+                if (_serverState.value != ServerState.RUNNING && !homeKit.enabled) stopSelf(startId)
+            }
+            ACTION_START_HOMEKIT -> {
+                notifications.promoteToForeground()
+                homeKit.sync()
+                if (!homeKit.enabled) stopSelf(startId)
+            }
         }
         return START_NOT_STICKY
     }
+
+    /**
+     * HomeKit must answer Apple Home even while the receiver is off, so enabling it keeps this
+     * service started and in the foreground; disabling it lets a stopped receiver shut the service down.
+     */
+    private fun syncHomeKit() {
+        homeKit.sync()
+        if (homeKit.enabled) {
+            if (!notifications.foreground) {
+                ContextCompat.startForegroundService(this, Intent(this, AirPlayService::class.java).setAction(ACTION_START_HOMEKIT))
+            }
+        } else if (_serverState.value != ServerState.RUNNING) {
+            notifications.dismiss()
+            stopSelf()
+        }
+    }
+
+    /** Emits once per change of any of [keys], and once up front. */
+    private fun SharedPreferences.changes(vararg keys: String): Flow<Unit> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key -> if (key in keys) trySend(Unit) }
+        trySend(Unit)
+        registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    fun resetHomeKitPairings() = homeKit.server.resetPairings()
 
     override fun onDestroy() {
         stopServer()
         mediaReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
         mediaReceiver = null
         volumeSync.release()
+        homeKit.release()
         dacpController?.release()
         dacpController = null
         mediaSession.release()
@@ -383,7 +427,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         _lastError.value = reason
         releaseServerResources()
         _serverState.value = ServerState.ERROR
-        notifications.dismiss()
+        if (homeKit.enabled) notifications.update() else notifications.dismiss()
     }
 
     fun stopServer() {
@@ -399,8 +443,12 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         _serverState.value = ServerState.STOPPED
         _connectionCount.value = 0
         refreshDacpPlayer()
-        notifications.dismiss()
-        stopSelf()
+        if (homeKit.enabled) {
+            notifications.update()
+        } else {
+            notifications.dismiss()
+            stopSelf()
+        }
         log("Server stopped")
     }
 
@@ -702,6 +750,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         const val ACTION_NEXT = "pl.prodevcode.airplay.NEXT"
         const val ACTION_PREV = "pl.prodevcode.airplay.PREV"
         const val ACTION_START_SERVER = "pl.prodevcode.airplay.START_SERVER"
+        /** Bring the service up for HomeKit only; the receiver itself stays as it was. */
+        const val ACTION_START_HOMEKIT = "pl.prodevcode.airplay.START_HOMEKIT"
         private const val SESSION_GRACE_MS = 8_000L
         private const val PIN_EXPIRY_MS = 60_000L
 

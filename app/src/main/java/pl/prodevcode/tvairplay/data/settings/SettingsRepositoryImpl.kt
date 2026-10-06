@@ -69,6 +69,7 @@ class SettingsRepositoryImpl @Inject constructor(
         subtitlesByDefault = prefs.getBoolean(Prefs.SUBTITLES_DEFAULT, Prefs.DEF_SUBTITLES_DEFAULT),
         language = AppLanguage.fromTag(prefs.getString(KEY_LANGUAGE, null) ?: appLocale.current()),
         latencyMode = CoreLatencyMode.fromPref(prefs.getString(Prefs.LATENCY_MODE, Prefs.DEF_LATENCY_MODE)).toDomain(),
+        homeKitEnabled = prefs.getBoolean(Prefs.HOMEKIT_ENABLED, Prefs.DEF_HOMEKIT_ENABLED),
     )
 
     private fun write(s: ReceiverSettings) = prefs.edit {
@@ -84,6 +85,7 @@ class SettingsRepositoryImpl @Inject constructor(
         putString(Prefs.LATENCY_MODE, s.latencyMode.toCore().pref)
         putInt(Prefs.IDLE_DIM_MINUTES, s.idleDimMinutes)
         putBoolean(Prefs.SUBTITLES_DEFAULT, s.subtitlesByDefault)
+        putBoolean(Prefs.HOMEKIT_ENABLED, s.homeKitEnabled)
         // mirrored in prefs so the settings flow sees the change; AppCompat keeps its own copy
         putString(KEY_LANGUAGE, s.language.tag)
     }

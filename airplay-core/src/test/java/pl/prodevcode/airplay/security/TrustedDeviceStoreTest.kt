@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import pl.prodevcode.airplay.Prefs
-import pl.prodevcode.airplay.testing.FakeSharedPreferences
+import pl.prodevcode.testing.FakeSharedPreferences
 
 class TrustedDeviceStoreTest {
 

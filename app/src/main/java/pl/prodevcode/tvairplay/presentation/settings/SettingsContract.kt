@@ -1,5 +1,6 @@
 package pl.prodevcode.tvairplay.presentation.settings
 
+import pl.prodevcode.tvairplay.domain.model.HomeKitStatus
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.InstallProgress
 import pl.prodevcode.tvairplay.domain.model.UpdateCheck
@@ -8,12 +9,13 @@ import pl.prodevcode.tvairplay.presentation.mvi.UiIntent
 import pl.prodevcode.tvairplay.presentation.mvi.UiState
 
 /** Screens reachable from the settings list; each has its own ViewModel. */
-enum class SettingsSub { DEVICE_NAME, LANGUAGE, IDLE_DIM, LATENCY, TRUSTED_DEVICES, DIAGNOSTICS, LICENSES }
+enum class SettingsSub { DEVICE_NAME, LANGUAGE, IDLE_DIM, LATENCY, TRUSTED_DEVICES, HOMEKIT, DIAGNOSTICS, LICENSES }
 
 data class SettingsUiState(
     val settings: ReceiverSettings = ReceiverSettings(),
     val overlayGranted: Boolean = true,
     val trustedDeviceCount: Int = 0,
+    val homeKit: HomeKitStatus = HomeKitStatus(),
     val update: UpdateCheck = UpdateCheck.Idle,
     val install: InstallProgress = InstallProgress.Idle,
     /** Row to focus when the list comes back from a sub-screen. */

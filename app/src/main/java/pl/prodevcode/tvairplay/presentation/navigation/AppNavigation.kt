@@ -25,13 +25,14 @@ import pl.prodevcode.tvairplay.presentation.receiver.screens.PinOverlay
 import pl.prodevcode.tvairplay.presentation.settings.SettingsScreen
 import pl.prodevcode.tvairplay.presentation.settings.SettingsSub
 import pl.prodevcode.tvairplay.presentation.settings.devicename.DeviceNameScreen
+import pl.prodevcode.tvairplay.presentation.settings.homekit.HomeKitScreen
 import pl.prodevcode.tvairplay.presentation.settings.idledim.IdleDimScreen
 import pl.prodevcode.tvairplay.presentation.settings.language.LanguageScreen
 import pl.prodevcode.tvairplay.presentation.settings.latency.LatencyScreen
 import pl.prodevcode.tvairplay.presentation.settings.trusted.TrustedDevicesScreen
 
 private enum class Destination {
-    Receiver, Settings, Licenses, Diagnostics, DeviceName, Language, IdleDim, Latency, TrustedDevices
+    Receiver, Settings, Licenses, Diagnostics, DeviceName, Language, IdleDim, Latency, TrustedDevices, HomeKit
 }
 
 private fun SettingsSub.toDestination() = when (this) {
@@ -40,6 +41,7 @@ private fun SettingsSub.toDestination() = when (this) {
     SettingsSub.IDLE_DIM -> Destination.IdleDim
     SettingsSub.LATENCY -> Destination.Latency
     SettingsSub.TRUSTED_DEVICES -> Destination.TrustedDevices
+    SettingsSub.HOMEKIT -> Destination.HomeKit
     SettingsSub.DIAGNOSTICS -> Destination.Diagnostics
     SettingsSub.LICENSES -> Destination.Licenses
 }
@@ -81,6 +83,7 @@ private fun Screens(destination: Destination, onNavigate: (Destination) -> Unit)
                 Destination.IdleDim -> IdleDimScreen(onBack = backToSettings)
                 Destination.Latency -> LatencyScreen(onBack = backToSettings)
                 Destination.TrustedDevices -> TrustedDevicesScreen(onBack = backToSettings)
+                Destination.HomeKit -> HomeKitScreen(onBack = backToSettings)
             }
         }
     }

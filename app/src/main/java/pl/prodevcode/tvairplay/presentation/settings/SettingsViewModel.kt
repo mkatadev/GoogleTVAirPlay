@@ -13,6 +13,7 @@ import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RestartReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.UpdateSettingsUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveTrustedDevicesUseCase
+import pl.prodevcode.tvairplay.domain.usecase.ObserveHomeKitStatusUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveInstallProgressUseCase
@@ -28,6 +29,7 @@ class SettingsViewModel @Inject constructor(
     private val observeOverlay: ObserveOverlayPermissionUseCase,
     private val requestOverlay: RequestOverlayPermissionUseCase,
     observeTrustedDevices: ObserveTrustedDevicesUseCase,
+    observeHomeKitStatus: ObserveHomeKitStatusUseCase,
     observeUpdate: ObserveUpdateUseCase,
     private val checkForUpdate: CheckForUpdateUseCase,
     observeInstallProgress: ObserveInstallProgressUseCase,
@@ -40,6 +42,7 @@ class SettingsViewModel @Inject constructor(
         observeSettings().reduceInto { copy(settings = it) }
         observeOverlay().reduceInto { copy(overlayGranted = it) }
         observeTrustedDevices().reduceInto { copy(trustedDeviceCount = it.size) }
+        observeHomeKitStatus().reduceInto { copy(homeKit = it) }
         observeUpdate().reduceInto { copy(update = it) }
         observeInstallProgress().reduceInto { copy(install = it) }
     }
