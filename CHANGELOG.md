@@ -6,6 +6,16 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-06
+
+### Added
+- **Apple Home (HomeKit)** integration (Settings → Smart home → Apple Home): the TV appears in the Home app on iPhone, iPad and Mac as a *Television* accessory — switch the AirPlay receiver on and off, use the remote keys (play/pause, next/previous track, seek in AirPlay Video) and control volume/mute, locally or through a home hub. Pairing with a setup code shown on the TV; *Remove from Home* forgets all pairings.
+- Own HomeKit Accessory Protocol implementation in the new `:homekit` module (TLV8, SRP-6a, pair-setup/pair-verify, encrypted sessions, characteristic events, `_hap._tcp` advertisement) with end-to-end JVM tests; no bridge or Home Assistant required.
+- With HomeKit enabled the receiver service stays running in the background (also after boot) so Home can turn the receiver on while it is off; the notification shows the receiver as off.
+
+### Changed
+- Shared JVM test helpers moved to the `:testing` module.
+
 ## [1.1.0] - 2026-10-03
 
 ### Added
@@ -41,6 +51,7 @@ The section for the version being released is used verbatim as the GitHub releas
 ### Added
 - First release: AirPlay receiver for Google TV / Chromecast — screen mirroring, AirPlay Video (HLS) with D-pad seeking, AirPlay audio with cover art and track info, hardware H.264/HEVC decoding, optional PIN, background service with start on boot, English and Polish UI.
 
-[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/mkatadev/GoogleTVAirPlay/releases/tag/v1.0.0
