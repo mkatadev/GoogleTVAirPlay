@@ -33,6 +33,10 @@ import pl.prodevcode.tvairplay.domain.repository.UpdateRepository
  * Reads the latest GitHub release and, on request, downloads its APK, checks the published
  * SHA-256 and hands it to [PackageInstaller]. The system still asks the user to confirm;
  * that is as far as a non-system app can go.
+ *
+ * The version comes from the `releases/latest` redirect on github.com, which has no rate limit;
+ * the REST API (60 unauthenticated requests per hour per IP, shared by every device behind the
+ * same router) is only consulted for asset metadata and may fail without breaking the check.
  */
 @Singleton
 class GitHubUpdateRepository @Inject constructor(
@@ -136,33 +140,51 @@ class GitHubUpdateRepository @Inject constructor(
     }
 
     private fun fetchLatest(): AppUpdate {
-        val json = JSONObject(get(LATEST_RELEASE, accept = "application/vnd.github+json"))
-        val tag = json.getString("tag_name").removePrefix("v")
-        var apkUrl: String? = null; var shaUrl: String? = null; var size = 0L
-        val assets = json.optJSONArray("assets")
-        if (assets != null) for (i in 0 until assets.length()) {
-            val a = assets.getJSONObject(i)
-            val name = a.optString("name")
-            when {
-                name.endsWith(".apk.sha256") -> shaUrl = a.optString("browser_download_url")
-                name.endsWith(".apk") -> { apkUrl = a.optString("browser_download_url"); size = a.optLong("size") }
-            }
-        }
+        val (tag, releaseUrl) = latestTag()
+        // release.yml publishes assets under fixed names, so no API call is needed to find them
+        val apkName = "AirPlay-for-Google-TV-v$tag.apk"
+        val base = "$REPO_URL/releases/download/v$tag/"
+        val size = runCatching { apkSizeFromApi(tag, apkName) }
+            .onFailure { Log.d(TAG, "asset metadata unavailable: ${it.message}") }
+            .getOrDefault(0L)
         return AppUpdate(
-            currentVersion = currentVersion, latestVersion = tag,
-            releaseUrl = json.optString("html_url", RELEASES_PAGE),
-            apkUrl = apkUrl, apkSha256Url = shaUrl, apkSizeBytes = size,
+            currentVersion = currentVersion, latestVersion = tag, releaseUrl = releaseUrl,
+            apkUrl = base + apkName, apkSha256Url = "$base$apkName.sha256", apkSizeBytes = size,
         )
     }
 
-    private fun open(url: String, accept: String? = null): HttpURLConnection =
+    /** Follows `releases/latest` to `releases/tag/vX.Y.Z` without touching the rate-limited API. */
+    private fun latestTag(): Pair<String, String> {
+        val conn = open(RELEASES_PAGE, follow = false)
+        try {
+            val location = conn.getHeaderField("Location")
+            if (conn.responseCode !in 300..399 || location == null) error("HTTP ${conn.responseCode}")
+            val tag = location.substringAfter("/releases/tag/", "").removePrefix("v")
+            if (!VersionComparator.isRelease(tag)) error("unexpected redirect $location")
+            return tag to location
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    private fun apkSizeFromApi(tag: String, apkName: String): Long {
+        val json = JSONObject(get("$API_URL/releases/tags/v$tag", accept = "application/vnd.github+json"))
+        val assets = json.optJSONArray("assets") ?: return 0L
+        for (i in 0 until assets.length()) {
+            val a = assets.getJSONObject(i)
+            if (a.optString("name") == apkName) return a.optLong("size")
+        }
+        return 0L
+    }
+
+    private fun open(url: String, accept: String? = null, follow: Boolean = true): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             accept?.let { setRequestProperty("Accept", it) }
             setRequestProperty("User-Agent", "GoogleTVAirPlay/$currentVersion")
             connectTimeout = TIMEOUT_MS
             readTimeout = TIMEOUT_MS
-            instanceFollowRedirects = true
+            instanceFollowRedirects = follow
         }
 
     private fun get(url: String, accept: String? = null): String {
@@ -237,8 +259,9 @@ class GitHubUpdateRepository @Inject constructor(
 
     private companion object {
         const val TAG = "UpdateCheck"
-        const val LATEST_RELEASE = "https://api.github.com/repos/mkatadev/GoogleTVAirPlay/releases/latest"
-        const val RELEASES_PAGE = "https://github.com/mkatadev/GoogleTVAirPlay/releases/latest"
+        const val REPO_URL = "https://github.com/mkatadev/GoogleTVAirPlay"
+        const val API_URL = "https://api.github.com/repos/mkatadev/GoogleTVAirPlay"
+        const val RELEASES_PAGE = "$REPO_URL/releases/latest"
         const val TIMEOUT_MS = 15_000
         const val CACHE_MS = 6 * 60 * 60 * 1000L
     }

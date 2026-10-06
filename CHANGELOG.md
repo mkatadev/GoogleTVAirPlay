@@ -6,6 +6,9 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+### Fixed
+- Update check no longer depends on the GitHub REST API (60 unauthenticated requests per hour per IP, shared by every device on the same network): the latest version comes from the `releases/latest` redirect, assets are addressed by their fixed names.
+
 ## [1.2.0] - 2026-10-06
 
 ### Added
