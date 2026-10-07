@@ -82,6 +82,9 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     lateinit var dacpPlayer: DacpPlayer
         private set
     private var mediaReceiver: BroadcastReceiver? = null
+    private var screenReceiver: BroadcastReceiver? = null
+    /** Receiver was running when the screen went off and should come back when it turns on. */
+    private var resumeOnScreenOn = false
     // tcp connections currently open; _connectionCount is what the ui sees and lags by the grace period
     private var liveConnections = 0
     private val sessionEnd = Runnable { finishSession() }
@@ -205,6 +208,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             nsdManager?.reregister()
         }
         homeKit = HomeKitBridge(this, prefs, audioManager, lifecycleScope)
+        // HomeKit must follow network changes even while the receiver is off
+        networkWatcher.start()
         lifecycleScope.launch { prefs.changes(Prefs.HOMEKIT_ENABLED, Prefs.SERVER_NAME).collect { syncHomeKit() } }
 
         mediaReceiver = object : BroadcastReceiver() {
@@ -222,6 +227,16 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             addAction(ACTION_PREV)
         }
         ContextCompat.registerReceiver(this, mediaReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        screenReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                when (intent.action) {
+                    Intent.ACTION_SCREEN_OFF -> onScreenOff()
+                    Intent.ACTION_SCREEN_ON -> onScreenOn()
+                }
+            }
+        }
+        val screenFilter = IntentFilter().apply { addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_SCREEN_ON) }
+        ContextCompat.registerReceiver(this, screenReceiver, screenFilter, ContextCompat.RECEIVER_EXPORTED)
 
         video.player.onPlayerChanged = { mediaSession.attachVideoPlayer(it) }
         video.bind(
@@ -296,7 +311,10 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         stopServer()
         mediaReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
         mediaReceiver = null
+        screenReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
+        screenReceiver = null
         volumeSync.release()
+        networkWatcher.stop()
         homeKit.release()
         dacpController?.release()
         dacpController = null
@@ -396,7 +414,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             nsd.registerAirplay(resolvedName, port, airplayTxt)
             nsdStatusJob = lifecycleScope.launch { nsd.status.collect { _nsdStatus.value = it } }
         }
-        networkWatcher.start()
 
         _serverState.value = ServerState.RUNNING
         if (ensureServiceStarted) {
@@ -413,7 +430,6 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             NativeBridge.nativeDestroy(nativeHandle)
             nativeHandle = 0L
         }
-        networkWatcher.stop()
         nsdStatusJob?.cancel()
         nsdStatusJob = null
         _nsdStatus.value = NsdServiceManager.Status()
@@ -433,6 +449,18 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     fun stopServer() {
+        resumeOnScreenOn = false
+        shutdownReceiver()
+        if (homeKit.enabled) {
+            notifications.update()
+        } else {
+            notifications.dismiss()
+            stopSelf()
+        }
+        log("Server stopped")
+    }
+
+    private fun shutdownReceiver() {
         mainHandler.removeCallbacks(sessionEnd)
         liveConnections = 0
         releaseServerResources()
@@ -445,13 +473,27 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         _serverState.value = ServerState.STOPPED
         _connectionCount.value = 0
         refreshDacpPlayer()
-        if (homeKit.enabled) {
-            notifications.update()
-        } else {
-            notifications.dismiss()
-            stopSelf()
-        }
-        log("Server stopped")
+    }
+
+    /**
+     * The TV went to sleep: take the receiver off the network so senders drop the AirPlay route
+     * instead of streaming into a dark screen (a mere restart keeps the route selected on iOS).
+     * It comes back on its own when the screen turns on; the service stays alive meanwhile.
+     */
+    private fun onScreenOff() {
+        if (_serverState.value != ServerState.RUNNING) return
+        log("Screen off, suspending receiver")
+        resumeOnScreenOn = true
+        shutdownReceiver()
+        notifications.update()
+    }
+
+    private fun onScreenOn() {
+        if (!resumeOnScreenOn) return
+        resumeOnScreenOn = false
+        if (_serverState.value == ServerState.RUNNING) return
+        log("Screen on, resuming receiver")
+        startServer(prefs.getString(Prefs.SERVER_NAME, Prefs.DEF_SERVER_NAME) ?: Prefs.DEF_SERVER_NAME, ensureServiceStarted = false)
     }
 
     private fun orientationFollowsDevice(): Boolean =

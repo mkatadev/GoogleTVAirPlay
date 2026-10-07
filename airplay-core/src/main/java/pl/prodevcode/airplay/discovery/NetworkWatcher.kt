@@ -32,6 +32,7 @@ class NetworkWatcher(
     private val handler = Handler(Looper.getMainLooper())
     private val addrsByNetwork = HashMap<Network, Set<String>>()
     private var lastSettled: Set<String> = emptySet()
+    private var seeded = false
     private var callback: ConnectivityManager.NetworkCallback? = null
     private val settle = Runnable { _fire() }
 
@@ -42,6 +43,7 @@ class NetworkWatcher(
         if (callback != null) return
         addrsByNetwork.clear()
         lastSettled = emptySet()
+        seeded = false
         val request = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
@@ -71,6 +73,7 @@ class NetworkWatcher(
         handler.removeCallbacks(settle)
         addrsByNetwork.clear()
         lastSettled = emptySet()
+        seeded = false
         _status.value = NetworkStatus()
     }
 
@@ -88,14 +91,11 @@ class NetworkWatcher(
         _status.value = _status.value.copy(transport = transport, interfaceName = iface, addresses = all.sorted())
 
         // first callback after start only seeds the baseline; the caller just announced itself
-        if (lastSettled.isEmpty() && all.isNotEmpty()) { lastSettled = all; return }
+        if (!seeded && all.isNotEmpty()) { seeded = true; lastSettled = all; return }
         if (all == lastSettled) return
         handler.removeCallbacks(settle)
-        if (all.isEmpty()) {
-            // offline: nothing to announce yet, wait for the next address
-            lastSettled = emptySet()
-            return
-        }
+        // offline: nothing to announce yet; the next address set is a real change, not a new baseline
+        if (all.isEmpty()) return
         // dhcp usually settles within a second; coalesce the burst of callbacks into one re-announce
         handler.postDelayed(settle, SETTLE_MS)
     }

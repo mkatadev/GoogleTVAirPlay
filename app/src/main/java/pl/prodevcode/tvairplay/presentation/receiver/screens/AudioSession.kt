@@ -40,7 +40,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,6 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
-import pl.prodevcode.tvairplay.R
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.presentation.components.ProgressTrack
 import pl.prodevcode.tvairplay.presentation.components.rememberCoverArt
@@ -133,32 +131,35 @@ fun AudioSession(
                 Text(
                     nowPlaying.title.ifBlank { "—" },
                     fontSize = 40.sp,
+                    lineHeight = 48.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Spacer(Modifier.height(8.dp))
-                Text(nowPlaying.artist, fontSize = 24.sp, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(nowPlaying.artist, fontSize = 24.sp, lineHeight = 30.sp, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (nowPlaying.album.isNotBlank()) {
-                    Text(nowPlaying.album, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(nowPlaying.album, fontSize = 18.sp, lineHeight = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(Modifier.height(32.dp))
                 ProgressTrack(position = position, duration = nowPlaying.durationMs, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(formatTime(position), fontSize = 14.sp, color = AirPlayColors.Muted)
-                    Text(formatTime(nowPlaying.durationMs), fontSize = 14.sp, color = AirPlayColors.Muted)
+                    Text(formatTime(position), fontSize = 14.sp, lineHeight = 20.sp, color = AirPlayColors.Muted)
+                    Text(formatTime(nowPlaying.durationMs), fontSize = 14.sp, lineHeight = 20.sp, color = AirPlayColors.Muted)
                 }
                 Spacer(Modifier.height(24.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                ) {
                     IconButton(onClick = onPrevious) { Icon(Icons.Default.SkipPrevious, null) }
                     IconButton(onClick = onPlayPause, modifier = Modifier.focusRequester(playFocus)) {
                         Icon(if (nowPlaying.playing) Icons.Default.Pause else Icons.Default.PlayArrow, null)
                     }
                     IconButton(onClick = onNext) { Icon(Icons.Default.SkipNext, null) }
-                    Spacer(Modifier.width(16.dp))
-                    Text(stringResource(R.string.audio_hint), fontSize = 14.sp, color = AirPlayColors.Muted)
                 }
             }
         }

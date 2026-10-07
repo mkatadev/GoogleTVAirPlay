@@ -151,7 +151,6 @@
     <string name="update_failed_checksum">Checksum mismatch — download discarded, select to retry</string>
     <string name="update_failed_installer">Installer error — use install.sh or sideload the APK</string>
     <string name="update_failed_aborted">Installation cancelled — select to try again</string>
-    <string name="audio_hint">OK play/pause · ◀ ▶ previous/next track</string>
 
     <!-- Tracks -->
     <string name="video_hint_playing_tracks">OK pause · ◀ ▶ seek · ▼ audio &amp; subtitles · Back stop</string>
