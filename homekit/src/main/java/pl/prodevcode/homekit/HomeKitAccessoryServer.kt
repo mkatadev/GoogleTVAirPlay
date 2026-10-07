@@ -97,7 +97,12 @@ class HomeKitAccessoryServer(
         _port.value = 0
     }
 
-    fun reannounce() = advertiser.reannounce()
+    /** After a network change: re-register the record and drop controller sessions bound to the old addresses. */
+    fun reannounce() {
+        if (!_running.value) return
+        router.closeAll()
+        advertiser.reannounce()
+    }
 
     /** Renames the accessory in Home and in the mDNS record. */
     fun setName(newName: String) {

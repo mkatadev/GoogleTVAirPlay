@@ -161,7 +161,6 @@
     <string name="update_failed_aborted">Instalacja anulowana — wybierz, aby spróbować ponownie</string>
 
     <!-- Ścieżki -->
-    <string name="audio_hint">OK odtwórz/pauza · ◀ ▶ poprzedni/następny utwór</string>
     <string name="video_hint_playing_tracks">OK pauza · ◀ ▶ przewijanie · ▼ audio i napisy · Wstecz stop</string>
     <string name="video_hint_paused_tracks">OK odtwórz · ◀ ▶ przewijanie · ▼ audio i napisy · Wstecz stop</string>
     <string name="tracks_audio">Audio</string>

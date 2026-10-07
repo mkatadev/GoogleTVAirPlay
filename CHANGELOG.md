@@ -6,6 +6,17 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-07
+
+### Changed
+- When the TV goes to sleep the AirPlay receiver is taken off the network (senders drop the route instead of streaming into a dark screen) and comes back automatically when the screen turns on.
+- Apple Home *Power on* wakes the display through an invisible activity (`setTurnScreenOn`) — Android 14 TV builds deny the wake-lock app-op to normal apps.
+- Now-playing screen: title/artist/album no longer overlap on two-line titles; transport buttons are centred under the progress bar and the key hint is gone.
+
+### Fixed
+- HomeKit record is re-announced and controller sessions reset after a network change even while the receiver is off; the network watcher no longer treats the first address after going offline as a new baseline.
+- Audio-mode layout on long translations.
+
 ## [1.3.0] - 2026-10-07
 
 ### Added
@@ -65,7 +76,8 @@ The section for the version being released is used verbatim as the GitHub releas
 ### Added
 - First release: AirPlay receiver for Google TV / Chromecast — screen mirroring, AirPlay Video (HLS) with D-pad seeking, AirPlay audio with cover art and track info, hardware H.264/HEVC decoding, optional PIN, background service with start on boot, English and Polish UI.
 
-[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.0.0...v1.1.0

@@ -161,18 +161,11 @@ internal class HomeKitBridge(
     override fun setActive(active: Boolean) = onMain {
         when {
             !tvControl.value -> if (active) service.startServer(serverName()) else service.stopServer()
-            active -> wakeScreen()
+            active -> WakeActivity.wake(service)
             else -> TvRemoteService.perform(TvRemoteService.Action.SLEEP)
         }
     }
 
-    // ACQUIRE_CAUSES_WAKEUP on a screen wake lock is the only way to wake the display without
-    // bringing an Activity to the front, which would hide whatever the user had on screen
-    @Suppress("DEPRECATION")
-    private fun wakeScreen() {
-        powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "tvairplay:homekit_wake")
-            .acquire(WAKE_HOLD_MS)
-    }
 
     override fun setPlaying(playing: Boolean) = onMain {
         if (service.video.active.value) service.setVideoPlaying(playing)
@@ -247,6 +240,5 @@ internal class HomeKitBridge(
     private companion object {
         const val PREFS_NAME = "homekit"
         const val SEEK_MS = 15_000L
-        const val WAKE_HOLD_MS = 3_000L
     }
 }

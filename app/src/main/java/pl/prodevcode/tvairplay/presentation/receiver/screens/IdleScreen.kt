@@ -82,6 +82,7 @@ fun IdleScreen(
             Text(
                 text = device.name.ifBlank { stringResource(R.string.app_name) },
                 fontSize = 44.sp,
+                lineHeight = 52.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
