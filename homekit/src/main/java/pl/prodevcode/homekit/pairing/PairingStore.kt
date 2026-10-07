@@ -25,6 +25,9 @@ class PairingStore(private val prefs: SharedPreferences) {
     /** Accessory identifier advertised as `id` in the `_hap._tcp` TXT record, `XX:XX:XX:XX:XX:XX`. */
     val accessoryId: String = prefs.getString(KEY_ID, null) ?: randomId().also { prefs.edit { putString(KEY_ID, it) } }
 
+    /** 4-character setup ID that ties the QR code to this accessory (`sh` TXT record). */
+    val setupId: String = prefs.getString(KEY_SETUP_ID, null) ?: randomSetupId().also { prefs.edit { putString(KEY_SETUP_ID, it) } }
+
     val keyPair: HapCrypto.Ed25519KeyPair = load()
 
     private val _pairings = MutableStateFlow(loadPairings())
@@ -88,6 +91,13 @@ class PairingStore(private val prefs: SharedPreferences) {
         const val KEY_PUBLIC = "ltpk"
         const val KEY_PAIRINGS = "pairings"
         const val KEY_CONFIG = "config_number"
+        const val KEY_SETUP_ID = "setup_id"
+        const val SETUP_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+        fun randomSetupId(): String {
+            val rnd = SecureRandom()
+            return String(CharArray(4) { SETUP_ID_ALPHABET[rnd.nextInt(SETUP_ID_ALPHABET.length)] })
+        }
 
         fun randomId(): String {
             val b = ByteArray(6).also { SecureRandom().nextBytes(it) }

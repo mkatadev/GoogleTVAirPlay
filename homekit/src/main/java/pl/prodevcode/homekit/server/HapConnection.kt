@@ -44,7 +44,7 @@ class HapConnection(private val socket: Socket, private val handler: HapRequestH
             val input = socket.getInputStream()
             while (!closed) {
                 val n = input.read(buf)
-                if (n < 0) break
+                if (n < 0) { Log.d(TAG, "$remote: closed by peer"); break }
                 val secure = channel
                 if (secure == null) {
                     parser.feed(buf, 0, n)
@@ -55,6 +55,9 @@ class HapConnection(private val socket: Socket, private val handler: HapRequestH
                 while (true) {
                     val request = parser.next() ?: break
                     val response = handler.handle(this, request)
+                    if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                        Log.v(TAG, "$remote: ${request.method} ${request.path}?${request.query} ${String(request.body)} -> ${response.status} ${String(response.body)}")
+                    }
                     send(response.serialize())
                     pendingSession?.let { keys ->
                         session = keys
@@ -75,6 +78,7 @@ class HapConnection(private val socket: Socket, private val handler: HapRequestH
 
     fun sendEvent(json: String) {
         if (channel == null) return
+        if (Log.isLoggable(TAG, Log.VERBOSE)) Log.v(TAG, "$remote: EVENT $json")
         runCatching { send(HttpResponse.json(200, json).serialize("EVENT/1.0")) }
             .onFailure { Log.d(TAG, "$remote: event failed: ${it.message}") }
     }
