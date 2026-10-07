@@ -64,16 +64,19 @@ class GitHubUpdateRepository @Inject constructor(
             return
         }
         _state.value = UpdateCheck.Checking
-        _state.value = withContext(Dispatchers.IO) {
+        val result = withContext(Dispatchers.IO) {
             runCatching { fetchLatest() }
-                .onFailure { Log.w(TAG, "update check failed", it) }
+                // Log.w swallows UnknownHostException traces, so spell the cause out
+                .onFailure { Log.w(TAG, "update check failed: $it") }
                 .map { update ->
                     if (VersionComparator.compare(update.latestVersion, currentVersion) > 0) UpdateCheck.Available(update)
                     else UpdateCheck.UpToDate(currentVersion)
                 }
                 .getOrElse { UpdateCheck.Failed(currentVersion) }
         }
-        lastCheckedAt = now
+        _state.value = result
+        // a failed check (TV still waking up, no network yet) is retried on the next screen visit
+        if (result !is UpdateCheck.Failed) lastCheckedAt = now
     }
 
     override suspend fun downloadAndInstall() {

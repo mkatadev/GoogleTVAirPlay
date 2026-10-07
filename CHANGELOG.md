@@ -17,6 +17,8 @@ The section for the version being released is used verbatim as the GitHub releas
 - Shared JVM test helpers moved to the `:testing` module.
 
 ### Fixed
+- A failed update check (e.g. the TV still waking up without network) is retried on the next visit to Settings instead of being cached for six hours.
+- `install.sh` printed the requested version twice in its "Looking up" line.
 - Update check no longer depends on the GitHub REST API (60 unauthenticated requests per hour per IP, shared by every device on the same network): the latest version comes from the `releases/latest` redirect, assets are addressed by their fixed names.
 
 ## [1.1.0] - 2026-10-03
