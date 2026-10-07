@@ -13,15 +13,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pl.prodevcode.tvairplay.domain.model.DeviceInfo
+import pl.prodevcode.tvairplay.domain.model.NowPlaying
+import pl.prodevcode.tvairplay.domain.model.ReceiverState
+import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
 import pl.prodevcode.tvairplay.domain.model.SessionMode
+import pl.prodevcode.tvairplay.domain.model.VideoPlayback
 import pl.prodevcode.tvairplay.presentation.components.SubtitleOverlay
 import pl.prodevcode.tvairplay.presentation.components.VideoSurface
 import pl.prodevcode.tvairplay.presentation.receiver.screens.AudioSession
 import pl.prodevcode.tvairplay.presentation.receiver.screens.DimOverlay
 import pl.prodevcode.tvairplay.presentation.receiver.screens.IdleScreen
 import pl.prodevcode.tvairplay.presentation.receiver.screens.VideoOverlay
+import pl.prodevcode.tvairplay.presentation.theme.TvAirPlayTheme
 
 @Composable
 fun ReceiverScreen(
@@ -80,6 +88,7 @@ private fun ReceiverContent(
                     onPlayPause = { onIntent(ReceiverIntent.PlayPause) },
                     onNext = { onIntent(ReceiverIntent.Next) },
                     onPrevious = { onIntent(ReceiverIntent.Previous) },
+                    onStop = { onIntent(ReceiverIntent.StopSharing) },
                 )
 
                 SessionMode.IDLE, SessionMode.CONNECTED -> IdleScreen(
@@ -95,5 +104,55 @@ private fun ReceiverContent(
         }
 
         if (ui.dimmed) DimOverlay(nowPlaying = state.nowPlaying)
+    }
+}
+
+private val previewDevice = DeviceInfo(name = "Living room TV", ipAddress = "192.168.1.20")
+
+@Preview(device = Devices.TV_1080p)
+@Composable
+private fun ReceiverIdlePreview() {
+    TvAirPlayTheme {
+        ReceiverContent(
+            ui = ReceiverUiState(receiver = ReceiverState(status = ReceiverStatus.RUNNING), device = previewDevice, updateAvailable = "v9.9.9"),
+            onIntent = {}, onOpenSettings = {},
+        )
+    }
+}
+
+@Preview(device = Devices.TV_1080p)
+@Composable
+private fun ReceiverAudioPreview() {
+    TvAirPlayTheme {
+        ReceiverContent(
+            ui = ReceiverUiState(
+                receiver = ReceiverState(
+                    status = ReceiverStatus.RUNNING, mode = SessionMode.AUDIO, connectedClients = 1,
+                    nowPlaying = NowPlaying(
+                        title = "A fairly long song title that wraps onto a second line", artist = "Some Artist", album = "The Album",
+                        positionMs = 83_000, durationMs = 241_000, playing = true,
+                    ),
+                ),
+                device = previewDevice,
+            ),
+            onIntent = {}, onOpenSettings = {},
+        )
+    }
+}
+
+@Preview(device = Devices.TV_1080p)
+@Composable
+private fun ReceiverVideoPreview() {
+    TvAirPlayTheme {
+        ReceiverContent(
+            ui = ReceiverUiState(
+                receiver = ReceiverState(
+                    status = ReceiverStatus.RUNNING, mode = SessionMode.VIDEO, connectedClients = 1,
+                    video = VideoPlayback(title = "AirPlay video", positionMs = 600_000, durationMs = 5_400_000, playing = true),
+                ),
+                device = previewDevice,
+            ),
+            onIntent = {}, onOpenSettings = {},
+        )
     }
 }

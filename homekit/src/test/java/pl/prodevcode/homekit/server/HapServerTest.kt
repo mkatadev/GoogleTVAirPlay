@@ -30,6 +30,9 @@ class HapServerTest {
         override fun setVolume(percent: Int) { calls += "volume=$percent" }
         override fun volumeStep(up: Boolean) { calls += "step=${if (up) "up" else "down"}" }
         override fun setMuted(muted: Boolean) { calls += "muted=$muted" }
+        override fun selectInput(id: Int) { calls += "input=$id" }
+        override fun renameInput(id: Int, name: String) { calls += "rename=$id:$name" }
+        override fun setInputVisible(id: Int, visible: Boolean) { calls += "visible=$id:$visible" }
     }
 
     private val prefs = FakeSharedPreferences()
@@ -80,7 +83,7 @@ class HapServerTest {
             assertEquals(200, db.status)
             val services = db.json().getJSONArray("accessories").getJSONObject(0).getJSONArray("services")
             val types = (0 until services.length()).map { services.getJSONObject(it).getString("type") }
-            assertEquals(listOf("3E", "A2", "D8", "D9", "113"), types)
+            assertEquals(listOf("3E", "A2", "D8", "113", "D9"), types)
             val television = services.getJSONObject(2)
             assertTrue(television.getBoolean("primary"))
             assertEquals(2, television.getJSONArray("linked").length())

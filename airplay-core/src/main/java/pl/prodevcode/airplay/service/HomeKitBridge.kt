@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.view.KeyEvent
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
@@ -47,21 +48,25 @@ internal class HomeKitBridge(
     private val powerManager = service.getSystemService(Context.POWER_SERVICE) as PowerManager
     private var volumeReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
+    private var packageReceiver: BroadcastReceiver? = null
     private val screenOn = MutableStateFlow(powerManager.isInteractive)
 
     /** Whether the accessory controls the Google TV UI and power rather than only the receiver. */
     val tvControl: StateFlow<Boolean> = TvRemoteService.connected
 
+    private val inputs = TvInputs(service, service.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE))
+
     val server = HomeKitAccessoryServer(
         service, service.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), scope,
         AccessoryInfo(
             name = serverName(),
-            manufacturer = "prodevcode",
+            manufacturer = "Google powered by ProDevCode",
             model = Build.MODEL.ifBlank { "Google TV" },
             serialNumber = Settings.Secure.getString(service.contentResolver, Settings.Secure.ANDROID_ID) ?: "0",
             firmwareRevision = firmwareRevision(),
         ),
         controls = this,
+        inputs = inputs.inputs(),
     )
 
     val enabled: Boolean get() = prefs.getBoolean(Prefs.HOMEKIT_ENABLED, Prefs.DEF_HOMEKIT_ENABLED)
@@ -81,6 +86,16 @@ internal class HomeKitBridge(
                 }
             }.distinctUntilChanged().collect { server.television.setPlaying(it) }
         }
+        scope.launch {
+            combine(TvRemoteService.foregroundPackage, service.connectionCount, service.video.active) { front, clients, video ->
+                when {
+                    clients > 0 || video || front == service.packageName -> InputRegistry.ID_AIRPLAY
+                    front == null -> null
+                    front in LAUNCHERS -> InputRegistry.ID_HOME
+                    else -> inputs.idFor(front)
+                }
+            }.distinctUntilChanged().collect { id -> id?.let { server.television.setActiveInput(it) } }
+        }
     }
 
     /** Applies [Prefs.HOMEKIT_ENABLED]; the server keeps running across receiver restarts. */
@@ -88,12 +103,15 @@ internal class HomeKitBridge(
         if (enabled) {
             server.setName(serverName())
             if (!server.status.value.running) {
+                refreshInputs()
                 server.start()
                 pushVolume()
                 startVolumeWatch()
                 startScreenWatch()
+                startPackageWatch()
             }
         } else {
+            stopPackageWatch()
             stopScreenWatch()
             stopVolumeWatch()
             server.stop()
@@ -101,9 +119,38 @@ internal class HomeKitBridge(
     }
 
     fun release() {
+        stopPackageWatch()
         stopScreenWatch()
         stopVolumeWatch()
         server.stop()
+    }
+
+    private fun refreshInputs() {
+        val list = inputs.inputs()
+        Log.i(TAG, "inputs: ${list.joinToString { "${it.id}=${it.name}${if (it.visible) "" else " (hidden)"}" }}")
+        server.television.setInputs(list)
+    }
+
+    private fun startPackageWatch() {
+        if (packageReceiver != null) return
+        val r = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                // REPLACED arrives as REMOVED + ADDED with EXTRA_REPLACING; one refresh at the end is enough
+                if (intent.action == Intent.ACTION_PACKAGE_REMOVED && intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) return
+                refreshInputs()
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED); addAction(Intent.ACTION_PACKAGE_REMOVED); addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addDataScheme("package")
+        }
+        ContextCompat.registerReceiver(service, r, filter, ContextCompat.RECEIVER_EXPORTED)
+        packageReceiver = r
+    }
+
+    private fun stopPackageWatch() {
+        packageReceiver?.let { try { service.unregisterReceiver(it) } catch (_: Exception) {} }
+        packageReceiver = null
     }
 
     private fun serverName() = prefs.getString(Prefs.SERVER_NAME, Prefs.DEF_SERVER_NAME)?.ifBlank { null } ?: Prefs.DEF_SERVER_NAME
@@ -237,8 +284,32 @@ internal class HomeKitBridge(
         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, if (muted) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE, 0)
     }
 
+    override fun selectInput(id: Int) = onMain {
+        when (id) {
+            InputRegistry.ID_AIRPLAY -> service.showReceiver(serverName())
+            InputRegistry.ID_HOME -> if (!TvRemoteService.perform(TvRemoteService.Action.HOME)) launch(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME))
+            else -> inputs.launchIntent(id)?.let { launch(it) }
+        }
+    }
+
+    override fun renameInput(id: Int, name: String) {
+        inputs.rename(id, name)
+        onMain { refreshInputs() }
+    }
+
+    override fun setInputVisible(id: Int, visible: Boolean) {
+        inputs.setVisible(id, visible)
+        onMain { refreshInputs() }
+    }
+
+    private fun launch(intent: Intent) {
+        try { service.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)) } catch (e: Exception) { Log.w(TAG, "input launch failed", e) }
+    }
+
     private companion object {
+        const val TAG = "HomeKitBridge"
         const val PREFS_NAME = "homekit"
+        val LAUNCHERS = setOf("com.google.android.apps.tv.launcherx", "com.google.android.tvlauncher")
         const val SEEK_MS = 15_000L
     }
 }

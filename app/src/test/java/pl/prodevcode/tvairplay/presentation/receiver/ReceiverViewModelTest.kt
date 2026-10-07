@@ -38,6 +38,7 @@ import pl.prodevcode.tvairplay.domain.usecase.PinControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.PlaybackControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
+import pl.prodevcode.tvairplay.domain.usecase.DismissUiUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StopReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ToggleReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
@@ -71,6 +72,7 @@ class ReceiverViewModelTest {
         startReceiver = StartReceiverUseCase(receiverRepo),
         toggleReceiver = ToggleReceiverUseCase(receiverRepo),
         stopReceiver = StopReceiverUseCase(receiverRepo),
+        dismissUi = DismissUiUseCase(receiverRepo),
         playback = PlaybackControlUseCase(receiverRepo),
         pin = PinControlUseCase(receiverRepo),
         surfaces = mockk<VideoSurfaceHost>(relaxed = true),
@@ -207,6 +209,22 @@ class ReceiverViewModelTest {
         vm.onIntent(ReceiverIntent.PlayPause)
         vm.onIntent(ReceiverIntent.SeekTo(5_000))
         vm.onIntent(ReceiverIntent.Next)
-        verify { receiverRepo.togglePlayPause(); receiverRepo.seekTo(5_000); receiverRepo.skipNext() }
+        vm.onIntent(ReceiverIntent.StopSharing)
+        verify { receiverRepo.togglePlayPause(); receiverRepo.seekTo(5_000); receiverRepo.skipNext(); receiverRepo.stopSharing() }
+    }
+
+    @Test fun `leaving the app during a session keeps it playing only when background use is allowed`() = runTest {
+        receiverState.value = ReceiverState(connectedClients = 1)
+        val vm = viewModel()
+        advanceUntilIdle()
+        vm.onIntent(ReceiverIntent.AppBackgrounded)
+        verify(exactly = 1) { receiverRepo.uiDismissed() }
+        verify(exactly = 0) { receiverRepo.stopSharing() }
+
+        settingsFlow.value = ReceiverSettings(runInBackground = false)
+        advanceUntilIdle()
+        vm.onIntent(ReceiverIntent.AppBackgrounded)
+        verify(exactly = 1) { receiverRepo.stopSharing() }
+        verify(exactly = 0) { receiverRepo.stop() }
     }
 }

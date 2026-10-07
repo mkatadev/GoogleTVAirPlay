@@ -42,6 +42,11 @@ class PairingStore(private val prefs: SharedPreferences) {
 
     fun bumpConfigNumber() { configNumber = (configNumber % 65535) + 1 }
 
+    /** Shape of the accessory database last advertised; lets the host bump `c#` when it changed across restarts. */
+    var databaseSignature: String?
+        get() = prefs.getString(KEY_DB_SIGNATURE, null)
+        set(value) = prefs.edit { putString(KEY_DB_SIGNATURE, value) }
+
     fun find(identifier: String): Pairing? = _pairings.value.firstOrNull { it.identifier == identifier }
 
     @Synchronized
@@ -92,6 +97,7 @@ class PairingStore(private val prefs: SharedPreferences) {
         const val KEY_PAIRINGS = "pairings"
         const val KEY_CONFIG = "config_number"
         const val KEY_SETUP_ID = "setup_id"
+        const val KEY_DB_SIGNATURE = "db_signature"
         const val SETUP_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
         fun randomSetupId(): String {

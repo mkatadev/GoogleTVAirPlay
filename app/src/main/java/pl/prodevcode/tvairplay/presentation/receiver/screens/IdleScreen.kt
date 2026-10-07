@@ -44,6 +44,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import pl.prodevcode.tvairplay.R
+import pl.prodevcode.tvairplay.presentation.components.localizedLog
 import pl.prodevcode.tvairplay.domain.model.DeviceInfo
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
 import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
@@ -155,7 +156,7 @@ fun IdleScreen(
         )
         if (state.lastLog.isNotBlank()) {
             Text(
-                text = state.lastLog,
+                text = localizedLog(state.lastLog),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.align(Alignment.BottomEnd).padding(40.dp),

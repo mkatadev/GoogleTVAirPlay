@@ -213,4 +213,21 @@
     <string name="homekit_reset">Usuń z aplikacji Dom</string>
     <string name="homekit_reset_desc">Zapomina wszystkie sparowane urządzenia. Telewizor trzeba będzie dodać do Domu ponownie.</string>
     <string name="homekit_reset_confirm">Tak, usuń</string>
+    <string name="audio_stop_hint">Wstecz kończy udostępnianie z iPhone’a</string>
+    <!-- komunikaty usługi pokazywane na ekranie bezczynności -->
+    <string name="log_server_started">Odbiornik uruchomiony na porcie %1$d</string>
+    <string name="log_server_stopped">Odbiornik zatrzymany</string>
+    <string name="log_client_connected">Urządzenie połączone (%1$d)</string>
+    <string name="log_client_disconnected">Urządzenie rozłączone (%1$d)</string>
+    <string name="log_client_reconnected">Urządzenie połączone ponownie (%1$d)</string>
+    <string name="log_paired">Sparowano: %1$s</string>
+    <string name="log_audio_mode">Strumieniowanie dźwięku</string>
+    <string name="log_mirror_mode">Klonowanie ekranu</string>
+    <string name="log_last_client_gone">Ostatnie urządzenie odłączone, sesja utrzymana przez %1$d s</string>
+    <string name="log_screen_off">Ekran wyłączony — odbiornik wstrzymany</string>
+    <string name="log_screen_on">Ekran włączony — odbiornik wznowiony</string>
+    <string name="log_network_changed">Zmiana sieci, ponowne rozgłaszanie AirPlay</string>
+    <string name="log_video_play">Uruchomiono wideo AirPlay</string>
+    <string name="log_video_stopped">Zatrzymano wideo AirPlay</string>
+    <string name="log_track">Utwór: %1$s</string>
 </resources>

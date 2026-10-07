@@ -10,8 +10,9 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Lets Apple Home drive the Google TV UI itself, not only AirPlay playback: D-pad, Select, Back and
  * Home through accessibility global actions and sleep through [GLOBAL_ACTION_LOCK_SCREEN]. The user
- * enables it once in Settings → Accessibility; it receives no accessibility events and never reads
- * window content. While it is not connected the HomeKit remote falls back to playback-only control.
+ * enables it once in Settings → Accessibility. The only event it listens to is the window-state
+ * change, and only for the package name of the app in front (the current HomeKit input); it never
+ * reads window content. While it is not connected the HomeKit remote falls back to playback-only control.
  */
 class TvRemoteService : AccessibilityService() {
 
@@ -30,7 +31,13 @@ class TvRemoteService : AccessibilityService() {
         super.onDestroy()
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        val pkg = event.packageName?.toString()?.takeIf { it.isNotBlank() } ?: return
+        // ignore transient system windows (volume, notifications); the app in front keeps being the input
+        if (pkg == "android" || pkg.startsWith("com.android.systemui")) return
+        _foregroundPackage.value = pkg
+    }
     override fun onInterrupt() = Unit
 
     private fun disconnect() {
@@ -45,9 +52,13 @@ class TvRemoteService : AccessibilityService() {
     companion object {
         @Volatile private var instance: TvRemoteService? = null
         private val _connected = MutableStateFlow(false)
+        private val _foregroundPackage = MutableStateFlow<String?>(null)
 
         /** True while the user has the service enabled, i.e. Google TV navigation and sleep are available. */
         val connected = _connected.asStateFlow()
+
+        /** Package of the app whose window is in front; `null` until the first event. */
+        val foregroundPackage = _foregroundPackage.asStateFlow()
 
         /** Performs [action] on the current UI; false when the service is off or the OS lacks the action. */
         fun perform(action: Action): Boolean {

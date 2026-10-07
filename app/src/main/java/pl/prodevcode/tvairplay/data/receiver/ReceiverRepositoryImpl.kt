@@ -99,6 +99,8 @@ class ReceiverRepositoryImpl @Inject constructor(
     }
 
     override fun stop() { svc?.stopServer() }
+    override fun uiDismissed() { svc?.onUiDismissed() }
+    override fun stopSharing() { svc?.disconnectClients() }
 
     override fun restart() {
         val s = svc ?: return

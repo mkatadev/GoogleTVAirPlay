@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import pl.prodevcode.homekit.accessory.AccessoryInfo
 import pl.prodevcode.homekit.accessory.TelevisionAccessory
 import pl.prodevcode.homekit.accessory.TelevisionControls
+import pl.prodevcode.homekit.accessory.TvInput
 import pl.prodevcode.homekit.pairing.PairingStore
 import pl.prodevcode.homekit.pairing.SetupPayload
 import pl.prodevcode.homekit.server.HapRouter
@@ -29,6 +30,7 @@ class HomeKitAccessoryServer(
     scope: CoroutineScope,
     private val info: AccessoryInfo,
     controls: TelevisionControls,
+    inputs: List<TvInput> = listOf(TelevisionAccessory.DEFAULT_INPUT),
 ) {
     data class Status(
         val running: Boolean = false,
@@ -44,7 +46,7 @@ class HomeKitAccessoryServer(
     )
 
     private val store = PairingStore(prefs)
-    val television = TelevisionAccessory(info, controls)
+    val television = TelevisionAccessory(info, controls, inputs)
     private val advertiser = HapAdvertiser(context)
     private var name = info.name
 
@@ -67,6 +69,24 @@ class HomeKitAccessoryServer(
     })
     private val server = HapServer(router)
 
+    init {
+        // inputs come and go with the installed apps: swap the database, bump c# so controllers refetch it
+        television.onDatabaseChanged = { db ->
+            router.accessory = db
+            publishDatabase()
+            if (_running.value) advertise()
+        }
+    }
+
+    /** Bumps `c#` when the database differs from the one controllers last saw (also across restarts). */
+    private fun publishDatabase() {
+        val signature = television.accessory.services.joinToString(",") { "${it.type}:${it.iid}" }
+        if (store.databaseSignature != signature) {
+            store.databaseSignature = signature
+            store.bumpConfigNumber()
+        }
+    }
+
     val status: StateFlow<Status> = combine(_running, store.pairings, _setupCode, _port) { running, pairings, code, port ->
         Status(
             running = running, paired = pairings.isNotEmpty(), controllers = pairings.size,
@@ -80,6 +100,7 @@ class HomeKitAccessoryServer(
     fun start() {
         if (_running.value) return
         _port.value = server.start()
+        publishDatabase()
         if (!store.isPaired) _setupCode.value = newSetupCode()
         _running.value = true
         advertise()

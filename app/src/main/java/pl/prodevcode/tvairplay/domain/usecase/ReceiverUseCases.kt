@@ -18,6 +18,10 @@ class StopReceiverUseCase @Inject constructor(private val repo: ReceiverReposito
     operator fun invoke() = repo.stop()
 }
 
+class DismissUiUseCase @Inject constructor(private val repo: ReceiverRepository) {
+    operator fun invoke() = repo.uiDismissed()
+}
+
 class ToggleReceiverUseCase @Inject constructor(private val repo: ReceiverRepository) {
     operator fun invoke(current: ReceiverStatus) =
         if (current == ReceiverStatus.RUNNING) repo.stop() else repo.start()
@@ -39,6 +43,7 @@ class PlaybackControlUseCase @Inject constructor(private val repo: ReceiverRepos
     fun next() = repo.skipNext()
     fun previous() = repo.skipPrevious()
     fun stopVideo() = repo.stopVideo()
+    fun stopSharing() = repo.stopSharing()
     fun selectAudioTrack(id: String) = repo.selectAudioTrack(id)
     fun selectSubtitleTrack(id: String?) = repo.selectSubtitleTrack(id)
 }

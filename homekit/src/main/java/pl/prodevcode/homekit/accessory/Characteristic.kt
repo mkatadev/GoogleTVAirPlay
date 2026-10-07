@@ -32,10 +32,15 @@ class Characteristic(
     private val minValue: Number? = null,
     private val maxValue: Number? = null,
     private val minStep: Number? = null,
-    private val validValues: List<Int>? = null,
+    validValues: List<Int>? = null,
     private val onWrite: ((Any) -> Unit)? = null,
+    iid: Int = 0,
 ) {
-    var iid = 0
+    var iid = iid
+        internal set
+
+    /** Allowed values for enumerations; may change when the accessory database is rebuilt (e.g. input list). */
+    var validValues: List<Int>? = validValues
         internal set
     var aid = 1
         internal set
@@ -72,7 +77,8 @@ class Characteristic(
         val d = n.toDouble()
         if (minValue != null && d < minValue.toDouble()) return false
         if (maxValue != null && d > maxValue.toDouble()) return false
-        if (validValues != null && n.toInt() !in validValues) return false
+        val allowed = validValues
+        if (allowed != null && n.toInt() !in allowed) return false
         return true
     }
 
