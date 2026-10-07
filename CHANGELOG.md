@@ -6,6 +6,10 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+### Fixed
+- A failed update check (e.g. the TV still waking up without network) is retried on the next visit to Settings instead of being cached for six hours.
+- `install.sh` printed the requested version twice in its "Looking up" line.
+
 ## [1.2.0] - 2026-10-06
 
 ### Added

@@ -63,7 +63,8 @@ if [[ -z "$apk" ]]; then
   need python3
   if [[ -n "$version" ]]; then api="https://api.github.com/repos/$REPO/releases/tags/v$version"
   else api="https://api.github.com/repos/$REPO/releases/latest"; fi
-  say "Looking up ${version:+v$version}${version:-the latest release}"
+  label="the latest release"; [[ -n "$version" ]] && label="v$version"
+  say "Looking up $label"
   release_json="$(curl -fsSL -H 'Accept: application/vnd.github+json' "$api")" || die "Release not found: $api"
   read -r tag apk_url sha_url < <(printf '%s' "$release_json" | python3 -c '
 import json, sys
