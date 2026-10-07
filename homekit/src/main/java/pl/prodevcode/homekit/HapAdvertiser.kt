@@ -17,6 +17,7 @@ internal class HapAdvertiser(private val context: Context) {
         val configNumber: Int,
         val paired: Boolean,
         val category: Int,
+        val setupHash: String,
     )
 
     private val nsd = context.getSystemService(Context.NSD_SERVICE) as NsdManager
@@ -44,10 +45,11 @@ internal class HapAdvertiser(private val context: Context) {
             setAttribute("s#", "1")
             setAttribute("sf", if (record.paired) "0" else "1")
             setAttribute("ci", record.category.toString())
+            setAttribute("sh", record.setupHash)
         }
         val l = object : NsdManager.RegistrationListener {
             override fun onServiceRegistered(i: NsdServiceInfo) { Log.i(TAG, "registered ${i.serviceName} (sf=${if (record.paired) 0 else 1})") }
-            override fun onRegistrationFailed(i: NsdServiceInfo, code: Int) { Log.e(TAG, "registration failed: $code") }
+            override fun onRegistrationFailed(i: NsdServiceInfo, code: Int) { Log.e(TAG, "registration failed for ${i.serviceName}: $code") }
             override fun onServiceUnregistered(i: NsdServiceInfo) {}
             override fun onUnregistrationFailed(i: NsdServiceInfo, code: Int) {}
         }

@@ -7,4 +7,6 @@
     <string name="notification_pin_text">PIN: %1$s</string>
     <string name="notification_off_title">Odbiornik AirPlay jest wyłączony</string>
     <string name="notification_off_text">Włącz go z aplikacji Dom lub z tej aplikacji</string>
+    <string name="tv_remote_service_summary">Pilot z aplikacji Apple Home</string>
+    <string name="tv_remote_service_description">Pozwala pilotowi z aplikacji Dom nawigować po Google TV (strzałki, wybór, wstecz, ekran główny) i usypiać urządzenie. Usługa nie odczytuje zawartości ekranu.</string>
 </resources>

@@ -14,6 +14,7 @@ import pl.prodevcode.homekit.accessory.AccessoryInfo
 import pl.prodevcode.homekit.accessory.TelevisionAccessory
 import pl.prodevcode.homekit.accessory.TelevisionControls
 import pl.prodevcode.homekit.pairing.PairingStore
+import pl.prodevcode.homekit.pairing.SetupPayload
 import pl.prodevcode.homekit.server.HapRouter
 import pl.prodevcode.homekit.server.HapServer
 
@@ -36,6 +37,8 @@ class HomeKitAccessoryServer(
         val controllers: Int = 0,
         /** Code to enter in the Home app; only while unpaired and running. */
         val setupCode: String? = null,
+        /** `X-HM://` payload for a QR code the Home app can scan; present together with [setupCode]. */
+        val setupUri: String? = null,
         val accessoryId: String = "",
         val port: Int = 0,
     )
@@ -68,6 +71,7 @@ class HomeKitAccessoryServer(
         Status(
             running = running, paired = pairings.isNotEmpty(), controllers = pairings.size,
             setupCode = if (running && pairings.isEmpty()) code else null,
+            setupUri = if (running && pairings.isEmpty() && code != null) SetupPayload.uri(code, store.setupId, TelevisionAccessory.CATEGORY_TELEVISION) else null,
             accessoryId = store.accessoryId, port = port,
         )
     }.stateIn(scope, SharingStarted.Eagerly, Status(accessoryId = store.accessoryId))
@@ -114,10 +118,13 @@ class HomeKitAccessoryServer(
         }
     }
 
+    // Android's mDNS stack requires instance names to be unique across service types, so the
+    // HAP record cannot share the AirPlay name; the accessory itself still carries the plain name
     private fun advertise() = advertiser.advertise(
         HapAdvertiser.Record(
-            name = name, port = _port.value, accessoryId = store.accessoryId, model = info.model,
+            name = "$name HomeKit", port = _port.value, accessoryId = store.accessoryId, model = info.model,
             configNumber = store.configNumber, paired = store.isPaired, category = TelevisionAccessory.CATEGORY_TELEVISION,
+            setupHash = SetupPayload.setupHash(store.setupId, store.accessoryId),
         ),
     )
 

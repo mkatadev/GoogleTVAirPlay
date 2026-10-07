@@ -6,6 +6,15 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-07
+
+### Added
+- **Control Google TV from Apple Home** (Settings → Apple Home → *Control Google TV*): after enabling the app's accessibility service once, the Home remote navigates the Google TV UI (arrows, select, back, home), *Power* puts the device to sleep and wakes it (HDMI‑CEC turns the TV set off/on if enabled), and the transport keys reach whatever app is playing. Without the service the behaviour is as before — *Power* switches the AirPlay receiver and the remote controls AirPlay playback only.
+- HomeKit setup **QR code** on the Apple Home screen (scannable with the Home app), next to the numeric code.
+
+### Fixed
+- HomeKit record is advertised as "*name* HomeKit" so it no longer collides with the AirPlay record of the same name in Android's mDNS stack.
+
 ## [1.2.0] - 2026-10-06
 
 ### Added
@@ -56,7 +65,8 @@ The section for the version being released is used verbatim as the GitHub releas
 ### Added
 - First release: AirPlay receiver for Google TV / Chromecast — screen mirroring, AirPlay Video (HLS) with D-pad seeking, AirPlay audio with cover art and track info, hardware H.264/HEVC decoding, optional PIN, background service with start on boot, English and Polish UI.
 
-[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/mkatadev/GoogleTVAirPlay/releases/tag/v1.0.0

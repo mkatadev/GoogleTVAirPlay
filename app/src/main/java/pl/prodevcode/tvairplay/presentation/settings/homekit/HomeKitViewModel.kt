@@ -32,6 +32,7 @@ class HomeKitViewModel @Inject constructor(
                 resetPairings()
             }
             HomeKitIntent.CancelReset -> setState { copy(confirmReset = false) }
+            HomeKitIntent.OpenTvControl -> sendEffect(HomeKitEffect.OpenAccessibilitySettings)
             HomeKitIntent.Back -> sendEffect(HomeKitEffect.Close)
         }
     }

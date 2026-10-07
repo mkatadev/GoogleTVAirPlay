@@ -183,9 +183,12 @@
     <!-- HomeKit -->
     <string name="section_smart_home">Smart home</string>
     <string name="setting_homekit">Apple Home (HomeKit)</string>
-    <string name="homekit_subtitle">Add this TV to the Home app on iPhone, iPad or Mac to switch the receiver on and off and control playback and volume.</string>
+    <string name="homekit_subtitle">Add this TV to the Home app on iPhone, iPad or Mac to switch it on and off and use the remote and volume from Control Center.</string>
     <string name="homekit_enable">Show in Apple Home</string>
     <string name="homekit_enable_desc">Advertise the TV as a HomeKit accessory on the local network. Keeps the receiver service running in the background.</string>
+    <string name="homekit_tv_control">Control Google TV</string>
+    <string name="homekit_tv_control_on">On — the Home remote navigates Google TV, Power puts it to sleep and wakes it</string>
+    <string name="homekit_tv_control_off">Off — Power switches the AirPlay receiver, the remote only controls playback. Select to enable “%1$s” in Accessibility settings.</string>
     <string name="homekit_status_off">Off</string>
     <string name="homekit_status_starting">Starting…</string>
     <string name="homekit_status_unpaired">Not paired — enter the setup code in Home</string>
@@ -194,7 +197,9 @@
         <item quantity="other">Paired with %d devices</item>
     </plurals>
     <string name="homekit_setup_code">Setup code</string>
-    <string name="homekit_setup_code_hint">In Home tap + › Add Accessory › More options… › choose “%1$s” and enter this code. Confirm “Add Anyway” when asked about an uncertified accessory.</string>
+    <string name="homekit_setup_code_hint">In Home tap + › Add Accessory › More options… › choose “%1$s HomeKit” and enter this code. Confirm “Add Anyway” when asked about an uncertified accessory.</string>
+    <string name="homekit_setup_qr_hint">Scan the QR code with the Home app (+ › Add Accessory) or enter the code manually:</string>
+    <string name="homekit_qr_description">HomeKit setup QR code</string>
     <string name="homekit_accessory_id">Accessory ID</string>
     <string name="homekit_reset">Remove from Home</string>
     <string name="homekit_reset_desc">Forget all paired devices. The TV then has to be added to Home again.</string>
