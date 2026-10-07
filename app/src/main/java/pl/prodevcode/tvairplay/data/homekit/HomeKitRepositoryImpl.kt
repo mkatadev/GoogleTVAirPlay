@@ -4,9 +4,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import pl.prodevcode.tvairplay.data.receiver.AirPlayServiceConnector
 import pl.prodevcode.tvairplay.domain.model.HomeKitStatus
 import pl.prodevcode.tvairplay.domain.repository.HomeKitRepository
@@ -19,12 +19,12 @@ class HomeKitRepositoryImpl @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val status: Flow<HomeKitStatus> = connector.service.flatMapLatest { svc ->
-        svc?.homeKitStatus?.map {
+        if (svc == null) flowOf(HomeKitStatus()) else combine(svc.homeKitStatus, svc.homeKitTvControl) { it, tvControl ->
             HomeKitStatus(
                 running = it.running, paired = it.paired, controllers = it.controllers,
-                setupCode = it.setupCode, accessoryId = it.accessoryId,
+                setupCode = it.setupCode, setupUri = it.setupUri, accessoryId = it.accessoryId, tvControl = tvControl,
             )
-        } ?: flowOf(HomeKitStatus())
+        }
     }
 
     override fun resetPairings() { connector.service.value?.resetHomeKitPairings() }

@@ -24,7 +24,7 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 - ⚡ **Dekodowanie sprzętowe** — H.264 i HEVC (H.265), gdy telewizor to wspiera
 - ⏱️ **Presety opóźnienia** — Niskie / Zrównoważone / Płynne, przełączane na żywo (gry vs. słabe Wi-Fi)
 - 🔒 **Parowanie PIN-em** (domyślnie włączone) — urządzenia, które raz wpisały PIN, są zapamiętywane; zarządzasz nimi w *Ustawienia → Zaufane urządzenia*
-- 🏠 **Apple Home (HomeKit)** — opcjonalnie: telewizor pojawia się w aplikacji Dom na iPhonie, iPadzie i Macu jako akcesorium *Telewizor*; włączasz/wyłączasz odbiornik, używasz przycisków pilota (play/pauza, następny/poprzedni) i głośności — lokalnie lub przez centrum domu. Własna implementacja HAP w module `:homekit`, bez mostka (*Ustawienia → Apple Home*)
+- 🏠 **Apple Home (HomeKit)** — opcjonalnie: telewizor pojawia się w aplikacji Dom na iPhonie, iPadzie i Macu jako akcesorium *Telewizor*; zasilanie, pilot i głośność z Centrum sterowania — lokalnie lub przez centrum domu. Z włączoną usługą ułatwień dostępu aplikacji pilot z Domu steruje samym interfejsem Google TV, a *Zasilanie* usypia i budzi urządzenie; bez niej przełącza odbiornik AirPlay i steruje tylko odtwarzaniem AirPlay. Własna implementacja HAP w module `:homekit`, bez mostka (*Ustawienia → Apple Home*)
 - 🩺 **Diagnostyka** — sprawdzenie odbiornika, sieci, rozgłaszania mDNS i portu z podpowiedziami po ludzku; po zmianie sieci TV rozgłasza się ponownie automatycznie
 - 🌙 **Przyciemnianie ekranu** przy muzyce (przyjazne OLED); zapauzowana sesja pozwala TV usnąć
 - 🔁 **Odporność na chwilowe zerwania** — zablokowanie iPhone'a nie kończy już odtwarzania audio/wideo
@@ -87,7 +87,7 @@ Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad 
 <img src="docs/screenshots/devicename-pl.png" width="49%" alt="Edytor nazwy urządzenia z podpowiedziami">
 </div>
 
-**Apple Home:** włącz *Ustawienia → Apple Home → Pokazuj w Apple Home*, a potem w aplikacji Dom stuknij **+ › Dodaj akcesorium › Więcej opcji…**, wybierz telewizor i wpisz kod konfiguracji z ekranu (potwierdź *Dodaj mimo to* przy ostrzeżeniu o niecertyfikowanym akcesorium). Usługa odbiornika działa wtedy stale w tle, więc Dom może go włączyć, nawet gdy jest wyłączony. *Usuń z aplikacji Dom* na tym samym ekranie zapomina wszystkie parowania.
+**Apple Home:** włącz *Ustawienia → Apple Home → Pokazuj w Apple Home*, a potem w aplikacji Dom stuknij **+ › Dodaj akcesorium › Więcej opcji…**, wybierz telewizor i wpisz kod konfiguracji z ekranu (albo zeskanuj kod QR) (potwierdź *Dodaj mimo to* przy ostrzeżeniu o niecertyfikowanym akcesorium). Usługa odbiornika działa wtedy stale w tle, więc Dom może go włączyć, nawet gdy jest wyłączony. *Usuń z aplikacji Dom* na tym samym ekranie zapomina wszystkie parowania. *Sterowanie Google TV* na tym samym ekranie otwiera ustawienia ułatwień dostępu — włącz tam *Pilot z aplikacji Apple Home*, a pilot z Domu (Centrum sterowania › Pilot) będzie nawigować po Google TV (strzałki, wybór, wstecz, ekran główny), *Zasilanie* uśpi i obudzi urządzenie (HDMI‑CEC przełączy też telewizor, jeśli jest włączone), a play/pauza i następny/poprzedni trafią do odtwarzającej aplikacji. Usługa nie odbiera zdarzeń ułatwień dostępu i nie czyta zawartości ekranu.
 
 Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przytrzymaj, aby przyspieszyć) · **▲ ▼** skok ±10 % · **0–9** skok do 0–90 % · **Wstecz** stop. Jeśli strumień ma kilka ścieżek audio lub napisy, **▼** otwiera menu ścieżek.
 
@@ -131,7 +131,7 @@ git tag v1.2.0 && git push origin v1.2.0
 :airplay-core  (biblioteka Android, NDK/CMake)
   src/main/cpp/            most JNI, silnik audio, shim dnssd; third_party/ submoduły (UxPlay, libplist, FFmpeg, openssl-cmake)
   pl.prodevcode.airplay    AirPlayService (cienki host) + współpracownicy: VideoSession, NowPlayingState, VolumeSync,
-                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, HomeKitBridge, renderery
+                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, HomeKitBridge, TvRemoteService, renderery
 
 :homekit  (biblioteka Android, czysty Kotlin — HomeKit Accessory Protocol po IP)
   crypto/      TLV8, SRP-6a (3072 bitów, SHA-512), HKDF/Ed25519/X25519 (Tink), ChaCha20-Poly1305 (JCA platformy)

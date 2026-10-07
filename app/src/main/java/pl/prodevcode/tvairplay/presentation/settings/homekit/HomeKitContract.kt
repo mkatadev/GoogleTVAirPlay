@@ -18,9 +18,12 @@ sealed interface HomeKitIntent : UiIntent {
     data object ResetPairings : HomeKitIntent
     data object ConfirmReset : HomeKitIntent
     data object CancelReset : HomeKitIntent
+    /** Row for the TV-remote accessibility service; it can only be switched in system settings. */
+    data object OpenTvControl : HomeKitIntent
     data object Back : HomeKitIntent
 }
 
 sealed interface HomeKitEffect : UiEffect {
     data object Close : HomeKitEffect
+    data object OpenAccessibilitySettings : HomeKitEffect
 }

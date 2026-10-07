@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- No event types and no window content: the service only issues global actions on request. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:description="@string/tv_remote_service_description"
+    android:summary="@string/tv_remote_service_summary" />

@@ -122,6 +122,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     val networkStatus get() = networkWatcher.status
     /** Apple Home pairing state and setup code, see [pl.prodevcode.homekit.HomeKitAccessoryServer]. */
     val homeKitStatus get() = homeKit.server.status
+    /** True while [TvRemoteService] is enabled, so Apple Home drives the Google TV UI and power. */
+    val homeKitTvControl get() = homeKit.tvControl
 
     // flattened aliases kept for existing consumers
     val videoPlaybackActive get() = video.active

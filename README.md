@@ -24,7 +24,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 - ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
 - ⏱️ **Latency presets** — Low / Balanced / Smooth, switchable live for games vs. shaky Wi-Fi
 - 🔒 **PIN pairing** (on by default) — devices that entered the PIN once are remembered; manage them under *Settings → Trusted devices*
-- 🏠 **Apple Home (HomeKit)** — optional: the TV shows up in the Home app on iPhone, iPad and Mac as a *Television* accessory; switch the receiver on/off, use the remote keys (play/pause, next/previous) and volume, locally or via a home hub. Own HAP implementation in the `:homekit` module, no bridge needed (*Settings → Apple Home*)
+- 🏠 **Apple Home (HomeKit)** — optional: the TV shows up in the Home app on iPhone, iPad and Mac as a *Television* accessory; power on/off, remote and volume from Control Center, locally or via a home hub. With the app's accessibility service enabled the Home remote drives the Google TV UI itself and *Power* sleeps/wakes the device; otherwise it switches the AirPlay receiver and controls AirPlay playback. Own HAP implementation in the `:homekit` module, no bridge needed (*Settings → Apple Home*)
 - 🩺 **Diagnostics** screen — receiver, network, mDNS announcement and port checks with plain-language hints; re-announces automatically when the TV changes network
 - 🌙 **Screen dimming** while music plays (OLED-friendly); a paused session lets the TV sleep
 - 🔁 **Survives short drop-outs** — locking the iPhone no longer ends audio/video playback
@@ -87,7 +87,7 @@ Afterwards open the app once and grant **Display over other apps** so playback c
 <img src="docs/screenshots/devicename-en.png" width="49%" alt="Device name editor with suggestions">
 </div>
 
-**Apple Home:** enable *Settings → Apple Home → Show in Apple Home*, then in the Home app tap **+ › Add Accessory › More options…**, pick the TV and type the setup code shown on screen (confirm *Add Anyway* for the uncertified accessory). The receiver service then keeps running in the background so Home can switch it on even when it is off. *Remove from Home* on the same screen forgets all pairings.
+**Apple Home:** enable *Settings → Apple Home → Show in Apple Home*, then in the Home app tap **+ › Add Accessory › More options…**, pick the TV and type the setup code shown on screen (or scan the QR code) (confirm *Add Anyway* for the uncertified accessory). The receiver service then keeps running in the background so Home can switch it on even when it is off. *Remove from Home* on the same screen forgets all pairings. *Control Google TV* on the same screen opens Accessibility settings — enable *Remote control from Apple Home* there so the Home remote (Control Center › Remote) navigates Google TV (arrows, select, back, home), *Power* puts the device to sleep and wakes it (HDMI‑CEC switches the TV set along, if enabled) and play/pause, next/previous reach the app that is playing. The service receives no accessibility events and reads no screen content.
 
 While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop. If the stream has several audio tracks or subtitles, **▼** opens the track menu instead.
 
@@ -131,7 +131,7 @@ git tag v1.2.0 && git push origin v1.2.0
 :airplay-core  (Android library, NDK/CMake)
   src/main/cpp/            JNI bridge, audio engine, dnssd shim; third_party/ submodules (UxPlay, libplist, FFmpeg, openssl-cmake)
   pl.prodevcode.airplay    AirPlayService (thin host) + collaborators: VideoSession, NowPlayingState, VolumeSync,
-                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, HomeKitBridge, renderers
+                           MediaSessionController, ServiceNotifications, NsdServiceManager, NetworkWatcher, HomeKitBridge, TvRemoteService, renderers
 
 :homekit  (Android library, pure Kotlin — HomeKit Accessory Protocol over IP)
   crypto/      TLV8, SRP-6a (3072-bit, SHA-512), HKDF/Ed25519/X25519 (Tink), ChaCha20-Poly1305 (platform JCA)

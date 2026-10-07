@@ -6,6 +6,13 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+### Added
+- **Control Google TV from Apple Home** (Settings → Apple Home → *Control Google TV*): after enabling the app's accessibility service once, the Home remote navigates the Google TV UI (arrows, select, back, home), *Power* puts the device to sleep and wakes it (HDMI‑CEC turns the TV set off/on if enabled), and the transport keys reach whatever app is playing. Without the service the behaviour is as before — *Power* switches the AirPlay receiver and the remote controls AirPlay playback only.
+- HomeKit setup **QR code** on the Apple Home screen (scannable with the Home app), next to the numeric code.
+
+### Fixed
+- HomeKit record is advertised as "*name* HomeKit" so it no longer collides with the AirPlay record of the same name in Android's mDNS stack.
+
 ## [1.2.0] - 2026-10-06
 
 ### Added

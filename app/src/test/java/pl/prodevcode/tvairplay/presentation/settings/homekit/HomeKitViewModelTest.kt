@@ -71,11 +71,26 @@ class HomeKitViewModelTest {
         verify(exactly = 1) { homeKitRepo.resetPairings() }
     }
 
+    @Test fun `tv control row opens accessibility settings`() = runTest {
+        val vm = viewModel()
+        vm.effects.test {
+            vm.onIntent(HomeKitIntent.OpenTvControl)
+            assertEquals(HomeKitEffect.OpenAccessibilitySettings, awaitItem())
+        }
+    }
+
     @Test fun `back closes`() = runTest {
         val vm = viewModel()
         vm.effects.test {
             vm.onIntent(HomeKitIntent.Back)
             assertEquals(HomeKitEffect.Close, awaitItem())
         }
+    }
+}
+
+class HomeKitCodeLabelTest {
+    @Test fun `formats the HAP code the way the Home app shows it`() {
+        assertEquals("9359-6759", homeKitCodeLabel("935-96-759"))
+        assertEquals("abc", homeKitCodeLabel("abc"))
     }
 }

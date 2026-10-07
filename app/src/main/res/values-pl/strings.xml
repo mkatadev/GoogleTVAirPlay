@@ -191,9 +191,12 @@
     <!-- HomeKit -->
     <string name="section_smart_home">Inteligentny dom</string>
     <string name="setting_homekit">Apple Home (HomeKit)</string>
-    <string name="homekit_subtitle">Dodaj ten telewizor do aplikacji Dom na iPhonie, iPadzie lub Macu, aby włączać i wyłączać odbiornik oraz sterować odtwarzaniem i głośnością.</string>
+    <string name="homekit_subtitle">Dodaj ten telewizor do aplikacji Dom na iPhonie, iPadzie lub Macu, aby go włączać i wyłączać oraz używać pilota i głośności z Centrum sterowania.</string>
     <string name="homekit_enable">Pokazuj w Apple Home</string>
     <string name="homekit_enable_desc">Rozgłasza telewizor jako akcesorium HomeKit w sieci lokalnej. Usługa odbiornika działa wtedy stale w tle.</string>
+    <string name="homekit_tv_control">Sterowanie Google TV</string>
+    <string name="homekit_tv_control_on">Włączone — pilot z aplikacji Dom nawiguje po Google TV, a Zasilanie usypia i budzi urządzenie</string>
+    <string name="homekit_tv_control_off">Wyłączone — Zasilanie przełącza odbiornik AirPlay, a pilot steruje tylko odtwarzaniem. Wybierz, aby włączyć „%1$s” w ustawieniach ułatwień dostępu.</string>
     <string name="homekit_status_off">Wyłączone</string>
     <string name="homekit_status_starting">Uruchamianie…</string>
     <string name="homekit_status_unpaired">Niesparowane — wpisz kod konfiguracji w aplikacji Dom</string>
@@ -204,7 +207,9 @@
         <item quantity="other">Sparowano z %d urządzenia</item>
     </plurals>
     <string name="homekit_setup_code">Kod konfiguracji</string>
-    <string name="homekit_setup_code_hint">W aplikacji Dom stuknij + › Dodaj akcesorium › Więcej opcji… › wybierz „%1$s” i wpisz ten kod. Potwierdź „Dodaj mimo to”, gdy pojawi się ostrzeżenie o niecertyfikowanym akcesorium.</string>
+    <string name="homekit_setup_code_hint">W aplikacji Dom stuknij + › Dodaj akcesorium › Więcej opcji… › wybierz „%1$s HomeKit” i wpisz ten kod. Potwierdź „Dodaj mimo to”, gdy pojawi się ostrzeżenie o niecertyfikowanym akcesorium.</string>
+    <string name="homekit_setup_qr_hint">Zeskanuj kod QR aparatem w aplikacji Dom (+ › Dodaj akcesorium) albo wpisz kod ręcznie:</string>
+    <string name="homekit_qr_description">Kod QR konfiguracji HomeKit</string>
     <string name="homekit_accessory_id">Identyfikator akcesorium</string>
     <string name="homekit_reset">Usuń z aplikacji Dom</string>
     <string name="homekit_reset_desc">Zapomina wszystkie sparowane urządzenia. Telewizor trzeba będzie dodać do Domu ponownie.</string>
