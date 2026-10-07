@@ -40,6 +40,7 @@ import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
 import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.presentation.components.SupportingText
 import pl.prodevcode.tvairplay.presentation.components.appListItemColors
+import pl.prodevcode.tvairplay.presentation.components.localizedLog
 import pl.prodevcode.tvairplay.presentation.theme.AirPlayColors
 
 @Composable
@@ -133,7 +134,7 @@ private fun DiagnosticsContent(
                     )
                 }
             }
-            item { InfoRow(stringResource(R.string.diagnostics_last_event), d.lastLog.ifBlank { "—" }) }
+            item { InfoRow(stringResource(R.string.diagnostics_last_event), if (d.lastLog.isBlank()) "—" else localizedLog(d.lastLog)) }
         }
     }
 }

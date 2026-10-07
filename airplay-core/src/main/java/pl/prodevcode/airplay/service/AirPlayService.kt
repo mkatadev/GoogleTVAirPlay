@@ -461,6 +461,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     private fun shutdownReceiver() {
+        uiDismissed = false
         mainHandler.removeCallbacks(sessionEnd)
         liveConnections = 0
         releaseServerResources()
@@ -540,6 +541,19 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     fun seekVideoBy(deltaMs: Long) = video.seekBy(deltaMs)
     fun selectVideoTrack(type: Int, id: String?) = video.selectTrack(type, id)
     fun stopVideoPlayback() = endVideoPlayback("AirPlay Video stopped (local)")
+
+    /** "Stop sharing": drops the sender(s); the receiver stays up for the next one. */
+    fun disconnectClients() {
+        if (nativeHandle == 0L) return
+        if (_connectionCount.value == 0 && !video.active.value) return
+        log("Session ended by the user")
+        if (video.active.value) endVideoPlayback("AirPlay Video stopped (user)")
+        NativeBridge.nativeDisconnectClients(nativeHandle)
+        // the user closed it: no grace period, the UI returns to idle at once
+        mainHandler.removeCallbacks(sessionEnd)
+        liveConnections = 0
+        finishSession()
+    }
 
     fun togglePlayPause() {
         val playing = !nowPlaying.playing.value
@@ -621,6 +635,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     override fun onConnectionDestroy() {
+        // already closed from the TV side: the native teardown that follows has nothing left to do
+        if (liveConnections == 0 && _connectionCount.value == 0) return
         liveConnections = (liveConnections - 1).coerceAtLeast(0)
         if (liveConnections > 0) {
             _connectionCount.value = (_connectionCount.value - 1).coerceAtLeast(1)
@@ -635,6 +651,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     private fun finishSession() {
         _connectionCount.value = 0
+        uiDismissed = false
         // clients may drop without POST /stop; must run before the poll-state reset
         endVideoPlayback("AirPlay Video stopped (disconnect)")
         // last client gone: release audio output devices to save power
@@ -765,12 +782,27 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     // --- ui hand-off -------------------------------------------------------------------------------
 
     private fun requiresPin(): Boolean = prefs.getBoolean(Prefs.REQUIRE_PIN, Prefs.DEF_REQUIRE_PIN)
-    private fun shouldLaunchOnConnect(): Boolean = prefs.getBoolean(Prefs.LAUNCH_ON_CONNECT, Prefs.DEF_LAUNCH_ON_CONNECT)
+    private fun shouldLaunchOnConnect(): Boolean =
+        !uiDismissed && prefs.getBoolean(Prefs.LAUNCH_ON_CONNECT, Prefs.DEF_LAUNCH_ON_CONNECT)
+
+    /** Set when the user backed out of the app during a session; cleared when that session ends. */
+    private var uiDismissed = false
+
+    fun onUiDismissed() {
+        if (_connectionCount.value == 0 && !video.active.value) return
+        uiDismissed = true
+    }
 
     /** Media started: show the receiver UI (needs SYSTEM_ALERT_WINDOW on TV when we are in the background). */
     private fun bringUiToFront() {
         if (!shouldLaunchOnConnect()) return
         if (requiresPin() && lastPin != null) return
+        launchMainActivity()
+    }
+
+    /** Apple Home picked the AirPlay input: make sure the receiver runs and bring its screen to the front. */
+    fun showReceiver(name: String) {
+        if (_serverState.value != ServerState.RUNNING) startServer(name)
         launchMainActivity()
     }
 

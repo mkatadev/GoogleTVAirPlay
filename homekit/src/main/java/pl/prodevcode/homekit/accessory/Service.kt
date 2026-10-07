@@ -3,8 +3,9 @@ package pl.prodevcode.homekit.accessory
 import org.json.JSONArray
 import org.json.JSONObject
 
-class Service(val type: String, val characteristics: List<Characteristic>, val primary: Boolean = false) {
-    var iid = 0
+/** [iid] 0 = assigned sequentially by [Accessory]; a fixed value keeps the id stable across database rebuilds. */
+class Service(val type: String, val characteristics: List<Characteristic>, val primary: Boolean = false, iid: Int = 0) {
+    var iid = iid
         internal set
     internal val linked = ArrayList<Service>()
 
@@ -22,16 +23,21 @@ class Service(val type: String, val characteristics: List<Characteristic>, val p
     }
 }
 
-/** A single accessory (aid 1) with sequential instance ids assigned on construction. */
+/** A single accessory (aid 1); services and characteristics without a fixed iid get sequential ones on construction. */
 class Accessory(val services: List<Service>) {
     val aid = 1
 
     init {
         var next = 1
         services.forEach { s ->
-            s.iid = next++
-            s.characteristics.forEach { c -> c.iid = next++; c.aid = aid }
+            if (s.iid == 0) s.iid = next++
+            s.characteristics.forEach { c ->
+                if (c.iid == 0) c.iid = next++
+                c.aid = aid
+            }
         }
+        val ids = services.flatMap { s -> listOf(s.iid) + s.characteristics.map { it.iid } }
+        require(ids.size == ids.toSet().size) { "duplicate instance ids: ${ids.groupBy { it }.filterValues { it.size > 1 }.keys}" }
     }
 
     fun characteristic(iid: Int): Characteristic? =

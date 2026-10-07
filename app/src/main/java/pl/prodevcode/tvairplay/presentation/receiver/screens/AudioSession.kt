@@ -40,6 +40,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,6 +51,7 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
+import pl.prodevcode.tvairplay.R
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.presentation.components.ProgressTrack
 import pl.prodevcode.tvairplay.presentation.components.rememberCoverArt
@@ -63,6 +65,7 @@ fun AudioSession(
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
+    onStop: () -> Unit,
 ) {
     // sender only reports position on discontinuities; extrapolate while playing
     var position by remember(nowPlaying.positionMs, nowPlaying.playing) { mutableLongStateOf(nowPlaying.positionMs) }
@@ -87,6 +90,7 @@ fun AudioSession(
                     Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> onPlayPause
                     Key.DirectionRight, Key.MediaNext, Key.MediaSkipForward, Key.MediaFastForward -> onNext
                     Key.DirectionLeft, Key.MediaPrevious, Key.MediaSkipBackward, Key.MediaRewind -> onPrevious
+                    Key.MediaStop, Key.Back -> onStop
                     else -> return@onPreviewKeyEvent false
                 }
                 // consume KeyDown (and repeats) so focus does not move; act once on KeyUp
@@ -107,6 +111,11 @@ fun AudioSession(
             Modifier.fillMaxSize().background(
                 Brush.verticalGradient(listOf(Color.Transparent, AirPlayColors.Background.copy(alpha = 0.9f)))
             )
+        )
+        Text(
+            stringResource(R.string.footer_credit),
+            fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
         )
 
         Row(
@@ -161,6 +170,8 @@ fun AudioSession(
                     }
                     IconButton(onClick = onNext) { Icon(Icons.Default.SkipNext, null) }
                 }
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.audio_stop_hint), fontSize = 14.sp, lineHeight = 20.sp, color = AirPlayColors.Muted)
             }
         }
     }

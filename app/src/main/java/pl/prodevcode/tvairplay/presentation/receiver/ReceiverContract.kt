@@ -40,6 +40,8 @@ sealed interface ReceiverIntent : UiIntent {
     data object Next : ReceiverIntent
     data object Previous : ReceiverIntent
     data object StopVideo : ReceiverIntent
+    /** "Stop sharing" on the music screen: end the session, keep the receiver running. */
+    data object StopSharing : ReceiverIntent
     data class SelectAudioTrack(val id: String) : ReceiverIntent
     /** `null` = subtitles off. */
     data class SelectSubtitleTrack(val id: String?) : ReceiverIntent

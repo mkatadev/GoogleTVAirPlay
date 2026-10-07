@@ -19,6 +19,7 @@ import pl.prodevcode.tvairplay.domain.usecase.PinControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.PlaybackControlUseCase
 import pl.prodevcode.tvairplay.domain.usecase.RequestOverlayPermissionUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StartReceiverUseCase
+import pl.prodevcode.tvairplay.domain.usecase.DismissUiUseCase
 import pl.prodevcode.tvairplay.domain.usecase.StopReceiverUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ToggleReceiverUseCase
 import pl.prodevcode.tvairplay.platform.SubtitleCues
@@ -36,6 +37,7 @@ class ReceiverViewModel @Inject constructor(
     private val startReceiver: StartReceiverUseCase,
     private val toggleReceiver: ToggleReceiverUseCase,
     private val stopReceiver: StopReceiverUseCase,
+    private val dismissUi: DismissUiUseCase,
     private val playback: PlaybackControlUseCase,
     private val pin: PinControlUseCase,
     private val surfaces: VideoSurfaceHost,
@@ -109,9 +111,14 @@ class ReceiverViewModel @Inject constructor(
                 viewModelScope.launch { checkForUpdate() }
             }
             Intent.AppResumed -> observeOverlay.refresh()
-            // leaving the foreground never interrupts an active session
+            // Home during a session: keep playing (and do not pull the UI back) only if background use is allowed
             Intent.AppBackgrounded -> with(currentState) {
-                if (!runInBackground && receiver.connectedClients == 0) stopReceiver()
+                val inSession = receiver.connectedClients > 0
+                when {
+                    inSession && runInBackground -> dismissUi()
+                    inSession -> playback.stopSharing()
+                    !runInBackground -> stopReceiver()
+                }
             }
             Intent.ToggleReceiver -> toggleReceiver(currentState.receiver.status)
             Intent.GrantOverlay -> requestOverlay()
@@ -124,6 +131,7 @@ class ReceiverViewModel @Inject constructor(
             Intent.Next -> playback.next()
             Intent.Previous -> playback.previous()
             Intent.StopVideo -> playback.stopVideo()
+            Intent.StopSharing -> playback.stopSharing()
             is Intent.SelectAudioTrack -> playback.selectAudioTrack(intent.id)
             is Intent.SelectSubtitleTrack -> playback.selectSubtitleTrack(intent.id)
 

@@ -287,6 +287,12 @@ fun VideoOverlay(
                     )
                     Text(formatTime(video.durationMs), fontSize = 14.sp, color = AirPlayColors.Muted)
                 }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    stringResource(R.string.footer_credit),
+                    fontSize = 12.sp, lineHeight = 16.sp, color = AirPlayColors.Muted,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
             }
         }
     }

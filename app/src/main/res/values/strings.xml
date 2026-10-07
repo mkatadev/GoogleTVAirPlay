@@ -203,4 +203,21 @@
     <string name="homekit_reset">Remove from Home</string>
     <string name="homekit_reset_desc">Forget all paired devices. The TV then has to be added to Home again.</string>
     <string name="homekit_reset_confirm">Yes, remove</string>
+    <string name="audio_stop_hint">Back ends sharing on the iPhone</string>
+    <!-- service log lines shown on the idle screen -->
+    <string name="log_server_started">Receiver started on port %1$d</string>
+    <string name="log_server_stopped">Receiver stopped</string>
+    <string name="log_client_connected">Device connected (%1$d)</string>
+    <string name="log_client_disconnected">Device disconnected (%1$d)</string>
+    <string name="log_client_reconnected">Device reconnected (%1$d)</string>
+    <string name="log_paired">Paired: %1$s</string>
+    <string name="log_audio_mode">Audio streaming</string>
+    <string name="log_mirror_mode">Screen mirroring</string>
+    <string name="log_last_client_gone">Last device gone, keeping the session for %1$d s</string>
+    <string name="log_screen_off">Screen off — receiver suspended</string>
+    <string name="log_screen_on">Screen on — receiver resumed</string>
+    <string name="log_network_changed">Network changed, re-announcing AirPlay</string>
+    <string name="log_video_play">AirPlay video started</string>
+    <string name="log_video_stopped">AirPlay video stopped</string>
+    <string name="log_track">Track: %1$s</string>
 </resources>

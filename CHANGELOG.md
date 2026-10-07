@@ -6,6 +6,24 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-07
+
+### Added
+- **HomeKit inputs**: the Television accessory now lists AirPlay, the Google TV home screen and the installed streaming apps as inputs. Selecting one in Home (or via Siri/automations) launches it; the current input follows the app in front. Inputs can be renamed and hidden in Home; the list updates when apps are installed or removed (accessory configuration number bumps, no re-pairing). Ids stay stable per package.
+- "Supported by ProDevCode" footer on the now-playing and video screens; HomeKit manufacturer reads "Google powered by ProDevCode".
+- Receiver log lines shown on the idle and diagnostics screens are translated (receiver started/stopped, device connected, paired, …).
+- Compose previews for the receiver screen (idle, music, video).
+
+- **Back on the now-playing screen ends the AirPlay session** on the sender (also the Stop media key). Home keeps the music playing only when *Run in background* is on (and the app then stays out of the way until that session ends); with it off, Home ends the session.
+
+### Fixed
+- A session that starts while Settings is open now switches to the receiver screen instead of playing behind the menu.
+- Leaving the app (Home) during a background session no longer pulls it back to the front on every sender reconnect.
+- A session that starts while the system screensaver is showing dismisses it instead of playing behind it.
+
+### Changed
+- Now-playing screen: transport buttons centred, key hint removed; README screenshots refreshed (home, settings, Apple Home with setup code, now playing).
+
 ## [1.3.1] - 2026-10-07
 
 ### Changed
@@ -76,7 +94,8 @@ The section for the version being released is used verbatim as the GitHub releas
 ### Added
 - First release: AirPlay receiver for Google TV / Chromecast — screen mirroring, AirPlay Video (HLS) with D-pad seeking, AirPlay audio with cover art and track info, hardware H.264/HEVC decoding, optional PIN, background service with start on boot, English and Polish UI.
 
-[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.1.0...v1.2.0

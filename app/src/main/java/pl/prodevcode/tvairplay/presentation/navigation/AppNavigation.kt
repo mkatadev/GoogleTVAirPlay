@@ -8,6 +8,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -18,6 +19,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.prodevcode.tvairplay.presentation.diagnostics.DiagnosticsScreen
 import pl.prodevcode.tvairplay.presentation.licenses.LicensesScreen
+import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.presentation.receiver.ReceiverIntent
 import pl.prodevcode.tvairplay.presentation.receiver.ReceiverScreen
 import pl.prodevcode.tvairplay.presentation.receiver.ReceiverViewModel
@@ -53,6 +55,12 @@ fun AppNavigation(receiverViewModel: ReceiverViewModel = hiltViewModel()) {
 
     // sub-screens handle Back themselves; the settings list is the only one that falls through to here
     BackHandler(enabled = destination == Destination.Settings) { destination = Destination.Receiver }
+
+    // a session that starts while the user is in Settings must show up, not play behind the menu
+    val mode = receiverUi.receiver.mode
+    LaunchedEffect(mode) {
+        if (mode == SessionMode.MIRRORING || mode == SessionMode.VIDEO || mode == SessionMode.AUDIO) destination = Destination.Receiver
+    }
 
     Box(Modifier.fillMaxSize()) {
         Screens(destination, onNavigate = { destination = it })

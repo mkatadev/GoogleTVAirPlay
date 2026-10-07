@@ -18,10 +18,17 @@ import pl.prodevcode.homekit.pairing.PairingsEndpoint
  */
 class HapRouter(
     private val store: PairingStore,
-    private val accessory: Accessory,
+    accessory: Accessory,
     private val setupCode: () -> String,
     private val listener: Listener,
 ) : HapRequestHandler {
+
+    /** Current accessory database; replacing it re-hooks change events (callers bump `c#` themselves). */
+    @Volatile var accessory: Accessory = accessory
+        set(value) {
+            field = value
+            hookEvents(value)
+        }
 
     interface Listener {
         fun onPaired()
@@ -32,8 +39,10 @@ class HapRouter(
     private val pairings = PairingsEndpoint(store)
     private val verified = CopyOnWriteArraySet<HapConnection>()
 
-    init {
-        accessory.services.flatMap { it.characteristics }.forEach { c -> c.onChanged = { broadcast(it) } }
+    init { hookEvents(accessory) }
+
+    private fun hookEvents(db: Accessory) {
+        db.services.flatMap { it.characteristics }.forEach { c -> c.onChanged = { broadcast(it) } }
     }
 
     override fun handle(connection: HapConnection, request: HttpRequest): HttpResponse {

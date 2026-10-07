@@ -16,6 +16,18 @@
     <!-- Android TV blocks background activity starts unless the app may draw over other apps -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- HomeKit inputs = installed TV apps; package visibility (Android 11+) needs these declared -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
     <application android:usesCleartextTraffic="true">
         <service
             android:name=".service.AirPlayService"

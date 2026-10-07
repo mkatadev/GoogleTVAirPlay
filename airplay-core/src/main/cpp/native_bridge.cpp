@@ -153,6 +153,18 @@ Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeStart(
     return (jint)port;
 }
 
+/* drops every sender connection; the server keeps listening and stays advertised */
+extern "C"
+JNIEXPORT void JNICALL
+Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeDisconnectClients(
+        JNIEnv *env, jobject thiz, jlong handle) {
+
+    server_ctx_t *ctx = (server_ctx_t *)(intptr_t)handle;
+    if (!ctx || !ctx->raop) return;
+    raop_remove_known_connections(ctx->raop);
+    LOGI("AirPlay clients disconnected");
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeStop(
