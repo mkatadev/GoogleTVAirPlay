@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.domain.model.UpdateCheck
+import pl.prodevcode.tvairplay.domain.model.VideoPlaybackError
 import pl.prodevcode.tvairplay.domain.usecase.CheckForUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveUpdateUseCase
 import pl.prodevcode.tvairplay.domain.usecase.ObserveDeviceInfoUseCase
@@ -48,6 +49,8 @@ class ReceiverViewModel @Inject constructor(
 
     private var idleTimer: Job? = null
     private var idleDimMinutes = 0
+    private var receiverStateObserved = false
+    private var previousVideoError: VideoPlaybackError? = null
 
     init {
         combine(observeState(), observeDevice(), observeSettings(), observeOverlay()) { state, device, settings, overlay ->
@@ -63,6 +66,14 @@ class ReceiverViewModel @Inject constructor(
                 IdleKey(state.mode, state.nowPlaying.title, state.nowPlaying.playing),
             )
         }.reduceInto { (ui, key) ->
+            val videoError = ui.receiver.video.error
+            if (!receiverStateObserved) {
+                receiverStateObserved = true
+                previousVideoError = videoError
+            } else if (videoError != previousVideoError) {
+                previousVideoError = videoError
+                if (videoError != null) sendEffect(ReceiverEffect.VideoPlaybackFailed(videoError))
+            }
             // a new track, play/pause or a mode change counts as activity
             if (key != lastIdleKey) { lastIdleKey = key; restartIdleTimer(key.mode) }
             withDerived(
@@ -130,7 +141,7 @@ class ReceiverViewModel @Inject constructor(
             is Intent.SeekTo -> playback.seekTo(intent.positionMs)
             Intent.Next -> playback.next()
             Intent.Previous -> playback.previous()
-            Intent.StopVideo -> playback.stopVideo()
+            Intent.StopVideo -> playback.stopSharing()
             Intent.StopSharing -> playback.stopSharing()
             is Intent.SelectAudioTrack -> playback.selectAudioTrack(intent.id)
             is Intent.SelectSubtitleTrack -> playback.selectSubtitleTrack(intent.id)

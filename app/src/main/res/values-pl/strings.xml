@@ -19,6 +19,9 @@
     <string name="footer_no_network">Brak połączenia z siecią</string>
 
     <string name="video_title_fallback">Wideo AirPlay</string>
+    <string name="video_error_access_denied">Serwer odmówił dostępu do wideo (HTTP %1$d). Sprawdź link lub zaloguj się na urządzeniu wysyłającym.</string>
+    <string name="video_error_http">Serwer wideo zwrócił HTTP %1$d. Sprawdź, czy link jest poprawny i dostępny.</string>
+    <string name="video_error_playback">Nie udało się odtworzyć wideo. Sprawdź dostępność źródła i obsługiwany format.</string>
     <string name="video_hint_playing">OK pauza · ◀ ▶ przewijaj · ▲ ▼ skok o 10% · Wstecz zatrzymaj</string>
     <string name="video_hint_paused">Wstrzymano · OK, aby wznowić</string>
 

@@ -50,6 +50,25 @@ class HomeKitViewModelTest {
         assertTrue(vm.state.value.status.paired)
     }
 
+    @Test fun `successful pairing closes the setup screen`() = runTest {
+        val vm = viewModel()
+        vm.effects.test {
+            advanceUntilIdle()
+            accessoryStatus.value = HomeKitStatus(running = true, paired = true, controllers = 1, accessoryId = "AA:BB")
+            advanceUntilIdle()
+            assertEquals(HomeKitEffect.Close, awaitItem())
+        }
+    }
+
+    @Test fun `opening an already paired accessory does not close the screen`() = runTest {
+        accessoryStatus.value = HomeKitStatus(running = true, paired = true, controllers = 1, accessoryId = "AA:BB")
+        val vm = viewModel()
+        vm.effects.test {
+            advanceUntilIdle()
+            expectNoEvents()
+        }
+    }
+
     @Test fun `toggle writes the setting`() = runTest {
         val vm = viewModel()
         vm.onIntent(HomeKitIntent.SetEnabled(false))

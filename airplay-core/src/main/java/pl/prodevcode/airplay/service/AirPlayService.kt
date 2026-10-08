@@ -131,6 +131,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     // flattened aliases kept for existing consumers
     val videoPlaybackActive get() = video.active
     val videoPlaybackInfo get() = video.info
+    val videoPlaybackFailure get() = video.failure
     val videoPlaybackAspect get() = video.aspect
     val videoTitle get() = video.title
     val trackInfo get() = nowPlaying.track
@@ -708,6 +709,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     override fun onClientRegistered(deviceId: String, publicKey: String, name: String) {
         trustedDevices.register(deviceId, publicKey, name)
+        clearPin()
         log("Paired: ${name.ifBlank { deviceId }}")
     }
 

@@ -52,12 +52,13 @@ class ReceiverRepositoryImpl @Inject constructor(
                 coverArt = track.coverArtBytes?.let(::CoverArt), positionMs = pos, durationMs = dur, playing = playing,
             )
         }
-        val hls = combine(videoPlaybackInfo, videoTitle, videoPlaybackAspect, video.tracks) { info, title, aspect, tracks ->
+        val hls = combine(videoPlaybackInfo, videoTitle, videoPlaybackAspect, video.tracks, videoPlaybackFailure) { info, title, aspect, tracks, failure ->
             VideoPlayback(
                 title = title, positionMs = info.positionMs, durationMs = info.durationMs,
                 playing = info.playing, buffering = info.buffering, aspectRatio = aspect,
                 audioTracks = tracks.filter { it.type == C.TRACK_TYPE_AUDIO }.map { it.toDomain(TrackKind.AUDIO) },
                 subtitleTracks = tracks.filter { it.type == C.TRACK_TYPE_TEXT }.map { it.toDomain(TrackKind.SUBTITLE) },
+                error = failure?.let { pl.prodevcode.tvairplay.domain.model.VideoPlaybackError(it.httpStatusCode) },
             )
         }
         return combine(session, music, hls, videoAspect, pinPrompt, connector.logs) { values ->

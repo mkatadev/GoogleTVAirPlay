@@ -1,5 +1,6 @@
 package pl.prodevcode.tvairplay.presentation.receiver
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,11 +13,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pl.prodevcode.tvairplay.R
 import pl.prodevcode.tvairplay.domain.model.DeviceInfo
 import pl.prodevcode.tvairplay.domain.model.NowPlaying
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
@@ -29,6 +33,7 @@ import pl.prodevcode.tvairplay.presentation.receiver.screens.AudioSession
 import pl.prodevcode.tvairplay.presentation.receiver.screens.DimOverlay
 import pl.prodevcode.tvairplay.presentation.receiver.screens.IdleScreen
 import pl.prodevcode.tvairplay.presentation.receiver.screens.VideoOverlay
+import pl.prodevcode.tvairplay.presentation.mvi.CollectEffects
 import pl.prodevcode.tvairplay.presentation.theme.TvAirPlayTheme
 
 @Composable
@@ -37,6 +42,21 @@ fun ReceiverScreen(
     viewModel: ReceiverViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val resources = LocalResources.current
+    CollectEffects(viewModel.effects) { effect ->
+        when (effect) {
+            is ReceiverEffect.VideoPlaybackFailed -> {
+                val error = effect.error
+                val message = when (error.httpStatusCode) {
+                    401, 403 -> resources.getString(R.string.video_error_access_denied, error.httpStatusCode)
+                    null -> resources.getString(R.string.video_error_playback)
+                    else -> resources.getString(R.string.video_error_http, error.httpStatusCode)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     ReceiverContent(ui = ui, onIntent = viewModel::onIntent, onOpenSettings = onOpenSettings)
 }
 

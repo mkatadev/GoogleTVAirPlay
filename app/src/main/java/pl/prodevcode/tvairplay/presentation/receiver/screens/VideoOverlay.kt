@@ -90,7 +90,7 @@ private fun digitOf(key: Key): Int? =
  * D-pad transport for AirPlay video. Seeking works like a TV player: every ◀/▶ press (or hold — key
  * repeats) moves a *pending* position shown on the bar; the seek is committed once the user pauses
  * for [SEEK_COMMIT_DELAY_MS]. Step size scales with the video length and grows while holding.
- * ▲/▼ jump ±10 %, digits 0–9 jump to 0–90 %. OK = play/pause, Back = hide / stop.
+ * ▲/▼ jump ±10 %, digits 0–9 jump to 0–90 %. OK = play/pause; Back hides visible controls, then stops.
  * When the stream offers audio or subtitle tracks, ▼ on the visible overlay opens the track menu instead.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -118,6 +118,9 @@ fun VideoOverlay(
     val seeking = pendingMs >= 0
     val shownPosition = if (seeking) pendingMs else video.positionMs
 
+    BackHandler(enabled = !tracksMenu) {
+        if (visible) visible = false else onStop()
+    }
     LaunchedEffect(Unit) { focus.requestFocus() }
     LaunchedEffect(interactionTick, video.playing, seeking) {
         visible = true
@@ -203,7 +206,10 @@ fun VideoOverlay(
                         Key.DirectionRight, Key.DirectionLeft, Key.MediaFastForward, Key.MediaRewind,
                         Key.MediaSkipForward, Key.MediaSkipBackward -> true
                         Key.MediaStop -> { onStop(); true }
-                        Key.Back -> { if (visible) { visible = false; true } else { onStop(); true } }
+                        Key.Back -> {
+                            if (visible) visible = false else onStop()
+                            true
+                        }
                         Key.DirectionUp, Key.DirectionDown, Key.ChannelUp, Key.ChannelDown,
                         Key.PageUp, Key.PageDown -> true
                         else -> digitOf(event.key) != null
