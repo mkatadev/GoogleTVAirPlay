@@ -18,6 +18,8 @@ data class VideoPlaybackInfo(
     val buffering: Boolean = false,
 )
 
+data class VideoPlaybackFailure(val httpStatusCode: Int?)
+
 /** State of an AirPlay Video (HLS) session played by the TV itself via [AirPlayVideoPlayer]. */
 class VideoSession internal constructor(context: Context) {
 
@@ -28,6 +30,9 @@ class VideoSession internal constructor(context: Context) {
 
     private val _info = MutableStateFlow(VideoPlaybackInfo())
     val info = _info.asStateFlow()
+
+    private val _failure = MutableStateFlow<VideoPlaybackFailure?>(null)
+    val failure = _failure.asStateFlow()
 
     private val _aspect = MutableStateFlow(16f / 9f)
     val aspect = _aspect.asStateFlow()
@@ -47,6 +52,7 @@ class VideoSession internal constructor(context: Context) {
         player.onTitle = { _title.value = it ?: "" }
         player.onTracksChanged = { _tracks.value = it }
         player.onCues = { _cues.value = it }
+        player.onPlaybackError = { httpStatusCode -> _failure.value = VideoPlaybackFailure(httpStatusCode) }
         player.onEnded = onEnded
         player.onPlaybackInfo = { snapshot ->
             onPlaybackInfo(snapshot)
@@ -64,6 +70,7 @@ class VideoSession internal constructor(context: Context) {
     }
 
     fun play(location: String, startPositionSeconds: Float) {
+        _failure.value = null
         _info.value = VideoPlaybackInfo(positionMs = (startPositionSeconds * 1000).toLong())
         _aspect.value = 16f / 9f
         _title.value = ""
@@ -83,6 +90,7 @@ class VideoSession internal constructor(context: Context) {
         player.stop()
         _active.value = false
         _info.value = VideoPlaybackInfo()
+        _failure.value = null
     }
 
     fun selectTrack(type: Int, id: String?) { player.selectTrack(type, id) }

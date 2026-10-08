@@ -25,6 +25,8 @@ import pl.prodevcode.tvairplay.domain.model.SessionMode
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
 import pl.prodevcode.tvairplay.domain.model.ReceiverStatus
+import pl.prodevcode.tvairplay.domain.model.VideoPlaybackError
+import pl.prodevcode.tvairplay.domain.model.VideoPlayback
 import pl.prodevcode.tvairplay.domain.repository.DeviceInfoRepository
 import pl.prodevcode.tvairplay.domain.repository.OverlayPermissionRepository
 import pl.prodevcode.tvairplay.domain.repository.ReceiverRepository
@@ -211,6 +213,23 @@ class ReceiverViewModelTest {
         vm.onIntent(ReceiverIntent.Next)
         vm.onIntent(ReceiverIntent.StopSharing)
         verify { receiverRepo.togglePlayPause(); receiverRepo.seekTo(5_000); receiverRepo.skipNext(); receiverRepo.stopSharing() }
+    }
+
+    @Test fun `stopping video ends the whole AirPlay session`() = runTest {
+        val vm = viewModel()
+        vm.onIntent(ReceiverIntent.StopVideo)
+        verify(exactly = 1) { receiverRepo.stopSharing() }
+        verify(exactly = 0) { receiverRepo.stopVideo() }
+    }
+
+    @Test fun `new video playback errors are emitted as one-shot effects`() = runTest {
+        val vm = viewModel()
+        vm.effects.test {
+            advanceUntilIdle()
+            receiverState.value = ReceiverState(video = VideoPlayback(error = VideoPlaybackError(401)))
+            advanceUntilIdle()
+            assertEquals(ReceiverEffect.VideoPlaybackFailed(VideoPlaybackError(401)), awaitItem())
+        }
     }
 
     @Test fun `leaving the app during a session keeps it playing only when background use is allowed`() = runTest {

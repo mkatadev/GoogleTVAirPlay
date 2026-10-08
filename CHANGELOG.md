@@ -6,6 +6,13 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-10-08
+
+### Fixed
+- Failed AirPlay video loads now show a brief, non-blocking error toast with the HTTP status when available.
+- Back first hides visible video controls; a second press stops playback and ends the complete AirPlay session, including audio.
+- The AirPlay PIN prompt closes when pairing completes, and the HomeKit setup screen returns after successful pairing.
+
 ## [1.3.2] - 2026-10-07
 
 ### Added
@@ -94,7 +101,8 @@ The section for the version being released is used verbatim as the GitHub releas
 ### Added
 - First release: AirPlay receiver for Google TV / Chromecast — screen mirroring, AirPlay Video (HLS) with D-pad seeking, AirPlay audio with cover art and track info, hardware H.264/HEVC decoding, optional PIN, background service with start on boot, English and Polish UI.
 
-[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.2.0...v1.3.0

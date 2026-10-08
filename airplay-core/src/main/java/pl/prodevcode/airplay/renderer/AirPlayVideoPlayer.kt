@@ -16,6 +16,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.text.Cue
 import androidx.media3.common.text.CueGroup
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import java.util.Locale
 
@@ -50,6 +51,7 @@ class AirPlayVideoPlayer(private val context: Context) {
     private var pendingSurface: Surface? = null
 
     var onPlaybackInfo: ((PlaybackSnapshot) -> Unit)? = null
+    var onPlaybackError: ((httpStatusCode: Int?) -> Unit)? = null
     var onVideoSize: ((width: Int, height: Int, aspect: Float) -> Unit)? = null
     var onTitle: ((String?) -> Unit)? = null
     var onEnded: (() -> Unit)? = null
@@ -74,6 +76,7 @@ class AirPlayVideoPlayer(private val context: Context) {
     private val _listener = object : Player.Listener {
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
             Log.w(TAG, "playback error", error)
+            onPlaybackError?.invoke((error.cause as? HttpDataSource.InvalidResponseCodeException)?.responseCode)
             onEnded?.invoke()
         }
         override fun onPlaybackStateChanged(state: Int) {

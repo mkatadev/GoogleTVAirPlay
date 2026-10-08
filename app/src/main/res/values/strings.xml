@@ -19,6 +19,9 @@
     <string name="footer_no_network">No network connection</string>
 
     <string name="video_title_fallback">AirPlay video</string>
+    <string name="video_error_access_denied">The video server denied access (HTTP %1$d). Check the link or sign in on the sending device.</string>
+    <string name="video_error_http">The video server returned HTTP %1$d. Check that the link is valid and accessible.</string>
+    <string name="video_error_playback">The video could not be played. Check that the source is reachable and uses a supported format.</string>
     <string name="video_hint_playing">OK pause · ◀ ▶ seek · ▲ ▼ jump 10% · Back stop</string>
     <string name="video_hint_paused">Paused · OK to resume</string>
 

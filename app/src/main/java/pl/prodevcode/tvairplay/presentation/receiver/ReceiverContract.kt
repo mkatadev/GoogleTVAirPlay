@@ -4,7 +4,8 @@ import android.view.Surface
 import androidx.media3.common.text.Cue
 import pl.prodevcode.tvairplay.domain.model.DeviceInfo
 import pl.prodevcode.tvairplay.domain.model.ReceiverState
-import pl.prodevcode.tvairplay.presentation.mvi.NoEffect
+import pl.prodevcode.tvairplay.domain.model.VideoPlaybackError
+import pl.prodevcode.tvairplay.presentation.mvi.UiEffect
 import pl.prodevcode.tvairplay.presentation.mvi.UiIntent
 import pl.prodevcode.tvairplay.presentation.mvi.UiState
 
@@ -52,4 +53,6 @@ sealed interface ReceiverIntent : UiIntent {
     data class VideoSurfaceGone(val surface: Surface) : ReceiverIntent
 }
 
-typealias ReceiverEffect = NoEffect
+sealed interface ReceiverEffect : UiEffect {
+    data class VideoPlaybackFailed(val error: VideoPlaybackError) : ReceiverEffect
+}

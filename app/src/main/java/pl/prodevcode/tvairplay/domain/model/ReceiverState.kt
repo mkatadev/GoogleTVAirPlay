@@ -34,6 +34,8 @@ data class MediaTrack(
     val selected: Boolean = false,
 )
 
+data class VideoPlaybackError(val httpStatusCode: Int?)
+
 data class VideoPlayback(
     val title: String = "",
     val positionMs: Long = 0,
@@ -43,6 +45,7 @@ data class VideoPlayback(
     val aspectRatio: Float = 16f / 9f,
     val audioTracks: List<MediaTrack> = emptyList(),
     val subtitleTracks: List<MediaTrack> = emptyList(),
+    val error: VideoPlaybackError? = null,
 ) {
     /** Anything worth a menu: a second audio track or any subtitle track. */
     val hasTrackChoices: Boolean get() = audioTracks.size > 1 || subtitleTracks.isNotEmpty()

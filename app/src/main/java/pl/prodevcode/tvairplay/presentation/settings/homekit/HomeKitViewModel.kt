@@ -18,9 +18,16 @@ class HomeKitViewModel @Inject constructor(
     private val resetPairings: ResetHomeKitPairingsUseCase,
 ) : MviViewModel<HomeKitUiState, HomeKitIntent, HomeKitEffect>(HomeKitUiState()) {
 
+    private var pairingScreenVisible = false
+
     init {
         observeSettings().reduceInto { copy(enabled = it.homeKitEnabled, deviceName = it.deviceName) }
-        observeHomeKitStatus().reduceInto { copy(status = it) }
+        observeHomeKitStatus().reduceInto {
+            val pairingCompleted = pairingScreenVisible && it.paired
+            pairingScreenVisible = it.setupCode != null && !it.paired
+            if (pairingCompleted) sendEffect(HomeKitEffect.Close)
+            copy(status = it)
+        }
     }
 
     override fun onIntent(intent: HomeKitIntent) {

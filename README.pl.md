@@ -128,7 +128,7 @@ Wypchnięcie tagu publikuje podpisany APK + SHA-256 w GitHub Releases ([`release
 git tag v1.2.0 && git push origin v1.2.0
 ```
 
-`versionName` pochodzi z tagu, a każde opublikowane wydanie otrzymuje kolejny rosnący `versionCode`, zaczynając od 1. Przy ponownym budowaniu istniejącego wydania przez *Run workflow* podaj jego pierwotny kod wersji; włącz **Build from matching tag**, aby użyć źródeł z tagu tego wydania. Workflow wymaga sekretów repozytorium: `KEYSTORE_BASE64` (`base64 -i release.keystore`), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. *Run workflow* w zakładce Actions buduje podpisany APK jako artefakt bez publikowania wydania. Każdy push i PR uruchamia [`ci.yml`](.github/workflows/ci.yml) (testy jednostkowe + build debug).
+`versionName` pochodzi z tagu, a `versionCode` jest z niego wyliczany (`1.2.3` → `10203`). Przy ponownym budowaniu istniejącego wydania przez *Run workflow* podaj jego pierwotny kod wersji; włącz **Build from matching tag**, aby użyć źródeł z tagu tego wydania. Workflow wymaga sekretów repozytorium: `KEYSTORE_BASE64` (`base64 -i release.keystore`), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. *Run workflow* w zakładce Actions buduje podpisany APK jako artefakt bez publikowania wydania. Każdy push i PR uruchamia [`ci.yml`](.github/workflows/ci.yml) (testy jednostkowe + build debug).
 
 ## Architektura
 
