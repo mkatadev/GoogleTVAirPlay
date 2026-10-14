@@ -96,6 +96,23 @@ Afterwards open the app once and grant **Display over other apps** so playback c
 
 While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop. If the stream has several audio tracks or subtitles, **▼** opens the track menu instead.
 
+## Known issues
+
+**Ending a music session from the TV leaves "Google TV" selected on the iPhone (iOS 26/27).** When you press *Back* /
+*End* on the TV (or the TV goes to sleep), the receiver pauses the music, tells the iPhone it is no longer an output
+(DACP `device-prevent-playback`) and closes the connection — exactly what AirPlay speakers do. The iPhone registers the
+disconnect, but iOS 26/27 re-routes audio automatically only for **AirPlay 2** endpoints (it manages them in an
+"endpoint aggregate"); a classic AirPlay/RAOP endpoint such as this receiver just stays selected until you pick another
+output in Control Center or the app's AirPlay menu. Playback is paused, so nothing plays into the void. Every signal a
+receiver can send was tested without effect: closing the socket, DACP `prevent-playback`/`pause`/`stop`, withdrawing the
+Bonjour records, a full receiver restart, even coming back as a different device. Ending the session on the iPhone, screen
+mirroring and video playback are not affected.
+
+*Possible fix:* AirPlay 2 buffered audio. Besides HAP pairing and an encrypted control channel (the crypto already exists
+in `:homekit`), it needs PTP timing on UDP ports 319/320 — privileged ports an Android app cannot bind without **root**.
+Until Apple restores the classic behaviour or accepts AirPlay 2 without PTP, this cannot be fixed from the TV side; a
+rooted-device build is the only realistic path.
+
 ## Build from source
 
 Requirements: JDK 17, Android SDK 37, NDK 28.2 + CMake 3.22 (installed by Android Studio on demand), `make`, `perl`.

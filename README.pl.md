@@ -96,6 +96,23 @@ Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad 
 
 Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przytrzymaj, aby przyspieszyć) · **▲ ▼** skok ±10 % · **0–9** skok do 0–90 % · **Wstecz** stop. Jeśli strumień ma kilka ścieżek audio lub napisy, **▼** otwiera menu ścieżek.
 
+## Znane problemy
+
+**Zakończenie sesji muzycznej z poziomu telewizora zostawia na iPhonie wybrane „Google TV” (iOS 26/27).** Gdy na TV
+naciśniesz *Wstecz* / *Zakończ* (albo TV zaśnie), odbiornik pauzuje muzykę, informuje iPhone'a, że przestał być wyjściem
+(DACP `device-prevent-playback`) i zamyka połączenie — dokładnie tak, jak robią to głośniki AirPlay. iPhone rejestruje
+rozłączenie, ale iOS 26/27 automatycznie przekierowuje dźwięk tylko dla endpointów **AirPlay 2** (zarządza nimi w
+„agregacie”); klasyczny endpoint AirPlay/RAOP, jakim jest ten odbiornik, pozostaje wybrany, dopóki nie wskażesz innego
+wyjścia w Centrum sterowania lub w menu AirPlay aplikacji. Odtwarzanie jest zapauzowane, więc nic nie gra w pustkę.
+Przetestowano każdy sygnał, jaki odbiornik może wysłać — bez skutku: zamknięcie gniazda, DACP
+`prevent-playback`/`pause`/`stop`, wycofanie rekordów Bonjour, pełny restart odbiornika, a nawet powrót jako inne
+urządzenie. Zakończenie sesji na iPhonie, mirroring ekranu i odtwarzanie wideo działają poprawnie.
+
+*Możliwa naprawa:* buforowane audio AirPlay 2. Poza parowaniem HAP i szyfrowanym kanałem sterującym (kryptografia jest
+już w `:homekit`) wymaga ono synchronizacji PTP na portach UDP 319/320 — uprzywilejowanych, których aplikacja Android nie
+może otworzyć bez **roota**. Dopóki Apple nie przywróci klasycznego zachowania albo nie zaakceptuje AirPlay 2 bez PTP, nie
+da się tego naprawić po stronie telewizora; jedyna realna droga to build na zrootowane urządzenie.
+
 ## Budowanie ze źródeł
 
 Wymagania: JDK 17, Android SDK 37, NDK 28.2 + CMake 3.22 (Android Studio doinstaluje na żądanie), `make`, `perl`.

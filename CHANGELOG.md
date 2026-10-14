@@ -6,6 +6,20 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.3.4] - 2026-10-14
+
+### Added
+- `psi` (public service identifier) in the AirPlay Bonjour record, so iOS tracks the receiver like any other AirPlay device instead of a "device without pairing ID".
+- README **Known issues**: ending a music session from the TV leaves the receiver selected on iOS 26/27 — what the receiver does about it, why iOS only re-routes AirPlay 2 endpoints, and what a fix would take (AirPlay 2 buffered audio needs PTP on ports 319/320, i.e. root).
+
+### Changed
+- Ending a session from the TV (*Back* / *End*, or the TV going to sleep) now behaves like an AirPlay speaker switching input: the music is paused and the sender is told the receiver is no longer an output (DACP `device-prevent-playback`) before the connection is closed, so playback no longer runs on in silence.
+- Third-party components are pinned to their newest official releases: UxPlay v1.73.7 (iOS 27 teardown fix, memcpy/strstr hardening), libplist 2.8.0, FFmpeg 9.0.2, OpenSSL 3.6.1. `tools/third-party.sh update` now defaults to the newest release tag and `check-releases` enforces release-only pins in CI; the Android dnssd shim implements UxPlay's `dnssd.h` directly.
+
+### Fixed
+- Remote control of the sender (play/pause, next/previous, volume from the TV) did not work for senders whose DACP-ID starts with a zero (about one session in sixteen): the Bonjour service name is now zero-padded to 16 digits.
+- Track metadata arriving between the end of a session and the socket closing no longer lingers in the notification.
+
 ## [1.3.3] - 2026-10-08
 
 ### Fixed
