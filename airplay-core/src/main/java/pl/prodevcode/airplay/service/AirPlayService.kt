@@ -622,7 +622,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onAudioFormat(ct: Int, spf: Int, usingScreen: Boolean) {
         clearPin()
         audioRenderer.start()
-        audioRenderer.setFormat(ct, spf)
+        audioRenderer.setFormat(ct, spf, audioOnly = !usingScreen)
         if (!usingScreen) setPlaying(true)
         if (!usingScreen && !_audioOnly.value) {
             // pure music streaming (not screen mirroring audio)

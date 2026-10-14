@@ -43,4 +43,13 @@ class LatencyProfileTest {
         assertFalse(smooth.lowLatency)
         assertEquals(Prefs.ADAPTIVE_PERCENTILES[4], smooth.percentilePct)
     }
+
+    @Test fun `declared latency mirrors what the sender is told`() {
+        // unset: UxPlay's built-in Audio-Latency
+        assertEquals(Prefs.DEF_AUDIO_DELAY_MS, readAudioConfig(prefs).declaredLatencyMs)
+        prefs.edit().putInt(Prefs.AUDIO_LATENCY_MS, 400).apply()
+        assertEquals(400, readAudioConfig(prefs).declaredLatencyMs)
+        prefs.edit().putInt(Prefs.AUDIO_LATENCY_MS, 0).apply()
+        assertEquals(0, readAudioConfig(prefs).declaredLatencyMs)
+    }
 }

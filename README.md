@@ -21,7 +21,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 
 - 📺 **Screen mirroring** from iPhone, iPad and Mac
 - 🎬 **Video & photos** — the TV plays the stream itself (HLS), with D-pad seeking, **audio track and subtitle selection**
-- 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info
+- 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info; plays on the sender's schedule (~2 s buffer, like any AirPlay speaker), so lost or late Wi-Fi packets are resent in time instead of causing drop-outs
 - ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
 - ⏱️ **Latency presets** — Low / Balanced / Smooth, switchable live for games vs. shaky Wi-Fi
 - 🔒 **PIN pairing** (on by default) — devices that entered the PIN once are remembered; manage them under *Settings → Trusted devices*
@@ -110,8 +110,15 @@ mirroring and video playback are not affected.
 
 *Possible fix:* AirPlay 2 buffered audio. Besides HAP pairing and an encrypted control channel (the crypto already exists
 in `:homekit`), it needs PTP timing on UDP ports 319/320 — privileged ports an Android app cannot bind without **root**.
-Until Apple restores the classic behaviour or accepts AirPlay 2 without PTP, this cannot be fixed from the TV side; a
-rooted-device build is the only realistic path.
+iOS does not fall back to NTP when the receiver omits the PTP feature bit, so there is no unprivileged variant. Until Apple
+restores the classic behaviour or accepts AirPlay 2 without PTP, this cannot be fixed from the TV side.
+
+*Why a "root mode" is not a quick win:* root only solves the port binding (an `su` helper can open 319/320 and hand the
+sockets over). The rest is a complete AirPlay 2 receiver that UxPlay does not have: AirPlay 2 feature bits (buffered audio,
+PTP, HomeKit/transient pairing), SRP transient pair-setup on the AirPlay port, ChaCha20-Poly1305 encryption of every
+control request, a PTP clock (cf. `nqptp`), the buffered TCP audio stream with per-packet encryption, the event channel
+and the `/setpeers`, `/setrateanchortime`, `/flushbuffered`, `/command` endpoints — effectively a port of
+shairport-sync's AirPlay 2 stack into the native layer, usable only on the few rooted Google TV devices. It is not planned.
 
 ## Build from source
 

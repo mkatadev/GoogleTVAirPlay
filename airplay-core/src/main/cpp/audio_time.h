@@ -12,4 +12,11 @@ static inline int64_t monoNs() {
     return (int64_t)ts.tv_sec * NS_PER_SEC + ts.tv_nsec;
 }
 
+// wall clock: the domain RAOP presentation times (ntp_time_local) are expressed in
+static inline int64_t realNs() {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (int64_t)ts.tv_sec * NS_PER_SEC + ts.tv_nsec;
+}
+
 #endif  // AUDIO_TIME_H

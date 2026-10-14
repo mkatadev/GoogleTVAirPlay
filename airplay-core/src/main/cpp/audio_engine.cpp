@@ -38,6 +38,7 @@ struct AudioConfig {
     const bool realtimePriority; // decoder: request realtime priority
     const bool lowLatency;       // low-latency decoder + oboe low-latency output
     const bool benchmarkLog;     // periodically log decoder stats
+    const int declaredLatencyMs; // Audio-Latency announced to the sender (scheduled playout adds it back)
 };
 
 struct CodecFormat {
@@ -95,10 +96,18 @@ struct AudioEngine {
         mDecoder = {};
     }
 
-    void onFormat(int ct, int spf) {
+    void onFormat(int ct, int spf, bool audioOnly) {
+        // pure audio sessions play on the sender's schedule; applied by decode() when the
+        // decoder is (re)built so it never races the producer
+        mScheduledWanted.store(audioOnly, std::memory_order_release);
         const int i = ctIndex(ct);
         if (i < 0 || spf <= 0) return;
         mQueued[i].store(CodecFormat{spf}, std::memory_order_release);
+    }
+
+    // sender FLUSH; RAOP thread, same as decode()
+    void flush() {
+        if (mTimeline) mTimeline->flush();
     }
 
     bool copyDebug(void *dst, size_t dstLen) {
@@ -129,15 +138,20 @@ struct AudioEngine {
                 mOutput.reset();
                 initInternals(*c);
                 mOutputActive = mRunning ? mOutput->start() : false;
+                mScheduledApplied = false;  // fresh timeline starts unscheduled
             }
         }
 
         const int ci = ctIndex(ct);
         const CodecFormat wantConfig = ci >= 0 ? mQueued[ci].load(std::memory_order_acquire) : CodecFormat{};
+        const bool scheduled = mScheduledWanted.load(std::memory_order_acquire);
         // transient codec-service failure does not mute entire session
-        const bool changed = ct != mDecoder.ct || wantConfig != mDecoder.format;
+        const bool changed = ct != mDecoder.ct || wantConfig != mDecoder.format
+                             || scheduled != mScheduledApplied;
         if (changed || (!mDecoder.decoder && monoNs() >= mRetryAtNs)) {
-            mDecoder = {}; // release old decoder first to free resources
+            mDecoder = {}; // release old decoder first to free resources (and its producer thread)
+            mTimeline->setScheduled(scheduled);
+            mScheduledApplied = scheduled;
             mDecoder = {ct, wantConfig,
                         makeDecoder(ct, wantConfig.spf, mSampleRate, mChannels, *mTimeline,
                                     mDecLatency, *mLog, mApplied->forceSwAlac,
@@ -148,6 +162,19 @@ struct AudioEngine {
         }
         if (mDecoder.decoder && !mDecoder.decoder->decode(data, len, ptsNs))
             mDecodeErrors.fetch_add(1, std::memory_order_relaxed);
+
+        if (mApplied->benchmarkLog && ++mBenchPackets % BENCH_LOG_EVERY == 0) {
+            const TimelineBuffer::Debug d = mTimeline->debugInfo();
+            if (scheduled) {
+                mLog->info("timeline: backlog=%ums target=%ums (scheduled, lead=%lldms) trims=%u drops=%u silences=%u underruns=%u",
+                           d.backlogMs, d.tunedCushionMs, (long long)mTimeline->scheduledLeadMs(),
+                           d.metrics.trims, d.metrics.drops, d.metrics.silences, d.metrics.underruns);
+            } else {
+                mLog->info("timeline: backlog=%ums target=%ums trims=%u drops=%u silences=%u underruns=%u",
+                           d.backlogMs, d.tunedCushionMs,
+                           d.metrics.trims, d.metrics.drops, d.metrics.silences, d.metrics.underruns);
+            }
+        }
     }
 
 private:
@@ -163,7 +190,8 @@ private:
     void initInternals(const AudioConfig &cfg) {
         mDecLatency.setEnableLogging(cfg.benchmarkLog);
         mTimeline = std::make_shared<TimelineBuffer>(mSampleRate, mChannels,
-                                                     cfg.staticCushionMs, cfg.percentilePct);
+                                                     cfg.staticCushionMs, cfg.percentilePct,
+                                                     cfg.declaredLatencyMs);
         mOutput = AudioOutput::create(mSampleRate, mChannels, cfg.oboeBufferFrames,
                                       cfg.lowLatency, mTimeline, mLog);
         mApplied = std::make_unique<AudioConfig>(cfg);
@@ -196,6 +224,12 @@ private:
     static constexpr int64_t DECODER_RETRY_NS = 1'000'000'000LL;
     int64_t mRetryAtNs = 0;  // earliest retry of failed decoder
 
+    // sender-scheduled playout: wanted by onFormat() (any thread), applied on decode thread
+    std::atomic<bool> mScheduledWanted{false};
+    bool mScheduledApplied = false;               // decode-thread-only: what mTimeline runs
+    static constexpr uint32_t BENCH_LOG_EVERY = 250;  // packets between timeline log lines (~2s ALAC)
+    uint32_t mBenchPackets = 0;                   // decode-thread-only
+
     // wanted config per codec, keyed by ctIndex
     static constexpr int NUM_CT = 3;
     std::atomic<CodecFormat> mQueued[NUM_CT] = {};
@@ -224,14 +258,18 @@ void audio_engine_set_default_stream_values(int sampleRate, int framesPerBurst) 
 
 bool audio_engine_configure(AudioEngine *engine, int cushionMs, int percentilePct,
                             int oboeBufferFrames, bool forceSwAlac, bool realtimePriority,
-                            bool lowLatency, bool benchmarkLog) {
+                            bool lowLatency, bool benchmarkLog, int declaredLatencyMs) {
     if (!engine) return false;
     return engine->configure({cushionMs, percentilePct, oboeBufferFrames, forceSwAlac,
-                              realtimePriority, lowLatency, benchmarkLog});
+                              realtimePriority, lowLatency, benchmarkLog, declaredLatencyMs});
 }
 
-void audio_engine_on_format(AudioEngine *engine, int ct, int spf) {
-    if (engine) engine->onFormat(ct, spf);
+void audio_engine_on_format(AudioEngine *engine, int ct, int spf, bool audioOnly) {
+    if (engine) engine->onFormat(ct, spf, audioOnly);
+}
+
+void audio_engine_flush(AudioEngine *engine) {
+    if (engine) engine->flush();
 }
 
 bool audio_engine_start(AudioEngine *engine) {

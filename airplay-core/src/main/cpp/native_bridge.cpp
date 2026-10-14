@@ -411,20 +411,22 @@ JNIEXPORT jboolean JNICALL
 Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeServerAudioConfigure(
         JNIEnv *env, jobject thiz, jlong handle, jint cushionMs, jint percentilePct,
         jint oboeBufferFrames, jboolean forceSwAlac, jboolean realtimePriority, jboolean lowLatency,
-        jboolean benchmarkLog) {
+        jboolean benchmarkLog, jint declaredLatencyMs) {
     server_ctx_t *ctx = (server_ctx_t *)(intptr_t)handle;
     if (!ctx || !ctx->cb_ctx.audio_engine) return JNI_FALSE;
     return audio_engine_configure(ctx->cb_ctx.audio_engine, cushionMs, percentilePct,
                                   oboeBufferFrames, forceSwAlac, realtimePriority, lowLatency,
-                                  benchmarkLog) ? JNI_TRUE : JNI_FALSE;
+                                  benchmarkLog, declaredLatencyMs) ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeServerAudioFormat(
-        JNIEnv *env, jobject thiz, jlong handle, jint ct, jint spf) {
+        JNIEnv *env, jobject thiz, jlong handle, jint ct, jint spf, jboolean audioOnly) {
     server_ctx_t *ctx = (server_ctx_t *)(intptr_t)handle;
-    if (ctx && ctx->cb_ctx.audio_engine) audio_engine_on_format(ctx->cb_ctx.audio_engine, ct, spf);
+    if (ctx && ctx->cb_ctx.audio_engine) {
+        audio_engine_on_format(ctx->cb_ctx.audio_engine, ct, spf, audioOnly == JNI_TRUE);
+    }
 }
 
 extern "C"

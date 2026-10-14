@@ -1,0 +1,159 @@
+diff --git a/lib/raop_buffer.c b/lib/raop_buffer.c
+index 45a3e4c..abc7a9b 100644
+--- a/lib/raop_buffer.c
++++ b/lib/raop_buffer.c
+@@ -27,0 +28 @@
++#include "raop_ntp.h"
+@@ -37,0 +39,7 @@
++/* a missing packet is requested again at most this often; iOS answers in ~10ms, so one
++ * request per arriving packet (the previous behaviour) made the sender resend it ~15 times */
++#define RAOP_RESEND_INTERVAL_NS 100000000ull /* 100 ms */
++/* how long to hold later packets back waiting for a resend of a missing one before
++ * giving up on it; the sender streams ~2s ahead, so this never starves a scheduled playout */
++#define RAOP_RESEND_WAIT_NS     500000000ull /* 500 ms */
++
+@@ -62,0 +71,5 @@ struct raop_buffer_s {
++    /* resend throttling: last requested head seqnum and when; when the head went missing */
++    unsigned short resend_seqnum;
++    uint64_t resend_time;
++    uint64_t missing_since;
++
+@@ -236,0 +250 @@ raop_buffer_dequeue(raop_buffer_t *raop_buffer, unsigned int *length, uint32_t *
++        raop_buffer->missing_since = 0;
+@@ -242,6 +256,23 @@ raop_buffer_dequeue(raop_buffer_t *raop_buffer, unsigned int *length, uint32_t *
+-    if (no_resend) {
+-        /* If we do no resends, always return the first entry */
+-    } else if (!entry->filled) {
+-        /* Check how much we have space left in the buffer */
+-        if (entry_count < RAOP_BUFFER_LENGTH) {
+-            /* Return nothing and hope resend gets on time */
++    if (!entry->filled) {
++        if (!no_resend && entry_count < RAOP_BUFFER_LENGTH) {
++            /* Hold later packets back for a while, hoping the resend arrives in time */
++            uint64_t now = raop_ntp_get_local_time();
++            if (!raop_buffer->missing_since) {
++                raop_buffer->missing_since = now;
++                return NULL;
++            }
++            if (now - raop_buffer->missing_since < RAOP_RESEND_WAIT_NS) {
++                return NULL;
++            }
++            logger_log(raop_buffer->logger, LOGGER_DEBUG, "raop_buffer giving up on seqnum %u",
++                       raop_buffer->first_seqnum);
++        }
++        /* Lost for good (or buffer about to overrun): skip the whole missing run so the
++         * next filled packet goes out now instead of after another wait each */
++        while (!entry->filled && entry_count > 0) {
++            raop_buffer->first_seqnum += 1;
++            entry_count--;
++            entry = &raop_buffer->entries[raop_buffer->first_seqnum % RAOP_BUFFER_LENGTH];
++        }
++        raop_buffer->missing_since = 0;
++        if (entry_count <= 0) {
+@@ -250 +280,0 @@ raop_buffer_dequeue(raop_buffer_t *raop_buffer, unsigned int *length, uint32_t *
+-        /* Risk of buffer overrun, return empty buffer */
+@@ -253 +283 @@ raop_buffer_dequeue(raop_buffer_t *raop_buffer, unsigned int *length, uint32_t *
+-    /* Update buffer and validate entry */
++    /* Update buffer and return the entry */
+@@ -255,3 +285 @@ raop_buffer_dequeue(raop_buffer_t *raop_buffer, unsigned int *length, uint32_t *
+-    if (!entry->filled) {
+-        return NULL;
+-    }
++    raop_buffer->missing_since = 0;
+@@ -286 +314,8 @@ void raop_buffer_handle_resends(raop_buffer_t *raop_buffer, raop_resend_cb_t res
+-            resend_cb(opaque, raop_buffer->first_seqnum, count);
++            /* ask once per missing head, then again only every RAOP_RESEND_INTERVAL_NS */
++            uint64_t now = raop_ntp_get_local_time();
++            if (raop_buffer->first_seqnum != raop_buffer->resend_seqnum ||
++                now - raop_buffer->resend_time >= RAOP_RESEND_INTERVAL_NS) {
++                raop_buffer->resend_seqnum = raop_buffer->first_seqnum;
++                raop_buffer->resend_time = now;
++                resend_cb(opaque, raop_buffer->first_seqnum, count);
++            }
+@@ -301,0 +337,2 @@ void raop_buffer_flush(raop_buffer_t *raop_buffer, int next_seq) {
++    raop_buffer->missing_since = 0;
++    raop_buffer->resend_time = 0;
+diff --git a/lib/raop_rtp.c b/lib/raop_rtp.c
+index 64eb7fb..94ed686 100644
+--- a/lib/raop_rtp.c
++++ b/lib/raop_rtp.c
+@@ -378,0 +379,38 @@ static uint64_t rtp_time_to_client_ntp(raop_rtp_t *raop_rtp,  uint32_t rtp32) {
++/* Render continuous buffer entries, then ask for whatever is still missing */
++static void
++raop_rtp_drain_audio(raop_rtp_t *raop_rtp, int no_resend, const char *type, bool logger_debug_data)
++{
++    void *payload = NULL;
++    unsigned int payload_size = 0;
++    unsigned short seqnum = 0;
++    uint32_t rtp_timestamp = 0;
++
++    while ((payload = raop_buffer_dequeue(raop_rtp->buffer, &payload_size, &rtp_timestamp, &seqnum, no_resend))) {
++        audio_decode_struct audio_data;
++        audio_data.rtp_time = rtp_timestamp;
++        audio_data.seqnum = seqnum;
++        audio_data.data_len = payload_size;
++        audio_data.data = payload;
++        audio_data.ct = raop_rtp->ct;
++        audio_data.ntp_time_remote = rtp_time_to_client_ntp(raop_rtp, rtp_timestamp);
++        audio_data.ntp_time_local  = raop_ntp_convert_remote_time(raop_rtp->ntp, audio_data.ntp_time_remote);
++
++        if (logger_debug_data) {
++            uint64_t ntp_now = raop_ntp_get_local_time();
++            int64_t latency = (audio_data.ntp_time_local ? ((int64_t) ntp_now) - ((int64_t) audio_data.ntp_time_local) : 0);
++            logger_log(raop_rtp->logger, LOGGER_DEBUG,
++                       "raop_rtp audio: now = %8.6f, ntp = %8.6f, latency = %9.6f, ts = %8.6f, rtp_time=%u seqnum = %5u %s %d",
++                       (double) ntp_now / SEC, (double) audio_data.ntp_time_local / SEC, (double) latency / SEC,
++                       (double) audio_data.ntp_time_remote /SEC, rtp_timestamp, seqnum, type, payload_size);
++        }
++
++        raop_rtp->callbacks.audio_process(raop_rtp->callbacks.cls, raop_rtp->ntp, &audio_data);
++        free(payload);
++    }
++
++    /* Handle possible resend requests */
++    if (!no_resend) {
++        raop_buffer_handle_resends(raop_rtp->buffer, raop_rtp_resend_callback, raop_rtp);
++    }
++}
++
+@@ -440 +478,4 @@ raop_rtp_thread_udp(void *arg)
+-            /* Timeout happened */
++            /* Timeout happened: a packet held back for a resend may be due to be given up on */
++            if (raop_rtp->initial_sync) {
++                raop_rtp_drain_audio(raop_rtp, no_resend, type, logger_debug_data);
++            }
+@@ -606,33 +647 @@ raop_rtp_thread_udp(void *arg)
+-            // Render continuous buffer entries
+-                void *payload = NULL;
+-                unsigned int payload_size = 0;
+-                unsigned short seqnum = 0;
+-                uint32_t rtp_timestamp = 0;
+-
+-                while ((payload = raop_buffer_dequeue(raop_rtp->buffer, &payload_size, &rtp_timestamp, &seqnum, no_resend))) {
+-                    audio_decode_struct audio_data; 
+-                    audio_data.rtp_time = rtp_timestamp;
+-                    audio_data.seqnum = seqnum;
+-                    audio_data.data_len = payload_size;
+-                    audio_data.data = payload;
+-                    audio_data.ct = raop_rtp->ct;
+-                    audio_data.ntp_time_remote = rtp_time_to_client_ntp(raop_rtp, rtp_timestamp);
+-                    audio_data.ntp_time_local  = raop_ntp_convert_remote_time(raop_rtp->ntp, audio_data.ntp_time_remote);
+-
+-                    if (logger_debug_data) {
+-                        uint64_t ntp_now = raop_ntp_get_local_time();
+-                        int64_t latency = (audio_data.ntp_time_local ? ((int64_t) ntp_now) - ((int64_t) audio_data.ntp_time_local) : 0); 
+-                        logger_log(raop_rtp->logger, LOGGER_DEBUG,
+-                                   "raop_rtp audio: now = %8.6f, ntp = %8.6f, latency = %9.6f, ts = %8.6f, rtp_time=%u seqnum = %5u %s %d",
+-                                   (double) ntp_now / SEC, (double) audio_data.ntp_time_local / SEC, (double) latency / SEC,
+-                                   (double) audio_data.ntp_time_remote /SEC, rtp_timestamp, seqnum, type, payload_size);
+-                    }
+-
+-                    raop_rtp->callbacks.audio_process(raop_rtp->callbacks.cls, raop_rtp->ntp, &audio_data);
+-                    free(payload);
+-                }
+-
+-                /* Handle possible resend requests */
+-                if (!no_resend) {
+-                    raop_buffer_handle_resends(raop_rtp->buffer, raop_rtp_resend_callback, raop_rtp);
+-                }
++                raop_rtp_drain_audio(raop_rtp, no_resend, type, logger_debug_data);

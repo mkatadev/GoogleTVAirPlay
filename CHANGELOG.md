@@ -6,6 +6,15 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+### Changed
+- Music (audio-only) sessions now play on the sender's schedule like an AirPlay speaker: the receiver holds the ~2 s lead iOS streams ahead of the play time instead of the low-latency mirroring cushion, so bursty Wi-Fi delivery and resent packets no longer cause drop-outs. Playback starts/resumes ~2 s after the sender, exactly as with other AirPlay speakers (iOS compensates for it). Mirroring audio keeps the low-latency cushion.
+- README **Known issues**: explains why a "root mode" would not fix the iOS 26/27 output-switching issue on its own — root only unblocks UDP 319/320, the rest is a full AirPlay 2 receiver (pairing, encrypted control channel, PTP clock, buffered stream) that UxPlay does not implement; iOS does not fall back to NTP without the PTP feature bit.
+
+### Fixed
+- A sender `FLUSH` (pause, seek, track change) now discards the audio buffered on the TV, so the old track no longer plays on after a skip.
+- UxPlay patch `0007`: a missing audio packet was re-requested on every following packet (the iPhone resent it ~15 times per loss, eating airtime on an already lossy link) — now at most every 100 ms; a packet whose resend never arrives is given up on after 500 ms instead of stalling the stream for up to 2 s (256 packets), and held-back packets are released even when the sender pauses.
+- Developer *benchmark log* also reports the audio timeline (backlog, target cushion, trims/drops/silences/underruns) every ~2 s.
+
 ## [1.3.4] - 2026-10-14
 
 ### Added

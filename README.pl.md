@@ -21,7 +21,7 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 
 - 📺 **Mirroring ekranu** z iPhone’a, iPada i Maca
 - 🎬 **Wideo i zdjęcia** — telewizor sam odtwarza strumień (HLS), przewijanie pilotem, **wybór ścieżki audio i napisów**
-- 🎵 **Muzyka** — widoczny jako głośnik AirPlay, z okładką i informacjami o utworze
+- 🎵 **Muzyka** — widoczny jako głośnik AirPlay, z okładką i informacjami o utworze; gra według harmonogramu nadawcy (~2 s bufora, jak każdy głośnik AirPlay), więc zgubione lub spóźnione pakiety Wi-Fi zdążą zostać retransmitowane zamiast powodować przerwy
 - ⚡ **Dekodowanie sprzętowe** — H.264 i HEVC (H.265), gdy telewizor to wspiera
 - ⏱️ **Presety opóźnienia** — Niskie / Zrównoważone / Płynne, przełączane na żywo (gry vs. słabe Wi-Fi)
 - 🔒 **Parowanie PIN-em** (domyślnie włączone) — urządzenia, które raz wpisały PIN, są zapamiętywane; zarządzasz nimi w *Ustawienia → Zaufane urządzenia*
@@ -110,8 +110,17 @@ urządzenie. Zakończenie sesji na iPhonie, mirroring ekranu i odtwarzanie wideo
 
 *Możliwa naprawa:* buforowane audio AirPlay 2. Poza parowaniem HAP i szyfrowanym kanałem sterującym (kryptografia jest
 już w `:homekit`) wymaga ono synchronizacji PTP na portach UDP 319/320 — uprzywilejowanych, których aplikacja Android nie
-może otworzyć bez **roota**. Dopóki Apple nie przywróci klasycznego zachowania albo nie zaakceptuje AirPlay 2 bez PTP, nie
-da się tego naprawić po stronie telewizora; jedyna realna droga to build na zrootowane urządzenie.
+może otworzyć bez **roota**. iOS nie przechodzi na NTP, gdy odbiornik nie ogłasza bitu PTP, więc wariant bez uprawnień nie
+istnieje. Dopóki Apple nie przywróci klasycznego zachowania albo nie zaakceptuje AirPlay 2 bez PTP, nie da się tego
+naprawić po stronie telewizora.
+
+*Dlaczego „tryb root” nie jest szybką wygraną:* root rozwiązuje tylko bindowanie portów (pomocnik `su` może otworzyć
+319/320 i przekazać gniazda). Reszta to kompletny odbiornik AirPlay 2, którego UxPlay nie ma: bity funkcji AirPlay 2
+(buforowane audio, PTP, parowanie HomeKit/transient), transient pair-setup SRP na porcie AirPlay, szyfrowanie
+ChaCha20-Poly1305 każdego żądania sterującego, zegar PTP (por. `nqptp`), buforowany strumień audio TCP z szyfrowaniem
+per pakiet, kanał zdarzeń oraz endpointy `/setpeers`, `/setrateanchortime`, `/flushbuffered`, `/command` — w praktyce
+port stosu AirPlay 2 z shairport-sync do warstwy natywnej, użyteczny tylko na nielicznych zrootowanych Google TV. Nie jest
+planowane.
 
 ## Budowanie ze źródeł
 

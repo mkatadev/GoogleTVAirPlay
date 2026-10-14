@@ -21,6 +21,8 @@ fun readAudioConfig(p: SharedPreferences): AudioConfig {
         realtimePriority = p.getBoolean(Prefs.KEY_PRIORITY, Prefs.DEF_KEY_PRIORITY),
         lowLatency = profile.oboeLowLatency ?: p.getBoolean(Prefs.LOW_LATENCY, Prefs.DEF_LOW_LATENCY),
         benchmarkLog = p.getBoolean(Prefs.BENCHMARK_LOG, Prefs.DEF_BENCHMARK_LOG),
+        declaredLatencyMs = p.getInt(Prefs.AUDIO_LATENCY_MS, Prefs.DEF_AUDIO_LATENCY_MS)
+            .takeIf { it >= 0 } ?: Prefs.DEF_AUDIO_DELAY_MS,
     )
 }
 
