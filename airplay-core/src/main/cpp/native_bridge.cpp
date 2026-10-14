@@ -61,7 +61,6 @@ Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeInit(
     ctx->cb_ctx.require_pin = requirePin ? 1 : 0;
     android_callbacks_fill(&ctx->callbacks, &ctx->cb_ctx);
 
-    ntp_global_init();
     ctx->raop = raop_init(&ctx->callbacks);
     if (!ctx->raop) {
         LOGE("raop_init failed");
@@ -106,7 +105,7 @@ Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeInit(
     /* shim dnssd_init only builds txt records; kotlin does the actual nsd registration */
     int dns_err = 0;
     unsigned char pin_pw = requirePin ? 1 : 0;
-    ctx->dnssd = dnssd_init(name_c, (int)strlen(name_c), ctx->hw_addr, 6, pin_pw, &dns_err);
+    ctx->dnssd = dnssd_init(name_c, (int)strlen(name_c), ctx->hw_addr, 6, &dns_err, pin_pw);
     if (!ctx->dnssd) {
         LOGE("dnssd_init failed: %d", dns_err);
     } else {
@@ -346,7 +345,9 @@ Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeSetLang(
     take(requested, ctx->lang_requested);
     take(subtitles, ctx->lang_subtitles);
     take(system, ctx->lang_system);
-    raop_set_lang(ctx->raop, ctx->lang_requested.c_str(), ctx->lang_subtitles.c_str(), ctx->lang_system.c_str());
+    /* UxPlay takes one colon-separated preference list for HLS audio: an explicit choice wins over the system locales */
+    const std::string &lang = ctx->lang_requested.empty() ? ctx->lang_system : ctx->lang_requested;
+    raop_set_lang(ctx->raop, lang.c_str());
 }
 
 /* feature bit 9 advertises audio support over dns-sd */

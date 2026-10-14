@@ -13,7 +13,7 @@ include(PatchUxPlay)
 
 # ---------- OpenSSL (built from source via openssl-cmake) ----------
 set(BUILD_OPENSSL ON CACHE BOOL "" FORCE)
-set(OPENSSL_BUILD_VERSION "3.4.4" CACHE STRING "" FORCE)
+set(OPENSSL_BUILD_VERSION "3.6.1" CACHE STRING "" FORCE)
 set(CROSS_ANDROID ON CACHE BOOL "" FORCE)
 string(REGEX MATCH "[0-9]+" AIRPLAY_ANDROID_API "${ANDROID_PLATFORM}")
 set(OPENSSL_PARAMS "-D__ANDROID_API__=${AIRPLAY_ANDROID_API}" CACHE STRING "" FORCE)
@@ -49,6 +49,7 @@ add_library(plist STATIC
     ${PLIST_SRC}/base64.c
     ${PLIST_SRC}/bplist.c
     ${PLIST_SRC}/bytearray.c
+    ${PLIST_SRC}/common.c
     ${PLIST_SRC}/hashtable.c
     ${PLIST_SRC}/jplist.c
     ${PLIST_SRC}/jsmn.c
@@ -71,7 +72,7 @@ target_include_directories(plist
 target_compile_definitions(plist PRIVATE
     _GNU_SOURCE
     HAVE_STRNDUP
-    PACKAGE_VERSION="2.6.0"
+    PACKAGE_VERSION="2.8.0"
 )
 
 # ---------- llhttp (embedded in UxPlay) ----------
@@ -92,13 +93,12 @@ add_library(playfair STATIC
 )
 target_include_directories(playfair PUBLIC ${UXPLAY_LIB}/playfair)
 
-# ---------- UxPlay core (dnssd via shim) ----------
+# ---------- UxPlay core (lib/dnssd.c needs Bonjour; android_dnssd_shim.c implements dnssd.h instead) ----------
 set(AIRPLAY_SOURCES
     ${UXPLAY_LIB}/airplay_video.c
     ${UXPLAY_LIB}/byteutils.c
     ${UXPLAY_LIB}/compat.c
     ${UXPLAY_LIB}/crypto.c
-    ${UXPLAY_LIB}/dnssd.c
     ${UXPLAY_LIB}/fairplay_playfair.c
     ${UXPLAY_LIB}/http_request.c
     ${UXPLAY_LIB}/http_response.c
