@@ -6,12 +6,15 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.3.5] - 2026-10-14
+
 ### Added
 - *Settings → Music delay*: how much of the sender's ~2 s lead music keeps buffered — *Short* (≈ 0.5 s), *Medium* (≈ 1 s) or *AirPlay standard* (default, exactly on the sender's schedule). Shorter starts and resumes faster, longer rides out more Wi-Fi loss; applies live.
 
 ### Changed
 - Music (audio-only) sessions now play on the sender's schedule like an AirPlay speaker: the receiver holds the ~2 s lead iOS streams ahead of the play time instead of the low-latency mirroring cushion, so bursty Wi-Fi delivery and resent packets no longer cause drop-outs. Playback starts/resumes ~2 s after the sender, exactly as with other AirPlay speakers (iOS compensates for it). Mirroring audio keeps the low-latency cushion.
 - README **Known issues**: explains why a "root mode" would not fix the iOS 26/27 output-switching issue on its own — root only unblocks UDP 319/320, the rest is a full AirPlay 2 receiver (pairing, encrypted control channel, PTP clock, buffered stream) that UxPlay does not implement; iOS does not fall back to NTP without the PTP feature bit.
+- README **Known issues**: October 2026 status check of the AirPlay 2 question — UxPlay 1.73.7/1.74, shairport-sync 5.6 and `nqptp` 1.2.9 still hard-require UDP 319/320, iOS 27 still speaks classic RAOP, no non-root way to bind privileged ports on Android (`adb`/Shizuku, `ip_unprivileged_port_start`, `android.uid.system`); the only loophole (advertise PTP, never answer it, anchor playback locally, as `openairplay/airplay2-receiver` does) gives unsynchronised single-device audio and was verified only up to iOS 17.
 
 ### Fixed
 - A sender `FLUSH` (pause, seek, track change) now discards the audio buffered on the TV, so the old track no longer plays on after a skip.
@@ -127,7 +130,9 @@ The section for the version being released is used verbatim as the GitHub releas
 ### Added
 - First release: AirPlay receiver for Google TV / Chromecast — screen mirroring, AirPlay Video (HLS) with D-pad seeking, AirPlay audio with cover art and track info, hardware H.264/HEVC decoding, optional PIN, background service with start on boot, English and Polish UI.
 
-[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.3...HEAD
+[Unreleased]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.5...HEAD
+[1.3.5]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.4...v1.3.5
+[1.3.4]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/mkatadev/GoogleTVAirPlay/compare/v1.3.0...v1.3.1

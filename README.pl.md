@@ -122,6 +122,16 @@ per pakiet, kanał zdarzeń oraz endpointy `/setpeers`, `/setrateanchortime`, `/
 port stosu AirPlay 2 z shairport-sync do warstwy natywnej, użyteczny tylko na nielicznych zrootowanych Google TV. Nie jest
 planowane.
 
+*Stan na październik 2026:* upstream nic się nie zmieniło. UxPlay 1.73.7/1.74 nie ma audio AirPlay 2 i odsyła do
+shairport-sync; shairport-sync 5.6 i `nqptp` 1.2.9 nadal mają na sztywno porty 319/320 i odrzucają strumienie AirPlay 2
+z synchronizacją NTP jako „not implemented”; iOS 27 wciąż rozmawia z UxPlay klasycznym RAOP. Na Androidzie też nie ma
+ścieżki bez roota: `adb shell` i Shizuku nie mają `CAP_NET_BIND_SERVICE`, `ip_unprivileged_port_start` wymaga
+`CAP_NET_ADMIN`, `android.uid.system` wymaga klucza platformy. Jedyna furtka to ta, z której korzysta
+[openairplay/airplay2-receiver](https://github.com/openairplay/airplay2-receiver): ogłosić bit PTP, nigdy nie bindować
+319/320 i zakotwiczyć odtwarzanie lokalnie w chwili nadejścia komendy `play`. iOS nie przerywa sesji, gdy peer PTP
+milczy, ale nie ma wtedy synchronizacji zegara (dryf niekorygowany, tylko jedno urządzenie), projekt jest nieaktywny od
+2023 r. i sprawdzony tylko do iOS 17 — a i tak wymaga całego stosu AirPlay 2 wymienionego powyżej.
+
 ## Budowanie ze źródeł
 
 Wymagania: JDK 17, Android SDK 37, NDK 28.2 + CMake 3.22 (Android Studio doinstaluje na żądanie), `make`, `perl`.

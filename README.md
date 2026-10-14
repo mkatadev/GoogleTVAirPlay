@@ -120,6 +120,16 @@ control request, a PTP clock (cf. `nqptp`), the buffered TCP audio stream with p
 and the `/setpeers`, `/setrateanchortime`, `/flushbuffered`, `/command` endpoints — effectively a port of
 shairport-sync's AirPlay 2 stack into the native layer, usable only on the few rooted Google TV devices. It is not planned.
 
+*Status check (October 2026):* nothing upstream has changed. UxPlay 1.73.7/1.74 has no AirPlay 2 audio and refers to
+shairport-sync; shairport-sync 5.6 and `nqptp` 1.2.9 still hard-code ports 319/320 and reject AirPlay 2 NTP-timed streams
+as "not implemented"; iOS 27 still speaks classic RAOP to UxPlay. On Android there is no non-root path either: `adb shell`
+and Shizuku lack `CAP_NET_BIND_SERVICE`, `ip_unprivileged_port_start` needs `CAP_NET_ADMIN`, `android.uid.system` needs the
+platform key. The only loophole is the one [openairplay/airplay2-receiver](https://github.com/openairplay/airplay2-receiver)
+uses: advertise the PTP feature bit, never bind 319/320 and anchor playback locally when the `play` command arrives. iOS
+does not abort when the PTP peer stays silent, but there is no clock sync (drift uncorrected, single device only), the
+project has been dormant since 2023 and was verified only up to iOS 17 — and it still needs the whole AirPlay 2 stack
+listed above.
+
 ## Build from source
 
 Requirements: JDK 17, Android SDK 37, NDK 28.2 + CMake 3.22 (installed by Android Studio on demand), `make`, `perl`.
