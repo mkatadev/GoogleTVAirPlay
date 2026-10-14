@@ -364,7 +364,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         // apply settings from preferences
         val maxFps = prefs.getInt(Prefs.MAX_FPS, Prefs.DEF_MAX_FPS)
         val overscanned = prefs.getBoolean(Prefs.OVERSCANNED, Prefs.DEF_OVERSCANNED)
-        val audioLatencyMs = prefs.getInt(Prefs.AUDIO_LATENCY_MS, Prefs.DEF_AUDIO_LATENCY_MS)
+        val audioLatencyMs = prefs.getInt(Prefs.AUDIO_LATENCY_MS, Prefs.DEF_AUDIO_LATENCY_MS).coerceAtLeast(0)
         val (reqW, reqH) = displaySize(clamp = false)
         val h265 = videoRenderer.selectDecoders(reqW, reqH, maxFps, prefs.getBoolean(Prefs.H265_ENABLED, Prefs.DEF_H265_ENABLED))
         val alac = prefs.getBoolean(Prefs.ALAC_ENABLED, Prefs.DEF_ALAC_ENABLED)
@@ -386,9 +386,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         NativeBridge.nativeSetAudioEnabled(nativeHandle, advertiseAudio)
         NativeBridge.nativeSetPlist(nativeHandle, "maxFPS", maxFps)
         NativeBridge.nativeSetPlist(nativeHandle, "overscanned", if (overscanned) 1 else 0)
-        if (audioLatencyMs >= 0) {
-            NativeBridge.nativeSetPlist(nativeHandle, "audio_delay_micros", audioLatencyMs * 1000)
-        }
+        NativeBridge.nativeSetPlist(nativeHandle, "audio_delay_micros", audioLatencyMs * 1000)
 
         // set display params
         lastOrientation = resources.configuration.orientation
@@ -622,7 +620,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onAudioFormat(ct: Int, spf: Int, usingScreen: Boolean) {
         clearPin()
         audioRenderer.start()
-        audioRenderer.setFormat(ct, spf)
+        audioRenderer.setFormat(ct, spf, audioOnly = !usingScreen)
         if (!usingScreen) setPlaying(true)
         if (!usingScreen && !_audioOnly.value) {
             // pure music streaming (not screen mirroring audio)

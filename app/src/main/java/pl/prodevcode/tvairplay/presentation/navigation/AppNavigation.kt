@@ -31,10 +31,11 @@ import pl.prodevcode.tvairplay.presentation.settings.homekit.HomeKitScreen
 import pl.prodevcode.tvairplay.presentation.settings.idledim.IdleDimScreen
 import pl.prodevcode.tvairplay.presentation.settings.language.LanguageScreen
 import pl.prodevcode.tvairplay.presentation.settings.latency.LatencyScreen
+import pl.prodevcode.tvairplay.presentation.settings.musicdelay.MusicDelayScreen
 import pl.prodevcode.tvairplay.presentation.settings.trusted.TrustedDevicesScreen
 
 private enum class Destination {
-    Receiver, Settings, Licenses, Diagnostics, DeviceName, Language, IdleDim, Latency, TrustedDevices, HomeKit
+    Receiver, Settings, Licenses, Diagnostics, DeviceName, Language, IdleDim, Latency, MusicDelay, TrustedDevices, HomeKit
 }
 
 private fun SettingsSub.toDestination() = when (this) {
@@ -42,6 +43,7 @@ private fun SettingsSub.toDestination() = when (this) {
     SettingsSub.LANGUAGE -> Destination.Language
     SettingsSub.IDLE_DIM -> Destination.IdleDim
     SettingsSub.LATENCY -> Destination.Latency
+    SettingsSub.MUSIC_DELAY -> Destination.MusicDelay
     SettingsSub.TRUSTED_DEVICES -> Destination.TrustedDevices
     SettingsSub.HOMEKIT -> Destination.HomeKit
     SettingsSub.DIAGNOSTICS -> Destination.Diagnostics
@@ -90,6 +92,7 @@ private fun Screens(destination: Destination, onNavigate: (Destination) -> Unit)
                 Destination.Language -> LanguageScreen(onBack = backToSettings)
                 Destination.IdleDim -> IdleDimScreen(onBack = backToSettings)
                 Destination.Latency -> LatencyScreen(onBack = backToSettings)
+                Destination.MusicDelay -> MusicDelayScreen(onBack = backToSettings)
                 Destination.TrustedDevices -> TrustedDevicesScreen(onBack = backToSettings)
                 Destination.HomeKit -> HomeKitScreen(onBack = backToSettings)
             }

@@ -133,6 +133,13 @@
     <string name="latency_balanced_desc">Domyślne — dobre dla większości treści</string>
     <string name="latency_smooth">Płynne</string>
     <string name="latency_smooth_desc">Większy bufor do filmów i słabego Wi-Fi; każda klatka jest pokazywana, opóźnienie nieco rośnie</string>
+    <string name="setting_music_delay">Opóźnienie muzyki</string>
+    <string name="music_delay_short">Krótkie</string>
+    <string name="music_delay_short_desc">Około 0,5 s — muzyka startuje i wznawia się szybko; wymaga stabilnego Wi-Fi</string>
+    <string name="music_delay_medium">Średnie</string>
+    <string name="music_delay_medium_desc">Około 1 s — zapas na większość czkawek Wi-Fi i retransmisje</string>
+    <string name="music_delay_airplay">Standard AirPlay</string>
+    <string name="music_delay_airplay_desc">Domyślne — około 2 s, dokładnie według harmonogramu iPhone\'a jak każdy głośnik AirPlay: najodporniejsze i zsynchronizowane z innymi głośnikami</string>
 
     <!-- Wygaszanie -->
     <string name="setting_idle_dim">Przyciemniaj ekran przy muzyce</string>
@@ -188,6 +195,7 @@
     <string name="language_subtitle">Język ekranów tej aplikacji. Język telewizora się nie zmienia.</string>
     <string name="idle_dim_subtitle">Gdy gra tylko muzyka, ekran przyciemni się po tym czasie. Dowolny klawisz pilota go wybudza.</string>
     <string name="latency_subtitle">Kompromis między opóźnieniem a płynnością przy mirroringu ekranu. Działa natychmiast.</string>
+    <string name="music_delay_subtitle">Jak długo muzyka jest buforowana, zanim zagra. iPhone wysyła dźwięk z około 2 s wyprzedzeniem; krótszy bufor reaguje szybciej, ale zostawia mniej czasu na zgubione pakiety. Działa natychmiast.</string>
     <string name="trusted_devices_subtitle">Urządzenia, które raz wpisały PIN, łączą się bez pytania. Wybierz, aby zapomnieć.</string>
 
     <!-- HomeKit -->

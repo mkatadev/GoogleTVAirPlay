@@ -61,6 +61,17 @@ public:
         mRead.store(r + n, std::memory_order_release);
     }
 
+    // absolute write position; any thread
+    size_t writePos() const { return mWrite.load(std::memory_order_acquire); }
+
+    // consumer: discard everything written before absolute position pos
+    void skipTo(size_t pos) {
+        const size_t r = mRead.load(std::memory_order_relaxed);
+        const size_t w = mWrite.load(std::memory_order_acquire);
+        if (pos > w) pos = w;
+        if (pos > r) mRead.store(pos, std::memory_order_release);
+    }
+
 private:
     const size_t mCapacity;
     std::unique_ptr<int16_t[]> mBuf;
@@ -71,22 +82,50 @@ private:
 /*
  * adaptive jitter cushion tuner, NetEQ-inspired but simplified: decaying histogram of
  * packet jitter, cushion = high percentile of it + 1 packet of margin.
- * observe() is producer-thread only; result published via atomic, consumer reads it live
+ * observe() is producer-thread only; result published via atomic, consumer reads it live.
+ *
+ * scheduled mode (audio-only sessions) replaces the tuner: the sender streams ~2s ahead of
+ * the time it wants each packet heard, so the cushion simply tracks that lead. Playout then
+ * starts exactly on the sender's schedule, like an AirPlay speaker, and the ~2s window
+ * absorbs bursts and resends that would underrun a low-latency cushion.
  */
 class DelayTracker {
 public:
     // staticCushionMs > 0: fixed cushion, tuner disabled
     // staticCushionMs <= 0: tune between MIN_CUSHION_MS and MAX_CUSHION_MS
-    DelayTracker(int sampleRate, int channels, int staticCushionMs, int percentilePct)
+    // declaredLatencyMs: output latency we announce to the sender (RECORD Audio-Latency);
+    //   the sender shortens its lead by it, so scheduled mode adds it back
+    // scheduledCapMs: scheduled mode plays this much behind the sender at most (user's
+    //   "music delay"); <= 0 = exactly on the sender's schedule
+    DelayTracker(int sampleRate, int channels, int staticCushionMs, int percentilePct,
+                 int declaredLatencyMs, int scheduledCapMs)
         : mSampleRate(sampleRate), mChannels(channels),
           mAdaptive(staticCushionMs <= 0),
           mFloor(msToSamples(sampleRate, channels, mAdaptive ? MIN_CUSHION_MS : staticCushionMs)),
           mCeil(msToSamples(sampleRate, channels, mAdaptive ? MAX_CUSHION_MS : staticCushionMs)),
           mPercentilePct(percentilePct),
+          mDeclaredLatencyNs((int64_t)declaredLatencyMs * 1'000'000LL),
+          mScheduledCeil(msToSamples(sampleRate, channels,
+                                     scheduledCapMs > 0 ? std::min(scheduledCapMs, SCHEDULED_MAX_MS)
+                                                        : SCHEDULED_MAX_MS)),
           mTuned(mFloor) {}
 
-    // ptsNs: packet presentation time; arrivalNs: local arrival time; durNs: packet duration
+    // ptsNs: packet presentation time (wall clock); arrivalNs: local arrival time (monotonic,
+    // only compared against other arrivals); durNs: packet duration
     void observe(int64_t ptsNs, int64_t arrivalNs, int64_t durNs) {
+        if (mScheduled.load(std::memory_order_relaxed)) {
+            // backlog to hold = time until the write head is due to be heard, minus the
+            // output pipeline delay the read head still has ahead of it. pts lives in the
+            // wall-clock domain of RAOP's NTP sync, so measure "now" there too
+            int64_t targetNs = ptsNs + durNs + mDeclaredLatencyNs - realNs()
+                               - mOutputBufferNs.load(std::memory_order_relaxed);
+            mScheduledLeadNs.store(targetNs, std::memory_order_relaxed);
+            if (targetNs < 0) targetNs = 0;
+            size_t samples = (size_t)(targetNs * mSampleRate / NS_PER_SEC) * mChannels;
+            if (samples > mScheduledCeil) samples = mScheduledCeil;
+            mTuned.store(samples, std::memory_order_relaxed);
+            return;
+        }
         if (!mAdaptive) return;
 
         const int64_t raw = arrivalNs - ptsNs; // arrival latency
@@ -129,15 +168,32 @@ public:
     // jitter calculations; producer-thread only (same as observe())
     void reanchor() { mHaveBase = false; }
 
+    // switch between scheduled (sender-paced) and tuned cushion; must not run concurrently
+    // with observe(). leaving scheduled mode restarts the tuner from scratch
+    void setScheduled(bool on) {
+        if (on == mScheduled.load(std::memory_order_relaxed)) return;
+        mScheduled.store(on, std::memory_order_relaxed);
+        if (!on) {
+            memset(mHist, 0, sizeof(mHist));
+            mHaveBase = false;
+            mTuned.store(mFloor, std::memory_order_relaxed);
+        }
+    }
+
     // latest tuned cushion in samples; any thread
     size_t target() const { return mTuned.load(std::memory_order_relaxed); }
+
+    // scheduled mode diagnostics: last unclamped lead (may exceed the cushion ceiling); any thread
+    int64_t scheduledLeadNs() const { return mScheduledLeadNs.load(std::memory_order_relaxed); }
 
     void noteOutputBufferFrames(int frames) {
         mOutputBufferNs.store((int64_t)frames * NS_PER_SEC / mSampleRate, std::memory_order_relaxed);
     }
 
-    // largest cushion tuner can reach, in samples
-    size_t ceil() const { return mCeil; }
+    // largest cushion either mode can reach, in samples
+    size_t ceil() const {
+        return std::max(mCeil, msToSamples(mSampleRate, mChannels, SCHEDULED_MAX_MS));
+    }
 
 private:
     static size_t msToSamples(int sampleRate, int channels, int ms) {
@@ -146,6 +202,8 @@ private:
 
     static constexpr int MIN_CUSHION_MS = 0;             // algorithm already enforces effective floor
     static constexpr int MAX_CUSHION_MS = 1000;
+    // sender lead + declared latency is 2s for AirPlay audio; headroom for odd senders
+    static constexpr int SCHEDULED_MAX_MS = 2500;
     static constexpr int BUCKET_MS = 5;                  // histogram granularity
     static constexpr int NBUCKETS = MAX_CUSHION_MS / BUCKET_MS;
     static constexpr int64_t BUCKET_NS = (int64_t)BUCKET_MS * 1000000LL;
@@ -159,6 +217,10 @@ private:
     const size_t mFloor;
     const size_t mCeil;
     const int mPercentilePct;            // arrival-delay percentile cushion targets
+    const int64_t mDeclaredLatencyNs;    // scheduled mode: added back to the sender's lead
+    const size_t mScheduledCeil;         // scheduled mode: cushion cap in samples
+    std::atomic<bool> mScheduled{false};
+    std::atomic<int64_t> mScheduledLeadNs{0};  // diagnostics: last unclamped scheduled target
     std::atomic<size_t> mTuned;
     std::atomic<int64_t> mOutputBufferNs{0};  // output->producer: oboe output buffer duration
     int64_t mHist[NBUCKETS] = {};
@@ -206,10 +268,12 @@ private:
 class TimelineBuffer {
 public:
     // cushion policy lives in mTracker; timeline reads mTracker.target() live
-    TimelineBuffer(int sampleRate, int channels, int staticCushionMs, int percentilePct)
+    TimelineBuffer(int sampleRate, int channels, int staticCushionMs, int percentilePct,
+                   int declaredLatencyMs, int scheduledCapMs)
         : mSampleRate(sampleRate),
           mChannels(channels),
-          mTracker(sampleRate, channels, staticCushionMs, percentilePct),
+          mTracker(sampleRate, channels, staticCushionMs, percentilePct, declaredLatencyMs,
+                   scheduledCapMs),
           // ring can't be reallocated mid-stream: size for worst-case backlog, i.e. cap
           // of largest reachable cushion + one throttle window of overshoot (trims are
           // throttled), 2x slack
@@ -230,6 +294,11 @@ public:
         // consumer underran since last write: it already played the gap as real-time
         // silence, re-anchor so we don't also insert it here
         if (mUnderran.exchange(false, std::memory_order_relaxed)) {
+            mExpectedPtsNs = ptsNs;
+        }
+        // sender flushed: the stream restarts somewhere else on its timeline, so the first
+        // packet after it is neither a gap nor late
+        if (mReanchorOnWrite.exchange(false, std::memory_order_relaxed)) {
             mExpectedPtsNs = ptsNs;
         }
         const int64_t gapNs = ptsNs - mExpectedPtsNs;
@@ -263,6 +332,15 @@ public:
         const size_t need = (size_t)frames * mChannels;
         const size_t tuned = mTracker.target();
         const int64_t now = monoNs();
+
+        // sender flushed: drop what was buffered before the flush, keep what came after,
+        // and rebuild the cushion before playing on
+        if (mFlushRequested.exchange(false, std::memory_order_acquire)) {
+            mRing.skipTo(mFlushPos.load(std::memory_order_relaxed));
+            mPriming = true;
+            mLastTrimBlockNs = now;
+            mAboveCapSinceNs = 0;
+        }
 
         // bound latency: cap tracks tuned cushion live so a calmed link sheds latency
         // without an underrun. each trim costs a glitch, so be conservative: trim only
@@ -318,6 +396,21 @@ public:
     // call after discontinuity or clock shift/resync; producer-side, must not run
     // concurrently with write()
     void reanchorTracker() { mTracker.reanchor(); }
+
+    // audio-only sessions play on the sender's schedule, mirroring on the tuned cushion;
+    // must not run concurrently with write()
+    void setScheduled(bool on) { mTracker.setScheduled(on); }
+
+    // scheduled mode diagnostics: last unclamped sender lead in ms; any thread
+    int64_t scheduledLeadMs() const { return mTracker.scheduledLeadNs() / 1'000'000LL; }
+
+    // sender FLUSH (pause, seek, track change): discard everything buffered so far, keep
+    // audio written afterwards. any thread; consumer applies it on its next read
+    void flush() {
+        mFlushPos.store(mRing.writePos(), std::memory_order_relaxed);
+        mFlushRequested.store(true, std::memory_order_release);
+        mReanchorOnWrite.store(true, std::memory_order_relaxed);
+    }
 
     // rebuild prebuffer cushion before resuming, e.g. after output stream restart;
     // must not run concurrently with read()
@@ -380,6 +473,9 @@ private:
     int64_t mLastTrimBlockNs = 0;        // consumer-only: last trim/underrun time (trim throttle)
     int64_t mAboveCapSinceNs = 0;        // consumer-only: when backlog first exceeded cap (0 = under)
     std::atomic<bool> mUnderran{false};  // consumer->producer: underrun happened
+    std::atomic<bool> mFlushRequested{false};   // flush()->consumer: skip ring to mFlushPos
+    std::atomic<size_t> mFlushPos{0};           // write position at flush()
+    std::atomic<bool> mReanchorOnWrite{false};  // flush()->producer: next write re-anchors pts
 
     int64_t mExpectedPtsNs = 0;          // presentation time expected at write head
 };

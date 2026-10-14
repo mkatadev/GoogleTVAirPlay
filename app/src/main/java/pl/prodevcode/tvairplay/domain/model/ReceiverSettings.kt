@@ -3,6 +3,9 @@ package pl.prodevcode.tvairplay.domain.model
 /** Mirroring/audio trade-off between delay and smoothness. */
 enum class LatencyMode { LOW, BALANCED, SMOOTH }
 
+/** How much of the sender's ~2 s lead music keeps buffered; AIRPLAY = exactly on the sender's schedule. */
+enum class MusicDelay { SHORT, MEDIUM, AIRPLAY }
+
 val IDLE_DIM_OPTIONS = listOf(0, 1, 5, 15)
 
 /** UI language; SYSTEM follows the TV. */
@@ -26,6 +29,7 @@ data class ReceiverSettings(
     val advertiseVideo: Boolean = true,
     val advertiseAudio: Boolean = true,
     val latencyMode: LatencyMode = LatencyMode.BALANCED,
+    val musicDelay: MusicDelay = MusicDelay.AIRPLAY,
     /** Minutes of audio-only idling before the screen dims; 0 = never. */
     val idleDimMinutes: Int = 5,
     /** Show HLS subtitles in the system language without asking. */

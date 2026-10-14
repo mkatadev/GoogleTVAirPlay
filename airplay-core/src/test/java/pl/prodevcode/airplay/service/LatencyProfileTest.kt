@@ -43,4 +43,22 @@ class LatencyProfileTest {
         assertFalse(smooth.lowLatency)
         assertEquals(Prefs.ADAPTIVE_PERCENTILES[4], smooth.percentilePct)
     }
+
+    @Test fun `declared latency mirrors what the sender is told`() {
+        assertEquals(Prefs.DEF_AUDIO_LATENCY_MS, readAudioConfig(prefs).declaredLatencyMs)
+        prefs.edit().putInt(Prefs.AUDIO_LATENCY_MS, 400).apply()
+        assertEquals(400, readAudioConfig(prefs).declaredLatencyMs)
+        prefs.edit().putInt(Prefs.AUDIO_LATENCY_MS, -1).apply()
+        assertEquals(0, readAudioConfig(prefs).declaredLatencyMs)
+    }
+
+    @Test fun `music delay caps the scheduled buffer, airplay default leaves it uncapped`() {
+        assertEquals(MusicDelay.AIRPLAY, MusicDelay.fromPref(null))
+        assertEquals(MusicDelay.AIRPLAY, MusicDelay.fromPref("huge"))
+        assertEquals(0, readAudioConfig(prefs).scheduledCapMs)
+        prefs.edit().putString(Prefs.MUSIC_DELAY, MusicDelay.SHORT.pref).apply()
+        assertEquals(500, readAudioConfig(prefs).scheduledCapMs)
+        prefs.edit().putString(Prefs.MUSIC_DELAY, MusicDelay.MEDIUM.pref).apply()
+        assertEquals(1000, readAudioConfig(prefs).scheduledCapMs)
+    }
 }

@@ -127,6 +127,13 @@
     <string name="latency_balanced_desc">Default — good for most content</string>
     <string name="latency_smooth">Smooth</string>
     <string name="latency_smooth_desc">Larger buffer for video and shaky Wi-Fi; every frame is shown, delay grows slightly</string>
+    <string name="setting_music_delay">Music delay</string>
+    <string name="music_delay_short">Short</string>
+    <string name="music_delay_short_desc">About 0.5 s — music starts and resumes quickly; needs a solid Wi-Fi link</string>
+    <string name="music_delay_medium">Medium</string>
+    <string name="music_delay_medium_desc">About 1 s — room for most Wi-Fi hiccups and resent packets</string>
+    <string name="music_delay_airplay">AirPlay standard</string>
+    <string name="music_delay_airplay_desc">Default — about 2 s, exactly on the iPhone\'s schedule like every AirPlay speaker: most robust and in sync with other speakers</string>
 
     <!-- Idle dim -->
     <string name="setting_idle_dim">Dim screen while music plays</string>
@@ -180,6 +187,7 @@
     <string name="language_subtitle">Language of this app’s screens. The TV’s own language is not changed.</string>
     <string name="idle_dim_subtitle">While only music plays, the screen dims after this time. Any key on the remote wakes it.</string>
     <string name="latency_subtitle">Trade-off between delay and smoothness for screen mirroring. Applies immediately.</string>
+    <string name="music_delay_subtitle">How long music is buffered before it plays. The iPhone sends audio about 2 s ahead; a shorter buffer reacts faster but leaves less time for lost packets. Applies immediately.</string>
     <string name="trusted_devices_subtitle">Devices that entered the PIN once connect without asking again. Select one to forget it.</string>
 
     <!-- HomeKit -->

@@ -9,7 +9,7 @@ import pl.prodevcode.tvairplay.presentation.mvi.UiIntent
 import pl.prodevcode.tvairplay.presentation.mvi.UiState
 
 /** Screens reachable from the settings list; each has its own ViewModel. */
-enum class SettingsSub { DEVICE_NAME, LANGUAGE, IDLE_DIM, LATENCY, TRUSTED_DEVICES, HOMEKIT, DIAGNOSTICS, LICENSES }
+enum class SettingsSub { DEVICE_NAME, LANGUAGE, IDLE_DIM, LATENCY, MUSIC_DELAY, TRUSTED_DEVICES, HOMEKIT, DIAGNOSTICS, LICENSES }
 
 data class SettingsUiState(
     val settings: ReceiverSettings = ReceiverSettings(),

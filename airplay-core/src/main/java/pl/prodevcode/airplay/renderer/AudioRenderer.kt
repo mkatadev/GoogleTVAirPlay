@@ -49,7 +49,8 @@ class AudioRenderer {
         if (serverHandle == 0L) return
         NativeBridge.nativeServerAudioConfigure(
             serverHandle, config.cushionMs, config.percentilePct, config.oboeBufferFrames,
-            config.forceSwAlac, config.realtimePriority, config.lowLatency, config.benchmarkLog)
+            config.forceSwAlac, config.realtimePriority, config.lowLatency, config.benchmarkLog,
+            config.declaredLatencyMs, config.scheduledCapMs)
     }
 
     private val debugBuf = java.nio.ByteBuffer.allocateDirect(DEBUG_BUF_BYTES)
@@ -77,12 +78,13 @@ class AudioRenderer {
                           meanUs, maxUs, held, decodeErrors)
     }
 
+    // audioOnly: pure audio session (not mirroring audio), played on the sender's schedule
     @Synchronized
-    fun setFormat(ct: Int, spf: Int) {
+    fun setFormat(ct: Int, spf: Int, audioOnly: Boolean) {
         codecLabel = when (ct) {
             CT_ALAC -> "ALAC"; CT_AAC_LC -> "AAC-LC"; CT_AAC_ELD -> "AAC-ELD"; else -> "?"
         }
-        if (serverHandle != 0L) NativeBridge.nativeServerAudioFormat(serverHandle, ct, spf)
+        if (serverHandle != 0L) NativeBridge.nativeServerAudioFormat(serverHandle, ct, spf, audioOnly)
     }
 
     companion object {

@@ -27,6 +27,7 @@ import pl.prodevcode.tvairplay.presentation.settings.homekit.homeKitSummary
 import pl.prodevcode.tvairplay.presentation.settings.idledim.idleDimLabel
 import pl.prodevcode.tvairplay.presentation.settings.language.languageLabel
 import pl.prodevcode.tvairplay.presentation.settings.latency.latencyModeTitle
+import pl.prodevcode.tvairplay.presentation.settings.musicdelay.musicDelayTitle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import pl.prodevcode.tvairplay.presentation.theme.TvAirPlayTheme
@@ -131,6 +132,7 @@ private fun SettingsContent(ui: SettingsUiState, onIntent: (SettingsIntent) -> U
                 }
             }
             item { SubRow(SettingsSub.LATENCY, stringResource(R.string.setting_latency), stringResource(latencyModeTitle(s.latencyMode))) }
+            item { SubRow(SettingsSub.MUSIC_DELAY, stringResource(R.string.setting_music_delay), stringResource(musicDelayTitle(s.musicDelay))) }
 
             item { SectionHeader(stringResource(R.string.section_smart_home)) }
             item { SubRow(SettingsSub.HOMEKIT, stringResource(R.string.setting_homekit), homeKitSummary(s.homeKitEnabled, ui.homeKit)) }
