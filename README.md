@@ -165,21 +165,25 @@ Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material
 
 ### Third-party code & updates
 
-`airplay-core/src/main/cpp/third_party/` holds git submodules pinned to exact upstream commits — see
-[`third_party/VERSIONS.md`](airplay-core/src/main/cpp/third_party/VERSIONS.md). Local fixes to UxPlay live in
+`airplay-core/src/main/cpp/third_party/` holds git submodules pinned to the **newest official release** of each
+upstream (a release tag — never main/master/develop) — see
+[`third_party/VERSIONS.md`](airplay-core/src/main/cpp/third_party/VERSIONS.md). The one exception is openssl-cmake,
+which publishes no tags and follows its `v3` branch; the OpenSSL it builds (`OPENSSL_BUILD_VERSION` in
+`airplay-core/src/main/cpp/CMakeLists.txt`) is the newest release its download mirror offers. Local fixes to UxPlay live in
 `airplay-core/src/main/cpp/patches/UxPlay/*.patch` and are applied at CMake configure time onto a copy in the build
 directory, so the submodules themselves stay pristine.
 
 ```bash
-tools/third-party.sh status                    # pinned version per component vs. what upstream has
-tools/third-party.sh update UxPlay v1.75       # bump one component (tag / branch / sha), re-check patches, refresh VERSIONS.md
-tools/third-party.sh update ffmpeg n9.0.2
+tools/third-party.sh status                    # pinned release per component vs. the newest release upstream
+tools/third-party.sh update UxPlay             # move one component to its newest release tag, re-check patches, refresh VERSIONS.md
+tools/third-party.sh update ffmpeg n9.0.2      # or pin an explicit tag
+tools/third-party.sh check-releases            # every pin is an official release tag (CI runs this)
 tools/third-party.sh verify-patches            # do the UxPlay patches still apply to the pinned commit?
 tools/third-party.sh rebase-patches            # scratch checkout to fix patches that stopped applying
 ```
 
-After an update: build, test on a TV, then commit the submodule pointer together with `VERSIONS.md`. CI rejects stale
-`VERSIONS.md` and broken patches. Cloned without `--recurse-submodules`? The CMake configure step runs
+After an update: build, test on a TV, then commit the submodule pointer together with `VERSIONS.md`. CI rejects pins that
+are not release tags, stale `VERSIONS.md` and broken patches. Cloned without `--recurse-submodules`? The CMake configure step runs
 `git submodule update --init` for you. GitHub's *Download ZIP* does **not** include submodules — use the
 `*-full-source.tar.gz` asset from Releases instead.
 
