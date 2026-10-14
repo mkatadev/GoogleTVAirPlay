@@ -96,6 +96,23 @@ Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad 
 
 Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przytrzymaj, aby przyspieszyć) · **▲ ▼** skok ±10 % · **0–9** skok do 0–90 % · **Wstecz** stop. Jeśli strumień ma kilka ścieżek audio lub napisy, **▼** otwiera menu ścieżek.
 
+## Znane problemy
+
+**Zakończenie sesji muzycznej z poziomu telewizora zostawia na iPhonie wybrane „Google TV” (iOS 26/27).** Gdy na TV
+naciśniesz *Wstecz* / *Zakończ* (albo TV zaśnie), odbiornik pauzuje muzykę, informuje iPhone'a, że przestał być wyjściem
+(DACP `device-prevent-playback`) i zamyka połączenie — dokładnie tak, jak robią to głośniki AirPlay. iPhone rejestruje
+rozłączenie, ale iOS 26/27 automatycznie przekierowuje dźwięk tylko dla endpointów **AirPlay 2** (zarządza nimi w
+„agregacie”); klasyczny endpoint AirPlay/RAOP, jakim jest ten odbiornik, pozostaje wybrany, dopóki nie wskażesz innego
+wyjścia w Centrum sterowania lub w menu AirPlay aplikacji. Odtwarzanie jest zapauzowane, więc nic nie gra w pustkę.
+Przetestowano każdy sygnał, jaki odbiornik może wysłać — bez skutku: zamknięcie gniazda, DACP
+`prevent-playback`/`pause`/`stop`, wycofanie rekordów Bonjour, pełny restart odbiornika, a nawet powrót jako inne
+urządzenie. Zakończenie sesji na iPhonie, mirroring ekranu i odtwarzanie wideo działają poprawnie.
+
+*Możliwa naprawa:* buforowane audio AirPlay 2. Poza parowaniem HAP i szyfrowanym kanałem sterującym (kryptografia jest
+już w `:homekit`) wymaga ono synchronizacji PTP na portach UDP 319/320 — uprzywilejowanych, których aplikacja Android nie
+może otworzyć bez **roota**. Dopóki Apple nie przywróci klasycznego zachowania albo nie zaakceptuje AirPlay 2 bez PTP, nie
+da się tego naprawić po stronie telewizora; jedyna realna droga to build na zrootowane urządzenie.
+
 ## Budowanie ze źródeł
 
 Wymagania: JDK 17, Android SDK 37, NDK 28.2 + CMake 3.22 (Android Studio doinstaluje na żądanie), `make`, `perl`.
@@ -165,21 +182,25 @@ Stack: AGP 9.4 (wbudowany Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-materia
 
 ### Kod third-party i aktualizacje
 
-`airplay-core/src/main/cpp/third_party/` to submoduły git przypięte do konkretnych commitów upstreamu — patrz
-[`third_party/VERSIONS.md`](airplay-core/src/main/cpp/third_party/VERSIONS.md). Lokalne poprawki do UxPlay leżą w
+`airplay-core/src/main/cpp/third_party/` to submoduły git przypięte do **najnowszego oficjalnego wydania** każdego
+upstreamu (tag wydania — nigdy main/master/develop) — patrz
+[`third_party/VERSIONS.md`](airplay-core/src/main/cpp/third_party/VERSIONS.md). Jedyny wyjątek to openssl-cmake, który
+nie publikuje tagów i śledzi swoją gałąź `v3`; budowany przez niego OpenSSL (`OPENSSL_BUILD_VERSION` w
+`airplay-core/src/main/cpp/CMakeLists.txt`) to najnowsze wydanie dostępne na jego mirrorze. Lokalne poprawki do UxPlay leżą w
 `airplay-core/src/main/cpp/patches/UxPlay/*.patch` i są nakładane podczas konfiguracji CMake na kopię w katalogu
 build — same submoduły pozostają nietknięte.
 
 ```bash
-tools/third-party.sh status                    # przypięta wersja każdego komponentu vs. co ma upstream
-tools/third-party.sh update UxPlay v1.75       # podbij jeden komponent (tag / gałąź / sha), sprawdź patche, odśwież VERSIONS.md
-tools/third-party.sh update ffmpeg n9.0.2
+tools/third-party.sh status                    # przypięte wydanie każdego komponentu vs. najnowsze wydanie upstreamu
+tools/third-party.sh update UxPlay             # przenieś komponent na najnowszy tag wydania, sprawdź patche, odśwież VERSIONS.md
+tools/third-party.sh update ffmpeg n9.0.2      # albo przypnij konkretny tag
+tools/third-party.sh check-releases            # każdy pin jest oficjalnym tagiem wydania (uruchamia to CI)
 tools/third-party.sh verify-patches            # czy patche UxPlay nadal nakładają się na przypięty commit?
 tools/third-party.sh rebase-patches            # roboczy checkout do naprawy patchy, które przestały się nakładać
 ```
 
-Po aktualizacji: build, test na TV, commit wskaźnika submodułu razem z `VERSIONS.md`. CI odrzuca nieaktualny
-`VERSIONS.md` i niedziałające patche. Sklonowane bez `--recurse-submodules`? Krok konfiguracji CMake sam uruchomi
+Po aktualizacji: build, test na TV, commit wskaźnika submodułu razem z `VERSIONS.md`. CI odrzuca piny niebędące tagami
+wydań, nieaktualny `VERSIONS.md` i niedziałające patche. Sklonowane bez `--recurse-submodules`? Krok konfiguracji CMake sam uruchomi
 `git submodule update --init`. *Download ZIP* na GitHubie **nie** zawiera submodułów — użyj `*-full-source.tar.gz` z Releases.
 
 ## Licencja

@@ -1,11 +1,8 @@
 diff --git a/lib/airplay_video.c b/lib/airplay_video.c
-index 8fa87ff..56ba9d0 100644
+index 19505b2..32fa7c6 100644
 --- a/lib/airplay_video.c
 +++ b/lib/airplay_video.c
-@@ -73,3 +73,15 @@
-     char type;
- } slice_t;
- 
+@@ -66,0 +67,12 @@ struct airplay_video_s {
 +static char *_raw_copy_playlist(const char *s) {
 +    size_t len = strlen(s);
 +    char *copy = (char *) malloc(len + 1);
@@ -18,9 +15,7 @@ index 8fa87ff..56ba9d0 100644
 +    return copy;
 +}
 +
-@@ -968,9 +980,11 @@
-     for (int i = 0; i < num ; i++) {
-         if (strcmp(media_data_store[i].uri, media_data_store[num].uri) == 0) {
+@@ -634,4 +646,6 @@ int store_media_playlist(airplay_video_t *airplay_video, char * media_playlist,
 -            assert(strcmp(media_data_store[i].playlist, media_playlist) == 0);
 -            media_data_store[num].num = i;
 -            free (media_playlist);
@@ -31,13 +26,7 @@ index 8fa87ff..56ba9d0 100644
 +                return 1;
 +            }
 +            break;
-         }
-     }
-     media_item_t *media_item = &media_data_store[num];
-@@ -1122,4 +1136,18 @@
-     return new_master;
- }
- 
+@@ -793,0 +808,14 @@ char *adjust_master_playlist (char *fcup_response_data, int fcup_response_datale
 +static char *_quoted_field(const char *hay, const char *key, size_t *len) {
 +    const char *begin = strstr(hay, key);
 +    if (begin) begin = strchr(begin, '"');
@@ -52,9 +41,7 @@ index 8fa87ff..56ba9d0 100644
 +    return val;
 +}
 +
- char *adjust_yt_condensed_playlist(const char *media_playlist) {
-@@ -1130,49 +1158,21 @@
- 
+@@ -800,6 +828,3 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 -    const char *base_uri_begin;
 -    const char *params_begin;
 -    const char *prefix_begin;
@@ -64,12 +51,11 @@ index 8fa87ff..56ba9d0 100644
 +    size_t base_uri_len = 0;
 +    size_t params_len = 0;
 +    size_t prefix_len = 0;
-     const char* ptr = strstr(media_playlist, "#EXTM3U\n");
+@@ -806,0 +832 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 +    if (!ptr) return _raw_copy_playlist(media_playlist);
- 
-     ptr += strlen("#EXTM3U\n");
+@@ -809 +834,0 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 -    assert(ptr);
-     if (strncmp(ptr, "#YT-EXT-CONDENSED-URL", strlen("#YT-EXT-CONDENSED-URL"))) {
+@@ -811,36 +836,11 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 -        size_t len = strlen(media_playlist);
 -        char * playlist_copy = (char *) malloc(len + 1);
 -        if (!playlist_copy) {
@@ -117,63 +103,26 @@ index 8fa87ff..56ba9d0 100644
 +        free(prefix);
 +        return _raw_copy_playlist(media_playlist);
 +    }
- 
-@@ -1217,8 +1217,7 @@
-     }
- 
-     size_t old_size = strlen(media_playlist);
+@@ -889,2 +889 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 -    size_t new_len = old_size;
 -    new_len += count * (base_uri_len + params_len);
 +    size_t new_len = old_size + (size_t) count * (base_uri_len + params_len + 2 * nparams + 2);
- 
-     char * new_playlist = (char *) malloc(new_len + 1);
-     if (!new_playlist) {
-@@ -1230,4 +1229,4 @@
-     char *new_pos = new_playlist;
-     ptr = old_pos;
-     ptr = strstr(old_pos, "#EXTINF:");
+@@ -903 +902 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 -    size_t len = ptr - old_pos;
 +    size_t len = (ptr ? ptr : old_pos + strlen(old_pos)) - old_pos;
-@@ -1240,3 +1239,4 @@
-         const char *end = NULL;
-         const char *start = strstr(ptr, prefix);
+@@ -912,0 +912 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 +        if (!start) break;
-         len = start - ptr;
-@@ -1269,6 +1269,7 @@
-             *new_pos = '/';
-             new_pos++;
- 
+@@ -947,0 +948 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
 +            if (!end) end = old_pos + strlen(old_pos);
-             len = end - old_pos;
-             end++;
- 
-@@ -1287,6 +1288,9 @@
-     new_pos += len;
-     old_pos += len;
- 
+@@ -968 +969,2 @@ char *adjust_yt_condensed_playlist(const char *media_playlist) {
+-    assert(byte_count == (int) new_len);
 +    *new_pos = '\0';
-+    assert(new_pos <= new_playlist + new_len);
-+
-     free (prefix);
-     free (base_uri);
-     free (params);
++    assert(byte_count <= (int) new_len);
 diff --git a/lib/http_handlers.h b/lib/http_handlers.h
-index b92bf75..13c9685 100644
+index 7984be8..aa985bf 100644
 --- a/lib/http_handlers.h
 +++ b/lib/http_handlers.h
-@@ -397,7 +397,6 @@
- 
-     raop_t *raop = conn->raop;
-     airplay_video_t *airplay_video = (airplay_video_t *) hls_get_current_video(raop);
+@@ -471 +470,0 @@ http_handler_action(raop_conn_t *conn, http_request_t *request, http_response_t
 -    assert(airplay_video);
-     bool data_is_plist = false;
-     plist_t req_root_node = NULL;
-     uint64_t uint_val = 0;
-@@ -405,6 +404,7 @@
-     int fcup_response_statuscode = 0;
-     char *type = NULL;
-     bool logger_debug = (logger_get_level(raop->logger) >= LOGGER_DEBUG);
+@@ -478,0 +478 @@ http_handler_action(raop_conn_t *conn, http_request_t *request, http_response_t
 +    if (!airplay_video) goto post_action_error;
- 
-     const char* session_id = http_request_get_header(request, "X-Apple-Session-ID");
-     if (!session_id) {

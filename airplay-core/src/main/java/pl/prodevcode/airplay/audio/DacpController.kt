@@ -46,6 +46,12 @@ class DacpController(ctx: Context) {
     fun beginRewind() = _send("/ctrl-int/1/beginrew")
     fun playResume() = _send("/ctrl-int/1/playresume")
 
+    /**
+     * "This device switched to another source": the DACP property AirPlay speakers and TVs set when they
+     * stop being an output, so the sender learns about an intentional stop instead of a dead socket.
+     */
+    fun preventPlayback() = _send("/ctrl-int/1/setproperty?dmcp.device-prevent-playback=1")
+
     fun reset() {
         dacpId = ""
         activeRemote = ""
@@ -60,7 +66,8 @@ class DacpController(ctx: Context) {
 
     private fun _resolve() {
         if (dacpId.isEmpty()) return
-        val serviceName = "iTunes_Ctrl_$dacpId"
+        // the DACP-ID header drops leading zeros, the Bonjour name always carries all 16 hex digits
+        val serviceName = "iTunes_Ctrl_${dacpId.padStart(16, '0')}"
         val info = NsdServiceInfo().apply {
             serviceType = "_dacp._tcp"
             this.serviceName = serviceName
@@ -110,6 +117,10 @@ class DacpController(ctx: Context) {
 
     private fun _send(path: String): ListenableFuture<Unit> {
         val result = SettableFuture.create<Unit>()
+        // snapshot now: reset() may clear the endpoint before the executor gets to run
+        val host = host
+        val port = port
+        val activeRemote = activeRemote
         if (host.isEmpty() || activeRemote.isEmpty()) {
             result.setException(IOException("dacp endpoint not resolved"))
             return result

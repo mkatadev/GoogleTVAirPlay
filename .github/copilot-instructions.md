@@ -16,7 +16,7 @@
 
 - `airplay-core/src/main/cpp/third_party/*` are git submodules pinned to exact upstream commits. Never edit files inside submodules.
 - Local changes to UxPlay go to `airplay-core/src/main/cpp/patches/UxPlay/*.patch` and are applied at CMake configure time.
-- Bump components only via `tools/third-party.sh update <component> <ref>`; commit the submodule pointer together with `third_party/VERSIONS.md`. CI rejects stale `VERSIONS.md` and patches that do not apply.
+- **Pin only official releases** (upstream release tags — never main/master/develop; openssl-cmake has no tags and follows `v3`, its OpenSSL is the newest release on its mirror). Bump via `tools/third-party.sh update <component>` (defaults to the newest release tag); commit the submodule pointer together with `third_party/VERSIONS.md`. CI rejects pins that are not release tags (`check-releases`), stale `VERSIONS.md` and patches that do not apply.
 
 ## Documentation
 

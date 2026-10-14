@@ -96,6 +96,23 @@ Afterwards open the app once and grant **Display over other apps** so playback c
 
 While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to accelerate) · **▲ ▼** jump ±10 % · **0–9** jump to 0–90 % · **Back** stop. If the stream has several audio tracks or subtitles, **▼** opens the track menu instead.
 
+## Known issues
+
+**Ending a music session from the TV leaves "Google TV" selected on the iPhone (iOS 26/27).** When you press *Back* /
+*End* on the TV (or the TV goes to sleep), the receiver pauses the music, tells the iPhone it is no longer an output
+(DACP `device-prevent-playback`) and closes the connection — exactly what AirPlay speakers do. The iPhone registers the
+disconnect, but iOS 26/27 re-routes audio automatically only for **AirPlay 2** endpoints (it manages them in an
+"endpoint aggregate"); a classic AirPlay/RAOP endpoint such as this receiver just stays selected until you pick another
+output in Control Center or the app's AirPlay menu. Playback is paused, so nothing plays into the void. Every signal a
+receiver can send was tested without effect: closing the socket, DACP `prevent-playback`/`pause`/`stop`, withdrawing the
+Bonjour records, a full receiver restart, even coming back as a different device. Ending the session on the iPhone, screen
+mirroring and video playback are not affected.
+
+*Possible fix:* AirPlay 2 buffered audio. Besides HAP pairing and an encrypted control channel (the crypto already exists
+in `:homekit`), it needs PTP timing on UDP ports 319/320 — privileged ports an Android app cannot bind without **root**.
+Until Apple restores the classic behaviour or accepts AirPlay 2 without PTP, this cannot be fixed from the TV side; a
+rooted-device build is the only realistic path.
+
 ## Build from source
 
 Requirements: JDK 17, Android SDK 37, NDK 28.2 + CMake 3.22 (installed by Android Studio on demand), `make`, `perl`.
@@ -165,21 +182,25 @@ Stack: AGP 9.4 (built-in Kotlin), Compose BOM 2026.09 + `androidx.tv:tv-material
 
 ### Third-party code & updates
 
-`airplay-core/src/main/cpp/third_party/` holds git submodules pinned to exact upstream commits — see
-[`third_party/VERSIONS.md`](airplay-core/src/main/cpp/third_party/VERSIONS.md). Local fixes to UxPlay live in
+`airplay-core/src/main/cpp/third_party/` holds git submodules pinned to the **newest official release** of each
+upstream (a release tag — never main/master/develop) — see
+[`third_party/VERSIONS.md`](airplay-core/src/main/cpp/third_party/VERSIONS.md). The one exception is openssl-cmake,
+which publishes no tags and follows its `v3` branch; the OpenSSL it builds (`OPENSSL_BUILD_VERSION` in
+`airplay-core/src/main/cpp/CMakeLists.txt`) is the newest release its download mirror offers. Local fixes to UxPlay live in
 `airplay-core/src/main/cpp/patches/UxPlay/*.patch` and are applied at CMake configure time onto a copy in the build
 directory, so the submodules themselves stay pristine.
 
 ```bash
-tools/third-party.sh status                    # pinned version per component vs. what upstream has
-tools/third-party.sh update UxPlay v1.75       # bump one component (tag / branch / sha), re-check patches, refresh VERSIONS.md
-tools/third-party.sh update ffmpeg n9.0.2
+tools/third-party.sh status                    # pinned release per component vs. the newest release upstream
+tools/third-party.sh update UxPlay             # move one component to its newest release tag, re-check patches, refresh VERSIONS.md
+tools/third-party.sh update ffmpeg n9.0.2      # or pin an explicit tag
+tools/third-party.sh check-releases            # every pin is an official release tag (CI runs this)
 tools/third-party.sh verify-patches            # do the UxPlay patches still apply to the pinned commit?
 tools/third-party.sh rebase-patches            # scratch checkout to fix patches that stopped applying
 ```
 
-After an update: build, test on a TV, then commit the submodule pointer together with `VERSIONS.md`. CI rejects stale
-`VERSIONS.md` and broken patches. Cloned without `--recurse-submodules`? The CMake configure step runs
+After an update: build, test on a TV, then commit the submodule pointer together with `VERSIONS.md`. CI rejects pins that
+are not release tags, stale `VERSIONS.md` and broken patches. Cloned without `--recurse-submodules`? The CMake configure step runs
 `git submodule update --init` for you. GitHub's *Download ZIP* does **not** include submodules — use the
 `*-full-source.tar.gz` asset from Releases instead.
 

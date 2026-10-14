@@ -19,6 +19,8 @@ jobs:
         with:
           submodules: recursive
       - run: tools/third-party.sh verify-patches
+      - name: Pins are official releases
+        run: tools/third-party.sh check-releases
       - name: VERSIONS.md is up to date
         run: |
           tools/third-party.sh versions

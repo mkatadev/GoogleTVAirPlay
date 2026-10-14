@@ -19,6 +19,9 @@ import android.view.Surface
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
@@ -478,14 +481,15 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     /**
-     * The TV went to sleep: take the receiver off the network so senders drop the AirPlay route
-     * instead of streaming into a dark screen (a mere restart keeps the route selected on iOS).
-     * It comes back on its own when the screen turns on; the service stays alive meanwhile.
+     * The TV went to sleep: pause the sender and take the receiver off the network instead of streaming
+     * into a dark screen. iOS 26/27 keeps a classic AirPlay route selected regardless (see README, Known
+     * issues). It comes back on its own when the screen turns on; the service stays alive meanwhile.
      */
     private fun onScreenOff() {
         if (_serverState.value != ServerState.RUNNING) return
         log("Screen off, suspending receiver")
         resumeOnScreenOn = true
+        notifySenderOfStop()
         shutdownReceiver()
         notifications.update()
     }
@@ -549,11 +553,38 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         if (_connectionCount.value == 0 && !video.active.value) return
         log("Session ended by the user")
         if (video.active.value) endVideoPlayback("AirPlay Video stopped (user)")
-        NativeBridge.nativeDisconnectClients(nativeHandle)
+        // the sockets go only after the sender has acknowledged, so the signals cannot arrive out of order
+        val notified = notifySenderOfStop()
         // the user closed it: no grace period, the UI returns to idle at once
         mainHandler.removeCallbacks(sessionEnd)
         liveConnections = 0
         finishSession()
+        if (notified == null) {
+            dropConnections()
+        } else {
+            notified.addListener({
+                val sent = runCatching { Futures.getDone(notified) }
+                Log.i(TAG, if (sent.isSuccess) "Sender told to stop (DACP)" else "DACP stop not delivered: ${sent.exceptionOrNull()?.message}")
+                mainHandler.post(::dropConnections)
+            }, MoreExecutors.directExecutor())
+        }
+    }
+
+    private fun dropConnections() {
+        if (nativeHandle == 0L) return
+        NativeBridge.nativeDisconnectClients(nativeHandle)
+    }
+
+    /**
+     * Courtesy signal before the receiver goes away, like a speaker switching input: pause the music (audio
+     * sessions only) and declare we are no longer an output (ReceiverSentPreventPlayback). iOS keeps the
+     * route selected regardless, but at least playback does not run on in silence.
+     */
+    private fun notifySenderOfStop(): ListenableFuture<Unit>? {
+        val dacp = dacpController ?: return null
+        if (_connectionCount.value == 0) return null
+        if (_audioOnly.value) dacp.pause()
+        return dacp.preventPlayback()
     }
 
     fun togglePlayPause() {
@@ -636,8 +667,14 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     override fun onConnectionDestroy() {
-        // already closed from the TV side: the native teardown that follows has nothing left to do
-        if (liveConnections == 0 && _connectionCount.value == 0) return
+        // already closed from the TV side: the native teardown that follows has nothing left to do, except
+        // dropping metadata the sender pushed between the session end and the socket actually closing
+        if (liveConnections == 0 && _connectionCount.value == 0) {
+            nowPlaying.clear()
+            refreshDacpPlayer()
+            updateNotification()
+            return
+        }
         liveConnections = (liveConnections - 1).coerceAtLeast(0)
         if (liveConnections > 0) {
             _connectionCount.value = (_connectionCount.value - 1).coerceAtLeast(1)
