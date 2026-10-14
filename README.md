@@ -21,7 +21,7 @@ Photos, music and video from your iPhone, iPad or Mac — straight to the big sc
 
 - 📺 **Screen mirroring** from iPhone, iPad and Mac
 - 🎬 **Video & photos** — the TV plays the stream itself (HLS), with D-pad seeking, **audio track and subtitle selection**
-- 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info; plays on the sender's schedule (~2 s buffer, like any AirPlay speaker), so lost or late Wi-Fi packets are resent in time instead of causing drop-outs
+- 🎵 **Music** — shows up as an AirPlay speaker, with cover art and track info; plays on the sender's schedule (~2 s buffer, like any AirPlay speaker), so lost or late Wi-Fi packets are resent in time instead of causing drop-outs — *Settings → Music delay* trades that for a faster start (Short ≈ 0.5 s, Medium ≈ 1 s)
 - ⚡ **Hardware decoding** — H.264 and HEVC (H.265) when the TV supports it
 - ⏱️ **Latency presets** — Low / Balanced / Smooth, switchable live for games vs. shaky Wi-Fi
 - 🔒 **PIN pairing** (on by default) — devices that entered the PIN once are remembered; manage them under *Settings → Trusted devices*

@@ -21,7 +21,7 @@ Zdjęcia, muzyka i wideo z iPhone’a, iPada lub Maca — prosto na duży ekran.
 
 - 📺 **Mirroring ekranu** z iPhone’a, iPada i Maca
 - 🎬 **Wideo i zdjęcia** — telewizor sam odtwarza strumień (HLS), przewijanie pilotem, **wybór ścieżki audio i napisów**
-- 🎵 **Muzyka** — widoczny jako głośnik AirPlay, z okładką i informacjami o utworze; gra według harmonogramu nadawcy (~2 s bufora, jak każdy głośnik AirPlay), więc zgubione lub spóźnione pakiety Wi-Fi zdążą zostać retransmitowane zamiast powodować przerwy
+- 🎵 **Muzyka** — widoczny jako głośnik AirPlay, z okładką i informacjami o utworze; gra według harmonogramu nadawcy (~2 s bufora, jak każdy głośnik AirPlay), więc zgubione lub spóźnione pakiety Wi-Fi zdążą zostać retransmitowane zamiast powodować przerwy — *Ustawienia → Opóźnienie muzyki* pozwala to zamienić na szybszy start (Krótkie ≈ 0,5 s, Średnie ≈ 1 s)
 - ⚡ **Dekodowanie sprzętowe** — H.264 i HEVC (H.265), gdy telewizor to wspiera
 - ⏱️ **Presety opóźnienia** — Niskie / Zrównoważone / Płynne, przełączane na żywo (gry vs. słabe Wi-Fi)
 - 🔒 **Parowanie PIN-em** (domyślnie włączone) — urządzenia, które raz wpisały PIN, są zapamiętywane; zarządzasz nimi w *Ustawienia → Zaufane urządzenia*

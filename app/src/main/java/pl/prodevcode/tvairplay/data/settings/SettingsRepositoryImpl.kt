@@ -14,8 +14,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import pl.prodevcode.airplay.Prefs
 import pl.prodevcode.airplay.service.LatencyMode as CoreLatencyMode
+import pl.prodevcode.airplay.service.MusicDelay as CoreMusicDelay
 import pl.prodevcode.tvairplay.domain.model.AppLanguage
 import pl.prodevcode.tvairplay.domain.model.LatencyMode
+import pl.prodevcode.tvairplay.domain.model.MusicDelay
 import pl.prodevcode.tvairplay.platform.AppLocale
 import pl.prodevcode.tvairplay.domain.model.ReceiverSettings
 import pl.prodevcode.tvairplay.domain.repository.SettingsRepository
@@ -69,6 +71,7 @@ class SettingsRepositoryImpl @Inject constructor(
         subtitlesByDefault = prefs.getBoolean(Prefs.SUBTITLES_DEFAULT, Prefs.DEF_SUBTITLES_DEFAULT),
         language = AppLanguage.fromTag(prefs.getString(KEY_LANGUAGE, null) ?: appLocale.current()),
         latencyMode = CoreLatencyMode.fromPref(prefs.getString(Prefs.LATENCY_MODE, Prefs.DEF_LATENCY_MODE)).toDomain(),
+        musicDelay = CoreMusicDelay.fromPref(prefs.getString(Prefs.MUSIC_DELAY, Prefs.DEF_MUSIC_DELAY)).toDomain(),
         homeKitEnabled = prefs.getBoolean(Prefs.HOMEKIT_ENABLED, Prefs.DEF_HOMEKIT_ENABLED),
     )
 
@@ -83,6 +86,7 @@ class SettingsRepositoryImpl @Inject constructor(
         putBoolean(Prefs.ADVERTISE_VIDEO, s.advertiseVideo)
         putBoolean(Prefs.ADVERTISE_AUDIO, s.advertiseAudio)
         putString(Prefs.LATENCY_MODE, s.latencyMode.toCore().pref)
+        putString(Prefs.MUSIC_DELAY, s.musicDelay.toCore().pref)
         putInt(Prefs.IDLE_DIM_MINUTES, s.idleDimMinutes)
         putBoolean(Prefs.SUBTITLES_DEFAULT, s.subtitlesByDefault)
         putBoolean(Prefs.HOMEKIT_ENABLED, s.homeKitEnabled)
@@ -100,6 +104,18 @@ class SettingsRepositoryImpl @Inject constructor(
         LatencyMode.LOW -> CoreLatencyMode.LOW
         LatencyMode.BALANCED -> CoreLatencyMode.BALANCED
         LatencyMode.SMOOTH -> CoreLatencyMode.SMOOTH
+    }
+
+    private fun CoreMusicDelay.toDomain() = when (this) {
+        CoreMusicDelay.SHORT -> MusicDelay.SHORT
+        CoreMusicDelay.MEDIUM -> MusicDelay.MEDIUM
+        CoreMusicDelay.AIRPLAY -> MusicDelay.AIRPLAY
+    }
+
+    private fun MusicDelay.toCore() = when (this) {
+        MusicDelay.SHORT -> CoreMusicDelay.SHORT
+        MusicDelay.MEDIUM -> CoreMusicDelay.MEDIUM
+        MusicDelay.AIRPLAY -> CoreMusicDelay.AIRPLAY
     }
 
     private companion object {

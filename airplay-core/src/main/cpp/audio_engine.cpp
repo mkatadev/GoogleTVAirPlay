@@ -39,6 +39,7 @@ struct AudioConfig {
     const bool lowLatency;       // low-latency decoder + oboe low-latency output
     const bool benchmarkLog;     // periodically log decoder stats
     const int declaredLatencyMs; // Audio-Latency announced to the sender (scheduled playout adds it back)
+    const int scheduledCapMs;    // audio-only buffer cap; 0 = exactly on the sender's schedule
 };
 
 struct CodecFormat {
@@ -191,7 +192,7 @@ private:
         mDecLatency.setEnableLogging(cfg.benchmarkLog);
         mTimeline = std::make_shared<TimelineBuffer>(mSampleRate, mChannels,
                                                      cfg.staticCushionMs, cfg.percentilePct,
-                                                     cfg.declaredLatencyMs);
+                                                     cfg.declaredLatencyMs, cfg.scheduledCapMs);
         mOutput = AudioOutput::create(mSampleRate, mChannels, cfg.oboeBufferFrames,
                                       cfg.lowLatency, mTimeline, mLog);
         mApplied = std::make_unique<AudioConfig>(cfg);
@@ -258,10 +259,12 @@ void audio_engine_set_default_stream_values(int sampleRate, int framesPerBurst) 
 
 bool audio_engine_configure(AudioEngine *engine, int cushionMs, int percentilePct,
                             int oboeBufferFrames, bool forceSwAlac, bool realtimePriority,
-                            bool lowLatency, bool benchmarkLog, int declaredLatencyMs) {
+                            bool lowLatency, bool benchmarkLog, int declaredLatencyMs,
+                            int scheduledCapMs) {
     if (!engine) return false;
     return engine->configure({cushionMs, percentilePct, oboeBufferFrames, forceSwAlac,
-                              realtimePriority, lowLatency, benchmarkLog, declaredLatencyMs});
+                              realtimePriority, lowLatency, benchmarkLog, declaredLatencyMs,
+                              scheduledCapMs});
 }
 
 void audio_engine_on_format(AudioEngine *engine, int ct, int spf, bool audioOnly) {

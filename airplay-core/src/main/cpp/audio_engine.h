@@ -22,10 +22,12 @@ typedef struct LogSink LogSink;
  * see: https://github.com/google/oboe/blob/main/docs/GettingStarted.md#obtaining-optimal-latency */
 void audio_engine_set_default_stream_values(int sampleRate, int framesPerBurst);
 
-/* change engine config; any thread. declaredLatencyMs = Audio-Latency announced to the sender */
+/* change engine config; any thread. declaredLatencyMs = Audio-Latency announced to the sender;
+ * scheduledCapMs = audio-only buffer cap, 0 = play exactly on the sender's schedule */
 bool audio_engine_configure(AudioEngine *engine, int cushionMs, int percentilePct,
                             int oboeBufferFrames, bool forceSwAlac, bool realtimePriority,
-                            bool lowLatency, bool benchmarkLog, int declaredLatencyMs);
+                            bool lowLatency, bool benchmarkLog, int declaredLatencyMs,
+                            int scheduledCapMs);
 
 /* sender is switching audio formats; audioOnly = pure audio session (not mirroring audio),
  * which plays on the sender's schedule instead of the low-latency cushion */

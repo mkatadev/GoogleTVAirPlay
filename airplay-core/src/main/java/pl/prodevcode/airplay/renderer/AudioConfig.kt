@@ -16,5 +16,7 @@ data class AudioConfig(
     val benchmarkLog: Boolean = false,
     // Audio-Latency we announce to the sender; audio-only playout runs on the sender's
     // schedule and adds it back on top of the sender's lead
-    val declaredLatencyMs: Int = Prefs.DEF_AUDIO_DELAY_MS,
+    val declaredLatencyMs: Int = Prefs.DEF_AUDIO_LATENCY_MS,
+    // audio-only buffer cap in ms; 0 = play exactly on the sender's schedule
+    val scheduledCapMs: Int = 0,
 )

@@ -50,7 +50,7 @@ class AudioRenderer {
         NativeBridge.nativeServerAudioConfigure(
             serverHandle, config.cushionMs, config.percentilePct, config.oboeBufferFrames,
             config.forceSwAlac, config.realtimePriority, config.lowLatency, config.benchmarkLog,
-            config.declaredLatencyMs)
+            config.declaredLatencyMs, config.scheduledCapMs)
     }
 
     private val debugBuf = java.nio.ByteBuffer.allocateDirect(DEBUG_BUF_BYTES)

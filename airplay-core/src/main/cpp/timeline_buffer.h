@@ -95,14 +95,19 @@ public:
     // staticCushionMs <= 0: tune between MIN_CUSHION_MS and MAX_CUSHION_MS
     // declaredLatencyMs: output latency we announce to the sender (RECORD Audio-Latency);
     //   the sender shortens its lead by it, so scheduled mode adds it back
+    // scheduledCapMs: scheduled mode plays this much behind the sender at most (user's
+    //   "music delay"); <= 0 = exactly on the sender's schedule
     DelayTracker(int sampleRate, int channels, int staticCushionMs, int percentilePct,
-                 int declaredLatencyMs)
+                 int declaredLatencyMs, int scheduledCapMs)
         : mSampleRate(sampleRate), mChannels(channels),
           mAdaptive(staticCushionMs <= 0),
           mFloor(msToSamples(sampleRate, channels, mAdaptive ? MIN_CUSHION_MS : staticCushionMs)),
           mCeil(msToSamples(sampleRate, channels, mAdaptive ? MAX_CUSHION_MS : staticCushionMs)),
           mPercentilePct(percentilePct),
           mDeclaredLatencyNs((int64_t)declaredLatencyMs * 1'000'000LL),
+          mScheduledCeil(msToSamples(sampleRate, channels,
+                                     scheduledCapMs > 0 ? std::min(scheduledCapMs, SCHEDULED_MAX_MS)
+                                                        : SCHEDULED_MAX_MS)),
           mTuned(mFloor) {}
 
     // ptsNs: packet presentation time (wall clock); arrivalNs: local arrival time (monotonic,
@@ -117,8 +122,7 @@ public:
             mScheduledLeadNs.store(targetNs, std::memory_order_relaxed);
             if (targetNs < 0) targetNs = 0;
             size_t samples = (size_t)(targetNs * mSampleRate / NS_PER_SEC) * mChannels;
-            const size_t ceil = msToSamples(mSampleRate, mChannels, SCHEDULED_MAX_MS);
-            if (samples > ceil) samples = ceil;
+            if (samples > mScheduledCeil) samples = mScheduledCeil;
             mTuned.store(samples, std::memory_order_relaxed);
             return;
         }
@@ -214,6 +218,7 @@ private:
     const size_t mCeil;
     const int mPercentilePct;            // arrival-delay percentile cushion targets
     const int64_t mDeclaredLatencyNs;    // scheduled mode: added back to the sender's lead
+    const size_t mScheduledCeil;         // scheduled mode: cushion cap in samples
     std::atomic<bool> mScheduled{false};
     std::atomic<int64_t> mScheduledLeadNs{0};  // diagnostics: last unclamped scheduled target
     std::atomic<size_t> mTuned;
@@ -264,10 +269,11 @@ class TimelineBuffer {
 public:
     // cushion policy lives in mTracker; timeline reads mTracker.target() live
     TimelineBuffer(int sampleRate, int channels, int staticCushionMs, int percentilePct,
-                   int declaredLatencyMs)
+                   int declaredLatencyMs, int scheduledCapMs)
         : mSampleRate(sampleRate),
           mChannels(channels),
-          mTracker(sampleRate, channels, staticCushionMs, percentilePct, declaredLatencyMs),
+          mTracker(sampleRate, channels, staticCushionMs, percentilePct, declaredLatencyMs,
+                   scheduledCapMs),
           // ring can't be reallocated mid-stream: size for worst-case backlog, i.e. cap
           // of largest reachable cushion + one throttle window of overshoot (trims are
           // throttled), 2x slack

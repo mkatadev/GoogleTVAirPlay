@@ -20,6 +20,8 @@ object Prefs {
     const val LOW_LATENCY = "low_latency"; const val DEF_LOW_LATENCY = false
     /** Preset over the individual latency knobs, see [pl.prodevcode.airplay.service.LatencyProfile]. */
     const val LATENCY_MODE = "latency_mode"; const val DEF_LATENCY_MODE = "balanced"
+    /** Audio-only buffer depth, see [pl.prodevcode.airplay.service.MusicDelay]. */
+    const val MUSIC_DELAY = "music_delay"; const val DEF_MUSIC_DELAY = "airplay"
     const val OPERATING_RATE = "operating_rate"; const val DEF_OPERATING_RATE = AUTO
     const val SCHEDULED_OUTPUT_BUFFER_RELEASE = "scheduled_output_buffer_release"; const val DEF_SCHEDULED_OUTPUT_BUFFER_RELEASE = false
     const val AUDIO_AUTO_BUFFER = "audio_auto_buffer"; const val DEF_AUDIO_AUTO_BUFFER = true
@@ -42,10 +44,8 @@ object Prefs {
     /** JSON array of trusted senders, see [pl.prodevcode.airplay.security.TrustedDeviceStore]. */
     const val TRUSTED_DEVICES = "trusted_devices"
     const val ALLOW_NEW_CONN = "allow_new_conn"; const val DEF_ALLOW_NEW_CONN = true
-    /** Audio-Latency (ms) announced to the sender; -1 = UxPlay's default [DEF_AUDIO_DELAY_MS]. */
-    const val AUDIO_LATENCY_MS = "audio_latency_ms"; const val DEF_AUDIO_LATENCY_MS = -1
-    /** UxPlay's built-in `audio_delay_micros` (raop.c), what the sender sees when [AUDIO_LATENCY_MS] is unset. */
-    const val DEF_AUDIO_DELAY_MS = 250
+    /** Audio-Latency (ms) announced to the sender (UxPlay `audio_delay_micros`); audio-only playout adds it back. */
+    const val AUDIO_LATENCY_MS = "audio_latency_ms"; const val DEF_AUDIO_LATENCY_MS = 250
     const val DEBUG_ENABLED = "debug_enabled"; const val DEF_DEBUG_ENABLED = false
     const val DEVELOPER_OPTIONS = "developer_options"; const val DEF_DEVELOPER_OPTIONS = false
     const val BENCHMARK_LOG = "benchmark_log"; const val DEF_BENCHMARK_LOG = false

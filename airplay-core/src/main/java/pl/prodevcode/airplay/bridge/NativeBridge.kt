@@ -40,7 +40,8 @@ object NativeBridge {
     external fun nativeServerAudioConfigure(handle: Long, cushionMs: Int, percentilePct: Int,
                                             oboeBufferFrames: Int, forceSwAlac: Boolean,
                                             realtimePriority: Boolean, lowLatency: Boolean,
-                                            benchmarkLog: Boolean, declaredLatencyMs: Int): Boolean
+                                            benchmarkLog: Boolean, declaredLatencyMs: Int,
+                                            scheduledCapMs: Int): Boolean
     external fun nativeServerAudioStart(handle: Long): Boolean
     external fun nativeServerAudioStop(handle: Long)
     // audioOnly: pure audio session (not mirroring audio) plays on the sender's schedule

@@ -411,12 +411,12 @@ JNIEXPORT jboolean JNICALL
 Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeServerAudioConfigure(
         JNIEnv *env, jobject thiz, jlong handle, jint cushionMs, jint percentilePct,
         jint oboeBufferFrames, jboolean forceSwAlac, jboolean realtimePriority, jboolean lowLatency,
-        jboolean benchmarkLog, jint declaredLatencyMs) {
+        jboolean benchmarkLog, jint declaredLatencyMs, jint scheduledCapMs) {
     server_ctx_t *ctx = (server_ctx_t *)(intptr_t)handle;
     if (!ctx || !ctx->cb_ctx.audio_engine) return JNI_FALSE;
     return audio_engine_configure(ctx->cb_ctx.audio_engine, cushionMs, percentilePct,
                                   oboeBufferFrames, forceSwAlac, realtimePriority, lowLatency,
-                                  benchmarkLog, declaredLatencyMs) ? JNI_TRUE : JNI_FALSE;
+                                  benchmarkLog, declaredLatencyMs, scheduledCapMs) ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C"
