@@ -52,7 +52,6 @@
     <string name="licenses_title">Open source</string>
     <string name="licenses_subtitle">Ta aplikacja jest wolnym oprogramowaniem na licencji GPL‑3.0. Wybierz komponent, aby przeczytać licencję.</string>
     <string name="about_credit">Wspierane przez ProDevCode</string>
-    <string name="about_credit_desc">prodevcodepl@gmail.com · darmowe i open source</string>
     <string name="footer_credit">Wspierane przez ProDevCode</string>
     <string name="overlay_title">Zezwól na „Wyświetlanie nad innymi aplikacjami”</string>
     <string name="overlay_desc">Potrzebne, aby odtwarzanie mogło otworzyć ten ekran, gdy jesteś w innej aplikacji</string>
@@ -205,8 +204,8 @@
     <string name="homekit_enable">Pokazuj w Apple Home</string>
     <string name="homekit_enable_desc">Rozgłasza telewizor jako akcesorium HomeKit w sieci lokalnej. Usługa odbiornika działa wtedy stale w tle.</string>
     <string name="homekit_tv_control">Sterowanie Google TV</string>
-    <string name="homekit_tv_control_on">Włączone — pilot z aplikacji Dom nawiguje po Google TV, a Zasilanie usypia i budzi urządzenie</string>
-    <string name="homekit_tv_control_off">Wyłączone — Zasilanie przełącza odbiornik AirPlay, a pilot steruje tylko odtwarzaniem. Wybierz, aby włączyć „%1$s” w ustawieniach ułatwień dostępu.</string>
+    <string name="homekit_tv_control_on">Włączone — otwarcie innej aplikacji rozłącza muzykę AirPlay. Przy włączonym Apple Home pilot z Domu nawiguje też po Google TV i steruje zasilaniem.</string>
+    <string name="homekit_tv_control_off">Włącz „%1$s” w ustawieniach ułatwień dostępu, aby rozłączać muzykę AirPlay po otwarciu innej aplikacji. Bez tej usługi AirPlay rozłącza się dopiero, gdy inna aplikacja przejmie audio focus. Umożliwia też nawigację po Google TV z Apple Home.</string>
     <string name="homekit_status_off">Wyłączone</string>
     <string name="homekit_status_starting">Uruchamianie…</string>
     <string name="homekit_status_unpaired">Niesparowane — wpisz kod konfiguracji w aplikacji Dom</string>

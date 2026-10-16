@@ -161,7 +161,7 @@ Java_pl_prodevcode_airplay_bridge_NativeBridge_nativeDisconnectClients(
     server_ctx_t *ctx = (server_ctx_t *)(intptr_t)handle;
     if (!ctx || !ctx->raop) return;
     raop_remove_known_connections(ctx->raop);
-    LOGI("AirPlay clients disconnected");
+    LOGI("AirPlay client disconnect requested");
 }
 
 extern "C"

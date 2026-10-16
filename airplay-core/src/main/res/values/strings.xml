@@ -8,5 +8,5 @@
     <string name="notification_off_title">AirPlay receiver is off</string>
     <string name="notification_off_text">Switch it on from Apple Home or the app</string>
     <string name="tv_remote_service_summary">Remote control from Apple Home</string>
-    <string name="tv_remote_service_description">Lets the Apple Home remote navigate Google TV (arrows, select, back, home) and put it to sleep. The service reads no screen content.</string>
+    <string name="tv_remote_service_description">Disconnects AirPlay music when another app opens. Also lets the Apple Home remote navigate Google TV (arrows, select, back, home) and put it to sleep. The service reads no screen content.</string>
 </resources>

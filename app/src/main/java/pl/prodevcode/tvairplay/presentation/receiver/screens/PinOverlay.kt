@@ -52,15 +52,16 @@ import pl.prodevcode.tvairplay.presentation.theme.AirPlayColors
 @Composable
 fun PinOverlay(request: PinRequest, onDismiss: () -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(request.pin) { focus.requestFocus() }
-    BackHandler(onBack = onDismiss)
-
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(request.pin) {
+    var now by remember(request) { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(request) {
         while (true) { now = System.currentTimeMillis(); delay(200) }
     }
     val total = (request.expiresAtMs - request.shownAtMs).coerceAtLeast(1)
-    val left = (request.expiresAtMs - now).coerceIn(0, total)
+    val left = (request.expiresAtMs - maxOf(now, System.currentTimeMillis())).coerceIn(0, total)
+    if (left == 0L) return
+
+    LaunchedEffect(request) { focus.requestFocus() }
+    BackHandler(onBack = onDismiss)
 
     Box(
         Modifier

@@ -71,6 +71,9 @@ adb install -r AirPlay-for-Google-TV-v*.apk
 
 Afterwards open the app once and grant **Display over other apps** so playback can take over the screen while you are in another app — the app asks for it on first launch:
 
+This permission also lets the receiver bring the pairing PIN to the screen while another app is open.
+**Open app on connect** must be enabled for automatic PIN display.
+
 <div align="center">
 <img src="docs/screenshots/overlay-prompt-en.png" width="49%" alt="In-app prompt: Allow Display over other apps">
 <img src="docs/screenshots/overlay-system.png" width="49%" alt="System screen: AirPlay for Google TV — Allowed">
@@ -90,6 +93,8 @@ Afterwards open the app once and grant **Display over other apps** so playback c
 
 **Apple Home:** enable *Settings → Apple Home → Show in Apple Home*, then in the Home app tap **+ › Add Accessory › More options…**, pick the TV and type the setup code shown on screen (or scan the QR code) (confirm *Add Anyway* for the uncertified accessory). The receiver service then keeps running in the background so Home can switch it on even when it is off. *Remove from Home* on the same screen forgets all pairings. *Control Google TV* on the same screen opens Accessibility settings — enable *Remote control from Apple Home* there so the Home remote (Control Center › Remote) navigates Google TV (arrows, select, back, home), *Power* puts the device to sleep and wakes it (HDMI‑CEC switches the TV set along, if enabled) and play/pause, next/previous reach the app that is playing. The service only receives window-state events (which app is in front, shown as the current input) and reads no screen content.
 
+**Switching away from AirPlay music:** with the accessibility service enabled, opening another app disconnects the audio session, even without Apple Home enabled. The *Control Google TV* row remains available in *Settings → Apple Home* when HomeKit is off. Independently, losing audio focus permanently or temporarily to another app disconnects AirPlay music; a denied focus request also ends the session. Without accessibility, merely opening an app that does not take audio focus cannot be detected. These rules do not disconnect AirPlay Video or screen mirroring.
+
 <div align="center">
 <img src="docs/screenshots/homekit-en.png" width="800" alt="Apple Home screen with the setup QR code and numeric code">
 </div>
@@ -98,37 +103,18 @@ While a video is playing: **OK** play/pause · **◀ ▶** seek (hold to acceler
 
 ## Known issues
 
-**Ending a music session from the TV leaves "Google TV" selected on the iPhone (iOS 26/27).** When you press *Back* /
-*End* on the TV (or the TV goes to sleep), the receiver pauses the music, tells the iPhone it is no longer an output
-(DACP `device-prevent-playback`) and closes the connection — exactly what AirPlay speakers do. The iPhone registers the
-disconnect, but iOS 26/27 re-routes audio automatically only for **AirPlay 2** endpoints (it manages them in an
-"endpoint aggregate"); a classic AirPlay/RAOP endpoint such as this receiver just stays selected until you pick another
-output in Control Center or the app's AirPlay menu. Playback is paused, so nothing plays into the void. Every signal a
-receiver can send was tested without effect: closing the socket, DACP `prevent-playback`/`pause`/`stop`, withdrawing the
-Bonjour records, a full receiver restart, even coming back as a different device. Ending the session on the iPhone, screen
-mirroring and video playback are not affected.
+**The iPhone can keep "Google TV" selected after the TV ends a music session.** The receiver requests pause and
+DACP `device-prevent-playback=1`, clears its session state and requests closure of the sender connections.
+Device logs have confirmed native connection destruction, but this is not proof that the iPhone deselected the output.
+`device-prevent-playback` signals unavailable playback, not an explicit output-selection change; an HTTP success response
+alone does not prove deselection either. Reconnection and occasional silent resume have also been observed and remain
+under investigation. As a workaround, select the iPhone or another output in Control Center or the app's AirPlay menu.
 
-*Possible fix:* AirPlay 2 buffered audio. Besides HAP pairing and an encrypted control channel (the crypto already exists
-in `:homekit`), it needs PTP timing on UDP ports 319/320 — privileged ports an Android app cannot bind without **root**.
-iOS does not fall back to NTP when the receiver omits the PTP feature bit, so there is no unprivileged variant. Until Apple
-restores the classic behaviour or accepts AirPlay 2 without PTP, this cannot be fixed from the TV side.
-
-*Why a "root mode" is not a quick win:* root only solves the port binding (an `su` helper can open 319/320 and hand the
-sockets over). The rest is a complete AirPlay 2 receiver that UxPlay does not have: AirPlay 2 feature bits (buffered audio,
-PTP, HomeKit/transient pairing), SRP transient pair-setup on the AirPlay port, ChaCha20-Poly1305 encryption of every
-control request, a PTP clock (cf. `nqptp`), the buffered TCP audio stream with per-packet encryption, the event channel
-and the `/setpeers`, `/setrateanchortime`, `/flushbuffered`, `/command` endpoints — effectively a port of
-shairport-sync's AirPlay 2 stack into the native layer, usable only on the few rooted Google TV devices. It is not planned.
-
-*Status check (October 2026):* nothing upstream has changed. UxPlay 1.73.7/1.74 has no AirPlay 2 audio and refers to
-shairport-sync; shairport-sync 5.6 and `nqptp` 1.2.9 still hard-code ports 319/320 and reject AirPlay 2 NTP-timed streams
-as "not implemented"; iOS 27 still speaks classic RAOP to UxPlay. On Android there is no non-root path either: `adb shell`
-and Shizuku lack `CAP_NET_BIND_SERVICE`, `ip_unprivileged_port_start` needs `CAP_NET_ADMIN`, `android.uid.system` needs the
-platform key. The only loophole is the one [openairplay/airplay2-receiver](https://github.com/openairplay/airplay2-receiver)
-uses: advertise the PTP feature bit, never bind 319/320 and anchor playback locally when the `play` command arrives. iOS
-does not abort when the PTP peer stays silent, but there is no clock sync (drift uncorrected, single device only), the
-project has been dormant since 2023 and was verified only up to iOS 17 — and it still needs the whole AirPlay 2 stack
-listed above.
+There is no verified conclusion that this is an unavoidable iOS limitation or that AirPlay 2/root is required to fix it.
+In a device test, the iPhone accepted DACP `pause` and `stop`, but rejected `getspeakers` and
+`setspeakers?speaker-id=0` with HTTP 400; the output remained selected. These output-selection commands are not sent by the receiver.
+A diagnostic test that sent FIN and drained incoming data until the iPhone closed its connection also left the output
+selected. Waiting for a graceful TCP close alone did not resolve the issue.
 
 ## Build from source
 

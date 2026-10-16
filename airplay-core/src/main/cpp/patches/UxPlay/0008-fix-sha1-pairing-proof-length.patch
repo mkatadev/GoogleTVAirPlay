@@ -1,0 +1,22 @@
+diff --git a/lib/raop_handlers.h b/lib/raop_handlers.h
+--- a/lib/raop_handlers.h
++++ b/lib/raop_handlers.h
+@@ -354,7 +354,8 @@
+         /* this is the second part of pair-setup-pin request */
+         char *client_pk = NULL;
+         char *client_proof = NULL;
+-        unsigned char proof[64] = { '\0' };
++        /* Legacy pairing uses SRP_SHA1: both proofs are 20-byte SHA-1 digests. */
++        unsigned char proof[20] = { '\0' };
+         memset(proof, 0, sizeof(proof));
+         uint64_t client_pk_len = 0;
+         uint64_t client_proof_len = 0;
+@@ -395,7 +396,7 @@
+             free (str);
+         }
+         plist_t res_root_node = plist_new_dict();
+-        plist_t res_proof_node = plist_new_data((const char *) proof, 20);
++        plist_t res_proof_node = plist_new_data((const char *) proof, sizeof(proof));
+         plist_dict_set_item(res_root_node, "proof", res_proof_node);	
+         plist_to_bin(res_root_node, response_data, (uint32_t*) response_datalen);
+         plist_free(res_root_node);

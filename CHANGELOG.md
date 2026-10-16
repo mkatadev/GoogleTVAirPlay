@@ -6,6 +6,18 @@ The section for the version being released is used verbatim as the GitHub releas
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-10-16
+
+### Fixed
+- AirPlay music sessions now stop when another app takes audio focus, or when the enabled accessibility service detects switching to another app. Foreground-app detection works independently of HomeKit; the accessibility settings entry is available with HomeKit disabled.
+- Late track metadata, artwork and progress callbacks no longer restore stale now-playing information after a session ends.
+- The pairing PIN can bring the app to the foreground while another app is open when *Display over other apps* permission and *Open app on connect* are enabled. PIN notifications take priority over track metadata, and refreshed prompts use their current expiry.
+- The PIN survives the iPhone closing its initial PIN-request connection before opening the verification connection.
+- UxPlay's legacy pairing now accepts the 20-byte SRP SHA-1 proof sent by the iPhone instead of incorrectly requiring 64 bytes.
+
+### Known issues
+- Ending a session stops playback and closes receiver connections, but Google TV can remain selected as the AirPlay output on the iPhone. This release does not fix output deselection or occasional silent resume; select the iPhone or another output manually if needed.
+
 ## [1.3.5] - 2026-10-14
 
 ### Added
