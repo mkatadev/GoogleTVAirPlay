@@ -29,10 +29,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import pl.prodevcode.airplay.Prefs
+import pl.prodevcode.airplay.audio.AndroidAudioFocusAccess
+import pl.prodevcode.airplay.audio.AudioFocusController
 import pl.prodevcode.airplay.audio.DacpController
 import pl.prodevcode.airplay.audio.DacpPlayer
 import pl.prodevcode.airplay.audio.NowPlayingState
@@ -74,6 +78,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     val nowPlaying = NowPlayingState()
     val trustedDevices by lazy { TrustedDeviceStore(prefs) }
     private lateinit var volumeSync: VolumeSync
+    private lateinit var audioFocus: AudioFocusController
     private lateinit var mediaSession: MediaSessionController
     private lateinit var notifications: ServiceNotifications
     private lateinit var networkWatcher: NetworkWatcher
@@ -145,10 +150,10 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     var logCallback: ((String) -> Unit)? = null
 
-    private val _pinPrompt = MutableStateFlow<PinPrompt?>(null)
+    private val pairingPin = PairingPinState()
     /** PIN the connecting device must enter, with who asked and when it expires. */
-    val pinPrompt = _pinPrompt.asStateFlow()
-    private val lastPin: String? get() = _pinPrompt.value?.pin
+    val pinPrompt = pairingPin.prompt
+    private val lastPin: String? get() = pinPrompt.value?.pin
 
     private fun log(msg: String) {
         Log.i(TAG, msg)
@@ -184,6 +189,23 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         }
         notifications.createChannel()
         dacpController = DacpController(this)
+        audioFocus = AudioFocusController(AndroidAudioFocusAccess(audioManager, mainHandler)) { reason ->
+            log("$reason, disconnecting AirPlay audio")
+            disconnectAirPlayAudio()
+        }
+        lifecycleScope.launch {
+            combine(audioOnly, connectionCount, playing, video.active) { audio, clients, playing, videoActive ->
+                audio && clients > 0 && playing && !videoActive
+            }.distinctUntilChanged().collect(audioFocus::update)
+        }
+        lifecycleScope.launch {
+            TvRemoteService.foregroundPackage.disconnectAudioOnAppChange(
+                receiverPackage = packageName,
+                audioOnly = { _audioOnly.value && !video.active.value },
+                connectionCount = { _connectionCount.value },
+                disconnect = ::disconnectAirPlayAudio,
+            )
+        }
         dacpPlayer = DacpPlayer(
             mainLooper,
             dacp = { dacpController },
@@ -463,6 +485,9 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     private fun shutdownReceiver() {
+        pairingPin.reset()
+        mainHandler.removeCallbacks(pinExpiry)
+        audioFocus.release()
         uiDismissed = false
         mainHandler.removeCallbacks(sessionEnd)
         liveConnections = 0
@@ -472,7 +497,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         video.reset()
         _audioOnly.value = false
         _mirroringActive.value = false
-        nowPlaying.clear()
+        nowPlaying.endSession()
         _serverState.value = ServerState.STOPPED
         _connectionCount.value = 0
         refreshDacpPlayer()
@@ -550,12 +575,12 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         if (nativeHandle == 0L) return
         if (_connectionCount.value == 0 && !video.active.value) return
         log("Session ended by the user")
+        clearPin()
         if (video.active.value) endVideoPlayback("AirPlay Video stopped (user)")
         // the sockets go only after the sender has acknowledged, so the signals cannot arrive out of order
         val notified = notifySenderOfStop()
         // the user closed it: no grace period, the UI returns to idle at once
         mainHandler.removeCallbacks(sessionEnd)
-        liveConnections = 0
         finishSession()
         if (notified == null) {
             dropConnections()
@@ -570,6 +595,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     private fun dropConnections() {
         if (nativeHandle == 0L) return
+        log("Requesting native AirPlay connection closure")
         NativeBridge.nativeDisconnectClients(nativeHandle)
     }
 
@@ -589,6 +615,11 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         val playing = !nowPlaying.playing.value
         setPlaying(playing)
         dacpController?.let { if (playing) it.play() else it.pause() }
+    }
+
+    private fun disconnectAirPlayAudio() {
+        if (!_audioOnly.value || _connectionCount.value == 0 || video.active.value) return
+        disconnectClients()
     }
 
     private fun endVideoPlayback(message: String) {
@@ -618,6 +649,10 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onVideoStop() = endVideoPlayback("AirPlay Video stopped")
 
     override fun onAudioFormat(ct: Int, spf: Int, usingScreen: Boolean) {
+        if (!nowPlaying.sessionActive) {
+            log("Ignoring audio format after session end")
+            return
+        }
         clearPin()
         audioRenderer.start()
         audioRenderer.setFormat(ct, spf, audioOnly = !usingScreen)
@@ -645,6 +680,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onClientVolume(): Float = volumeSync.clientVolumeDb()
 
     override fun onConnectionInit() {
+        pairingPin.connectionOpened()
         liveConnections++
         // a sender that dropped moments ago (iPhone lock, Wi-Fi power save) is the same session
         val resumed = mainHandler.hasCallbacks(sessionEnd)
@@ -654,6 +690,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
             return
         }
         val firstConnection = _connectionCount.value == 0
+        if (firstConnection) nowPlaying.beginSession()
         _connectionCount.value++
         log("Client connected (${_connectionCount.value})")
         if (!firstConnection) return
@@ -665,10 +702,15 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     override fun onConnectionDestroy() {
-        // already closed from the TV side: the native teardown that follows has nothing left to do, except
-        // dropping metadata the sender pushed between the session end and the socket actually closing
-        if (liveConnections == 0 && _connectionCount.value == 0) {
-            nowPlaying.clear()
+        pairingPin.connectionClosed()
+        if (pinPrompt.value == null) {
+            mainHandler.removeCallbacks(pinExpiry)
+            updateNotification()
+        }
+        if (_connectionCount.value == 0) {
+            liveConnections = (liveConnections - 1).coerceAtLeast(0)
+            log("Native AirPlay connection destroyed ($liveConnections remaining)")
+            nowPlaying.endSession()
             refreshDacpPlayer()
             updateNotification()
             return
@@ -686,6 +728,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     private fun finishSession() {
+        audioFocus.release()
         _connectionCount.value = 0
         uiDismissed = false
         // clients may drop without POST /stop; must run before the poll-state reset
@@ -693,12 +736,12 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         // last client gone: release audio output devices to save power
         audioRenderer.stop()
         _audioOnly.value = false
-        nowPlaying.clear()
+        nowPlaying.endSession()
         dacpController?.reset()
         volumeSync.onSessionEnded()
         refreshDacpPlayer()
         updateNotification()
-        log("Client disconnected (0)")
+        log("Session state cleared; native connections remaining: $liveConnections")
     }
 
     override fun onConnectionReset(reason: Int) {
@@ -706,17 +749,22 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     }
 
     override fun onDisplayPin(pin: String) {
-        // a new pin is the sync point with the client prompt: show every new value immediately
-        if (lastPin == pin) return
-        val now = System.currentTimeMillis()
-        _pinPrompt.value = PinPrompt(pin, shownAtMs = now, expiresAtMs = now + PIN_EXPIRY_MS)
+        val prompt = pairingPin.show(pin, System.currentTimeMillis(), PIN_EXPIRY_MS) ?: run {
+            log("Ignoring PIN from a closed pairing connection")
+            return
+        }
+        log("Pairing PIN prompt updated")
         mainHandler.removeCallbacks(pinExpiry)
         mainHandler.postDelayed(pinExpiry, PIN_EXPIRY_MS)
         updateNotification()
+        bringUiToFront(pinPrompt = prompt)
     }
 
     override fun onMetadata(data: ByteArray) {
-        val info = nowPlaying.onMetadata(data)
+        val info = nowPlaying.onMetadata(data) ?: run {
+            log("Ignoring metadata after session end")
+            return
+        }
         updateMediaMetadata()
         refreshDacpPlayer()
         log("Track: ${info.artist} - ${info.title}")
@@ -738,6 +786,10 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
     override fun onAudioTeardown() = setPlaying(false)
 
     override fun onDacpId(dacpId: String, activeRemote: String) {
+        if (!nowPlaying.sessionActive) {
+            log("Ignoring DACP update after session end")
+            return
+        }
         dacpController?.update(dacpId, activeRemote)
         log("DACP: $dacpId")
     }
@@ -790,8 +842,8 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
 
     private fun clearPin() {
         mainHandler.removeCallbacks(pinExpiry)
-        if (_pinPrompt.value == null) return
-        _pinPrompt.value = null
+        if (pinPrompt.value == null) return
+        pairingPin.clear()
         updateNotification()
     }
 
@@ -830,8 +882,22 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
         uiDismissed = true
     }
 
-    /** Media started: show the receiver UI (needs SYSTEM_ALERT_WINDOW on TV when we are in the background). */
-    private fun bringUiToFront() {
+    /** A PIN or media needs UI (requires SYSTEM_ALERT_WINDOW on TV when we are in the background). */
+    private fun bringUiToFront(pinPrompt: PinPrompt? = null) {
+        if (pinPrompt != null) {
+            mainHandler.post {
+                val shouldLaunch = shouldBringPinUiToFront(
+                    requested = pinPrompt,
+                    current = this.pinPrompt.value,
+                    nowMs = System.currentTimeMillis(),
+                    launchOnConnect = prefs.getBoolean(Prefs.LAUNCH_ON_CONNECT, Prefs.DEF_LAUNCH_ON_CONNECT),
+                    uiDismissed = uiDismissed,
+                )
+                if (!shouldLaunch) return@post
+                launchMainActivity()
+            }
+            return
+        }
         if (!shouldLaunchOnConnect()) return
         if (requiresPin() && lastPin != null) return
         launchMainActivity()

@@ -52,7 +52,6 @@
     <string name="licenses_title">Open source</string>
     <string name="licenses_subtitle">This app is free software under GPL‑3.0. Select a component to read its license.</string>
     <string name="about_credit">Supported by ProDevCode</string>
-    <string name="about_credit_desc">prodevcodepl@gmail.com · free &amp; open source</string>
     <string name="footer_credit">Supported by ProDevCode</string>
     <string name="overlay_title">Allow “Display over other apps”</string>
     <string name="overlay_desc">Needed so playback can open this screen while you are in another app</string>
@@ -197,8 +196,8 @@
     <string name="homekit_enable">Show in Apple Home</string>
     <string name="homekit_enable_desc">Advertise the TV as a HomeKit accessory on the local network. Keeps the receiver service running in the background.</string>
     <string name="homekit_tv_control">Control Google TV</string>
-    <string name="homekit_tv_control_on">On — the Home remote navigates Google TV, Power puts it to sleep and wakes it</string>
-    <string name="homekit_tv_control_off">Off — Power switches the AirPlay receiver, the remote only controls playback. Select to enable “%1$s” in Accessibility settings.</string>
+    <string name="homekit_tv_control_on">On — opening another app disconnects AirPlay music. With Apple Home enabled, its remote also navigates Google TV and controls power.</string>
+    <string name="homekit_tv_control_off">Enable “%1$s” in Accessibility settings to disconnect AirPlay music when another app opens. Without it, AirPlay disconnects only when another app takes audio focus. Also enables Google TV navigation from Apple Home.</string>
     <string name="homekit_status_off">Off</string>
     <string name="homekit_status_starting">Starting…</string>
     <string name="homekit_status_unpaired">Not paired — enter the setup code in Home</string>

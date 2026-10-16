@@ -87,15 +87,13 @@ private fun HomeKitContent(ui: HomeKitUiState, onIntent: (HomeKitIntent) -> Unit
                 }
             }
             item { InfoRow(stringResource(R.string.setting_homekit), homeKitSummary(ui.enabled, status)) }
-            if (ui.enabled) {
-                item {
-                    ValueRow(
-                        stringResource(R.string.homekit_tv_control),
-                        if (status.tvControl) stringResource(R.string.homekit_tv_control_on)
-                        else stringResource(R.string.homekit_tv_control_off, stringResource(CoreR.string.tv_remote_service_summary)),
-                        onClick = { onIntent(HomeKitIntent.OpenTvControl) },
-                    )
-                }
+            item {
+                ValueRow(
+                    stringResource(R.string.homekit_tv_control),
+                    if (status.tvControl) stringResource(R.string.homekit_tv_control_on)
+                    else stringResource(R.string.homekit_tv_control_off, stringResource(CoreR.string.tv_remote_service_summary)),
+                    onClick = { onIntent(HomeKitIntent.OpenTvControl) },
+                )
             }
 
             val code = status.setupCode

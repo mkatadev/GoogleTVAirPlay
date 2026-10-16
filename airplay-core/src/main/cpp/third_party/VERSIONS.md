@@ -25,5 +25,6 @@ Applied at CMake configure time onto a copy of `UxPlay/lib` (`cmake/PatchUxPlay.
 - `0005-signal-video-reset-on-abandoned-play-connection.patch` — signal video reset on abandoned play connection (`lib/http_handlers.h, lib/raop.c, lib/raop.h`)
 - `0006-deliver-volume-while-audio-stream-paused.patch` — deliver volume while audio stream paused (`lib/raop_handlers.h`)
 - `0007-throttle-resend-requests-and-bound-the-resend-wait.patch` — throttle resend requests and bound the resend wait (`lib/raop_buffer.c, lib/raop_rtp.c`)
+- `0008-fix-sha1-pairing-proof-length.patch` — fix sha1 pairing proof length (`lib/raop_handlers.h`)
 
 OpenSSL itself (`OPENSSL_BUILD_VERSION` in `CMakeLists.txt`, built by openssl-cmake from the release tarball): 3.6.1

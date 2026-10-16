@@ -71,6 +71,9 @@ adb install -r AirPlay-for-Google-TV-v*.apk
 
 Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad innymi aplikacjami**, żeby odtwarzanie mogło przejąć ekran, gdy jesteś w innej aplikacji — aplikacja poprosi o nie przy pierwszym uruchomieniu:
 
+To uprawnienie pozwala też wyświetlić ekran z PIN-em parowania, gdy otwarta jest inna aplikacja.
+Automatyczne pokazywanie PIN-u wymaga włączonej opcji **Otwórz aplikację przy połączeniu**.
+
 <div align="center">
 <img src="docs/screenshots/overlay-prompt-pl.png" width="49%" alt="Prośba w aplikacji: Zezwól na wyświetlanie nad innymi aplikacjami">
 <img src="docs/screenshots/overlay-system.png" width="49%" alt="Ekran systemowy: AirPlay for Google TV — dozwolone">
@@ -90,6 +93,8 @@ Po instalacji otwórz aplikację raz i przyznaj uprawnienie **Wyświetlanie nad 
 
 **Apple Home:** włącz *Ustawienia → Apple Home → Pokazuj w Apple Home*, a potem w aplikacji Dom stuknij **+ › Dodaj akcesorium › Więcej opcji…**, wybierz telewizor i wpisz kod konfiguracji z ekranu (albo zeskanuj kod QR) (potwierdź *Dodaj mimo to* przy ostrzeżeniu o niecertyfikowanym akcesorium). Usługa odbiornika działa wtedy stale w tle, więc Dom może go włączyć, nawet gdy jest wyłączony. *Usuń z aplikacji Dom* na tym samym ekranie zapomina wszystkie parowania. *Sterowanie Google TV* na tym samym ekranie otwiera ustawienia ułatwień dostępu — włącz tam *Pilot z aplikacji Apple Home*, a pilot z Domu (Centrum sterowania › Pilot) będzie nawigować po Google TV (strzałki, wybór, wstecz, ekran główny), *Zasilanie* uśpi i obudzi urządzenie (HDMI‑CEC przełączy też telewizor, jeśli jest włączone), a play/pauza i następny/poprzedni trafią do odtwarzającej aplikacji. Usługa odbiera wyłącznie zdarzenia zmiany okna (która aplikacja jest na wierzchu — pokazywana jako bieżące wejście) i nie czyta zawartości ekranu.
 
+**Przełączanie z muzyki AirPlay:** z włączoną usługą ułatwień dostępu otwarcie innej aplikacji rozłącza sesję audio, również bez włączonego Apple Home. Wiersz *Sterowanie Google TV* w *Ustawienia → Apple Home* pozostaje dostępny przy wyłączonym HomeKit. Niezależnie od tej usługi trwała lub chwilowa utrata audio focus na rzecz innej aplikacji rozłącza muzykę AirPlay; odmowa przyznania audio focus również kończy sesję. Bez ułatwień dostępu nie można wykryć samego otwarcia aplikacji, która nie przejmuje audio focus. Te reguły nie rozłączają AirPlay Video ani klonowania ekranu.
+
 <div align="center">
 <img src="docs/screenshots/homekit-pl.png" width="800" alt="Ekran Apple Home z kodem QR i kodem konfiguracji">
 </div>
@@ -98,39 +103,18 @@ Podczas odtwarzania wideo: **OK** pauza/wznów · **◀ ▶** przewijanie (przyt
 
 ## Znane problemy
 
-**Zakończenie sesji muzycznej z poziomu telewizora zostawia na iPhonie wybrane „Google TV” (iOS 26/27).** Gdy na TV
-naciśniesz *Wstecz* / *Zakończ* (albo TV zaśnie), odbiornik pauzuje muzykę, informuje iPhone'a, że przestał być wyjściem
-(DACP `device-prevent-playback`) i zamyka połączenie — dokładnie tak, jak robią to głośniki AirPlay. iPhone rejestruje
-rozłączenie, ale iOS 26/27 automatycznie przekierowuje dźwięk tylko dla endpointów **AirPlay 2** (zarządza nimi w
-„agregacie”); klasyczny endpoint AirPlay/RAOP, jakim jest ten odbiornik, pozostaje wybrany, dopóki nie wskażesz innego
-wyjścia w Centrum sterowania lub w menu AirPlay aplikacji. Odtwarzanie jest zapauzowane, więc nic nie gra w pustkę.
-Przetestowano każdy sygnał, jaki odbiornik może wysłać — bez skutku: zamknięcie gniazda, DACP
-`prevent-playback`/`pause`/`stop`, wycofanie rekordów Bonjour, pełny restart odbiornika, a nawet powrót jako inne
-urządzenie. Zakończenie sesji na iPhonie, mirroring ekranu i odtwarzanie wideo działają poprawnie.
+**iPhone może zachować wybrane „Google TV” po zakończeniu sesji muzycznej na TV.** Odbiornik żąda pauzy i wysyła
+DACP `device-prevent-playback=1`, czyści stan sesji i żąda zamknięcia połączeń nadawcy.
+Logi urządzenia potwierdziły zniszczenie połączenia natywnego, ale nie jest to dowód odznaczenia wyjścia na iPhonie.
+`device-prevent-playback` sygnalizuje niedostępność odtwarzania, a nie bezpośrednią zmianę wyboru wyjścia; sama odpowiedź
+HTTP oznaczająca sukces również nie dowodzi odznaczenia. Zaobserwowano też ponowne połączenia i sporadyczny powrót bez
+dźwięku; te przypadki są nadal badane. Obejście: wybierz iPhone lub inne wyjście w Centrum sterowania albo menu AirPlay aplikacji.
 
-*Możliwa naprawa:* buforowane audio AirPlay 2. Poza parowaniem HAP i szyfrowanym kanałem sterującym (kryptografia jest
-już w `:homekit`) wymaga ono synchronizacji PTP na portach UDP 319/320 — uprzywilejowanych, których aplikacja Android nie
-może otworzyć bez **roota**. iOS nie przechodzi na NTP, gdy odbiornik nie ogłasza bitu PTP, więc wariant bez uprawnień nie
-istnieje. Dopóki Apple nie przywróci klasycznego zachowania albo nie zaakceptuje AirPlay 2 bez PTP, nie da się tego
-naprawić po stronie telewizora.
-
-*Dlaczego „tryb root” nie jest szybką wygraną:* root rozwiązuje tylko bindowanie portów (pomocnik `su` może otworzyć
-319/320 i przekazać gniazda). Reszta to kompletny odbiornik AirPlay 2, którego UxPlay nie ma: bity funkcji AirPlay 2
-(buforowane audio, PTP, parowanie HomeKit/transient), transient pair-setup SRP na porcie AirPlay, szyfrowanie
-ChaCha20-Poly1305 każdego żądania sterującego, zegar PTP (por. `nqptp`), buforowany strumień audio TCP z szyfrowaniem
-per pakiet, kanał zdarzeń oraz endpointy `/setpeers`, `/setrateanchortime`, `/flushbuffered`, `/command` — w praktyce
-port stosu AirPlay 2 z shairport-sync do warstwy natywnej, użyteczny tylko na nielicznych zrootowanych Google TV. Nie jest
-planowane.
-
-*Stan na październik 2026:* upstream nic się nie zmieniło. UxPlay 1.73.7/1.74 nie ma audio AirPlay 2 i odsyła do
-shairport-sync; shairport-sync 5.6 i `nqptp` 1.2.9 nadal mają na sztywno porty 319/320 i odrzucają strumienie AirPlay 2
-z synchronizacją NTP jako „not implemented”; iOS 27 wciąż rozmawia z UxPlay klasycznym RAOP. Na Androidzie też nie ma
-ścieżki bez roota: `adb shell` i Shizuku nie mają `CAP_NET_BIND_SERVICE`, `ip_unprivileged_port_start` wymaga
-`CAP_NET_ADMIN`, `android.uid.system` wymaga klucza platformy. Jedyna furtka to ta, z której korzysta
-[openairplay/airplay2-receiver](https://github.com/openairplay/airplay2-receiver): ogłosić bit PTP, nigdy nie bindować
-319/320 i zakotwiczyć odtwarzanie lokalnie w chwili nadejścia komendy `play`. iOS nie przerywa sesji, gdy peer PTP
-milczy, ale nie ma wtedy synchronizacji zegara (dryf niekorygowany, tylko jedno urządzenie), projekt jest nieaktywny od
-2023 r. i sprawdzony tylko do iOS 17 — a i tak wymaga całego stosu AirPlay 2 wymienionego powyżej.
+Nie potwierdzono, że jest to nieuniknione ograniczenie iOS ani że naprawa wymaga AirPlay 2 lub roota.
+W teście na urządzeniu iPhone przyjął DACP `pause` i `stop`, ale odrzucił `getspeakers` oraz
+`setspeakers?speaker-id=0` odpowiedzią HTTP 400; wyjście pozostało zaznaczone. Odbiornik nie wysyła tych poleceń wyboru wyjść.
+Test diagnostyczny wysyłający FIN i odbierający końcowe dane do zamknięcia połączenia przez iPhone również pozostawił wyjście
+zaznaczone. Samo oczekiwanie na łagodne zamknięcie TCP nie rozwiązało problemu.
 
 ## Budowanie ze źródeł
 

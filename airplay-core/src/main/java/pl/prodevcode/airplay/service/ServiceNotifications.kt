@@ -70,7 +70,10 @@ internal class ServiceNotifications(
             .setContentIntent(pi)
             .setOngoing(true)
 
-        if (isAudio) {
+        if (s.pin != null) {
+            builder.setContentTitle(service.getString(R.string.notification_pin_title))
+                .setContentText(service.getString(R.string.notification_pin_text, s.pin))
+        } else if (isAudio) {
             builder.setContentTitle(s.track.title).setContentText(s.track.artist).setSubText(s.track.album)
             s.track.coverArt?.let { builder.setLargeIcon(it) }
             s.session?.let { session ->
@@ -84,10 +87,6 @@ internal class ServiceNotifications(
         } else if (s.receiverOff) {
             builder.setContentTitle(service.getString(R.string.notification_off_title))
                 .setContentText(service.getString(R.string.notification_off_text))
-        } else if (s.pin != null) {
-            // passive handoff only: do not launch/reorder the activity during pin auth
-            builder.setContentTitle(service.getString(R.string.notification_pin_title))
-                .setContentText(service.getString(R.string.notification_pin_text, s.pin))
         } else {
             builder.setContentTitle(service.getString(R.string.notification_title))
                 .setContentText(service.getString(R.string.notification_text))
